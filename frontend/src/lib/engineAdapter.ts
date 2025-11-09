@@ -1,7 +1,6 @@
-import { MoleculeGraph } from '@biosynth/engine'
-import { MoleculeSerializer } from '@biosynth/engine'
-import { Atom, Bond } from '@biosynth/engine'
+import { MoleculeGraph, MoleculeSerializer, ForceField } from '@biosynth/engine'
 import { useMoleculeStore } from '../store/moleculeStore'
+import { pushState } from '../store/historyStore'
 
 export interface RenderableAtom {
   id: string
@@ -78,10 +77,101 @@ export function updateAtomPosition(
   // Update position
   molecule.atoms.set(id, { ...atom, position })
 
+  // TODO: Run geometry optimization in WebWorker for better performance
+  // For now, run synchronously with a small number of iterations
+  // This will relax the molecule after dragging
+  setTimeout(() => {
+    const cloned = molecule.clone()
+    ForceField.optimizeGeometry(cloned, 5, 0.005) // Quick relaxation
+    store.setMolecule(cloned)
+  }, 0)
+
   // Update store with cloned molecule to trigger re-render
   store.setMolecule(molecule.clone())
 
   // Re-run predictions when geometry changes
+  store.fetchPredictions()
+}
+
+/**
+ * Add atom to molecule graph
+ */
+export function addAtom(
+  element: string,
+  position: [number, number, number]
+): void {
+  const store = useMoleculeStore.getState()
+  const molecule = store.currentMolecule
+
+  if (!molecule) {
+    // Create new molecule if none exists
+    const newMolecule = new MoleculeGraph()
+    newMolecule.addAtom({ element: element as any, position })
+    store.setMolecule(newMolecule)
+    pushState()
+    return
+  }
+
+  // Add atom
+  molecule.addAtom({ element: element as any, position })
+  const cloned = molecule.clone()
+  store.setMolecule(cloned)
+  pushState()
+
+  // Optimize geometry
+  setTimeout(() => {
+    const optimized = cloned.clone()
+    ForceField.optimizeGeometry(optimized, 5, 0.005)
+    store.setMolecule(optimized)
+  }, 0)
+
+  // Re-run predictions
+  store.fetchPredictions()
+}
+
+/**
+ * Remove atom from molecule graph
+ */
+export function removeAtom(id: string): void {
+  const store = useMoleculeStore.getState()
+  const molecule = store.currentMolecule
+
+  if (!molecule) return
+
+  pushState()
+  molecule.removeAtom(id)
+  const cloned = molecule.clone()
+  store.setMolecule(cloned)
+
+  // Clear selection if deleted atom was selected
+  if (store.selectedAtomId === id) {
+    store.selectAtom(null)
+  }
+
+  // Re-run predictions
+  store.fetchPredictions()
+}
+
+/**
+ * Remove bond from molecule graph
+ */
+export function removeBond(id: string): void {
+  const store = useMoleculeStore.getState()
+  const molecule = store.currentMolecule
+
+  if (!molecule) return
+
+  pushState()
+  molecule.removeBond(id)
+  const cloned = molecule.clone()
+  store.setMolecule(cloned)
+
+  // Clear selection if deleted bond was selected
+  if (store.selectedBondId === id) {
+    store.selectBond(null)
+  }
+
+  // Re-run predictions
   store.fetchPredictions()
 }
 
@@ -94,16 +184,28 @@ export function addBond(a1: string, a2: string, order: number = 1): void {
 
   if (!molecule) return
 
+  pushState()
+
   // Add bond
   const bondId = molecule.addBond(a1, a2, order)
   if (bondId) {
     // Update store with cloned molecule
-    store.setMolecule(molecule.clone())
+    const cloned = molecule.clone()
+    store.setMolecule(cloned)
+
+    // TODO: Run geometry optimization in WebWorker for better performance
+    // Optimize geometry after bond addition to relax the structure
+    setTimeout(() => {
+      const optimized = cloned.clone()
+      ForceField.optimizeGeometry(optimized, 10, 0.005) // More iterations for new bonds
+      store.setMolecule(optimized)
+    }, 0)
 
     // Re-run predictions when structure changes
     store.fetchPredictions()
   }
 }
+
 
 /**
  * Create a MoleculeGraph from renderable format
@@ -112,7 +214,7 @@ export function addBond(a1: string, a2: string, order: number = 1): void {
  */
 export function renderableToMolecule(
   atoms: RenderableAtom[],
-  bonds: RenderableBond[]
+  _bonds: RenderableBond[] // Unused until bond mapping is fixed
 ): MoleculeGraph {
   const molecule = new MoleculeGraph()
   const atomIdMap = new Map<string, string>() // old ID -> new ID
@@ -129,11 +231,7 @@ export function renderableToMolecule(
   // Add bonds using mapped IDs
   // TODO: Fix bond mapping - bonds need to reference atoms by position or store atom IDs
   // For now, this is a placeholder that won't work correctly
-  bonds.forEach((bond) => {
-    // This is incorrect - bond.id is the bond's ID, not atom IDs
-    // Need to store atom IDs in the RenderableBond interface
-    console.warn('renderableToMolecule: Bond mapping not implemented correctly')
-  })
+  // Note: bonds parameter is intentionally unused until bond mapping is fixed
 
   return molecule
 }

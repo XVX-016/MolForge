@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { MoleculeGraph } from '@biosynth/engine'
+import { MoleculeGraph, Element } from '@biosynth/engine'
 import { predict, generate, predictFast } from '../lib/api'
 
 interface BackendPredictions {
@@ -10,30 +10,45 @@ interface BackendPredictions {
   novelty?: number
 }
 
+export type Tool = 'select' | 'add-atom' | 'bond' | 'delete'
+
 interface MoleculeState {
   // State
   currentMolecule: MoleculeGraph | null
   selectedAtomId: string | null
+  selectedBondId: string | null
   loadingState: 'idle' | 'loading' | 'success' | 'error'
   backendPredictions: BackendPredictions | null
   error: string | null
+  tool: Tool
+  atomToAdd: Element | null
+  currentBondOrder: number
 
   // Actions
   setMolecule: (molecule: MoleculeGraph | null) => void
   selectAtom: (id: string | null) => void
+  selectBond: (id: string | null) => void
   updatePosition: (id: string, position: [number, number, number]) => void
   fetchPredictions: () => Promise<void>
   fetchPredictionsFast: () => Promise<void>
   generateMolecule: (prompt: string) => Promise<void>
   reset: () => void
+  setTool: (tool: Tool) => void
+  resetTool: () => void
+  setAtomToAdd: (element: Element | null) => void
+  setBondOrder: (order: number) => void
 }
 
 const initialState = {
   currentMolecule: null,
   selectedAtomId: null,
+  selectedBondId: null,
   loadingState: 'idle' as const,
   backendPredictions: null,
   error: null,
+  tool: 'select' as Tool,
+  atomToAdd: null as Element | null,
+  currentBondOrder: 1,
 }
 
 export const useMoleculeStore = create<MoleculeState>((set, get) => ({
@@ -45,6 +60,10 @@ export const useMoleculeStore = create<MoleculeState>((set, get) => ({
 
   selectAtom: (id) => {
     set({ selectedAtomId: id })
+  },
+
+  selectBond: (id) => {
+    set({ selectedBondId: id })
   },
 
   updatePosition: (id, position) => {
@@ -133,6 +152,26 @@ export const useMoleculeStore = create<MoleculeState>((set, get) => ({
 
   reset: () => {
     set(initialState)
+  },
+
+  setTool: (tool) => {
+    set({ tool })
+    // Auto-switch to add-atom when element selected
+    if (tool === 'add-atom' && get().atomToAdd === null) {
+      set({ atomToAdd: 'C' }) // Default to carbon
+    }
+  },
+
+  resetTool: () => {
+    set({ tool: 'select', atomToAdd: null })
+  },
+
+  setAtomToAdd: (element) => {
+    set({ atomToAdd: element, tool: 'add-atom' })
+  },
+
+  setBondOrder: (order) => {
+    set({ currentBondOrder: order })
   },
 }))
 

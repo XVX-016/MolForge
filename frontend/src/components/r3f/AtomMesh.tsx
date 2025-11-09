@@ -42,11 +42,21 @@ export default function AtomMesh({ id, position, element }: AtomMeshProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const selectedAtomId = useMoleculeStore((state) => state.selectedAtomId)
+  const tool = useMoleculeStore((state) => state.tool)
   
   const radius = ELEMENT_RADII[element] || 1.0
   const color = ELEMENT_COLORS[element] || 0x9da3ae
   const isSelected = selectedAtomId === id
-  const scale = isSelected ? 1.15 : 1.0
+  
+  // Visual feedback based on tool
+  let scale = isSelected ? 1.15 : 1.0
+  let outlineColor = 0x4EA7FF // Blue for select/hover
+  if (tool === 'delete' && (isHovered || isSelected)) {
+    outlineColor = 0xFF6B6B // Red for delete
+  } else if (tool === 'bond' && (isHovered || isSelected)) {
+    outlineColor = 0x4EA7FF // Blue for bond
+  }
+  
   const opacity = isDragging ? 0.7 : 1.0
 
   // Handle pointer over (hover)
@@ -65,10 +75,18 @@ export default function AtomMesh({ id, position, element }: AtomMeshProps) {
     }
   }
 
-  // Handle click (select)
+  // Handle click (select or delete)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    selectionManager.onSelect(id)
+    
+    if (tool === 'delete') {
+      // Import removeAtom dynamically to avoid circular dependency
+      import('../../lib/engineAdapter').then(({ removeAtom: remove }) => {
+        remove(id)
+      })
+    } else {
+      selectionManager.onSelect(id)
+    }
   }
 
   // Handle pointer down (start drag)
@@ -127,7 +145,7 @@ export default function AtomMesh({ id, position, element }: AtomMeshProps) {
         opacity={opacity}
       />
       {(isHovered || isSelected) && (
-        <Outlines thickness={0.1} color={0x4EA7FF} />
+        <Outlines thickness={0.1} color={outlineColor} />
       )}
     </mesh>
   )

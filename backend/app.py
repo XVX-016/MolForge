@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from backend.routes import predict as predict_router
 from backend.routes import generate as generate_router
@@ -23,13 +23,27 @@ def root():
 def predict_fast(payload: PredictFastIn):
     """
     Fast prediction using ONNX model
-    TODO: Implement ONNX inference
     """
-    # Placeholder: use regular predict for now
-    from backend.routes.predict import predict
-    from backend.routes.predict import PredictIn
+    from backend.models.onnx_predictor import get_onnx_predictor
+    from backend.utils.featurizer import featurize_smiles, validate_smiles
+    from backend.routes.predict import PredictOut
     
-    return predict(PredictIn(smiles=payload.smiles))
+    if not validate_smiles(payload.smiles):
+        raise HTTPException(status_code=400, detail="Invalid SMILES string")
+    
+    features = featurize_smiles(payload.smiles)
+    if features is None:
+        raise HTTPException(status_code=400, detail="Failed to featurize SMILES")
+    
+    try:
+        predictor = get_onnx_predictor()
+        properties = predictor.predict(features)
+        return PredictOut(properties=properties)
+    except FileNotFoundError as e:
+        # Fallback to regular predictor if ONNX not available
+        from backend.routes.predict import predict
+        from backend.routes.predict import PredictIn
+        return predict(PredictIn(smiles=payload.smiles))
 
 
 @app.get("/health")

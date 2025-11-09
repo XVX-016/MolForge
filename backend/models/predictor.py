@@ -1,26 +1,84 @@
 """
 Property prediction model wrapper
 """
+import os
 import torch
+from backend.models.property_predictor import create_model
 
 
-class DummyModel:
+class ModelLoader:
     """
-    Placeholder model for property prediction
-    TODO: Replace with real PyTorch model loaded from weights
+    Loads and manages PropertyPredictor model
     """
-    def __call__(self, x):
-        # Returns fake properties: [stability, toxicity, solubility, bioavailability, novelty]
-        return [0.1, 0.2, 0.3, 0.4, 0.5]
+    def __init__(self, weights_path: str = 'backend/weights/property_predictor.pt'):
+        """
+        Initialize model loader
+        
+        Args:
+            weights_path: Path to model weights file
+        """
+        self.weights_path = weights_path
+        self.model = None
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self._load_model()
+    
+    def _load_model(self):
+        """Load model from weights file"""
+        if os.path.exists(self.weights_path):
+            self.model = create_model()
+            self.model.load_state_dict(torch.load(self.weights_path, map_location=self.device))
+            self.model.eval()  # Set to evaluation mode
+            self.model = self.model.to(self.device)
+            print(f"Loaded model from {self.weights_path}")
+        else:
+            print(f"Warning: Model weights not found at {self.weights_path}")
+            print("Using untrained model. Run train_property_predictor.py to train.")
+            self.model = create_model()
+            self.model.eval()
+            self.model = self.model.to(self.device)
+    
+    def predict(self, features):
+        """
+        Predict molecular properties from features
+        
+        Args:
+            features: Feature vector (list of floats, length 2048)
+            
+        Returns:
+            dict with properties: stability, toxicity, solubility, bioavailability, novelty
+        """
+        if self.model is None:
+            raise RuntimeError("Model not loaded")
+        
+        # Convert features to tensor
+        if isinstance(features, list):
+            x = torch.tensor(features, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+        else:
+            x = features
+        
+        x = x.to(self.device)
+        
+        # Run forward pass
+        with torch.no_grad():
+            y = self.model(x)
+            y = y.cpu().numpy()[0]  # Remove batch dimension and convert to numpy
+        
+        return {
+            "stability": float(y[0]),
+            "toxicity": float(y[1]),
+            "solubility": float(y[2]),
+            "bioavailability": float(y[3]),
+            "novelty": float(y[4]),
+        }
 
 
 class PropertyPredictor:
     """
     Wrapper for molecular property prediction model
+    Maintains backward compatibility with existing code
     """
-    def __init__(self):
-        # TODO: Load real PyTorch model from weights
-        self.model = DummyModel()
+    def __init__(self, weights_path: str = 'backend/weights/property_predictor.pt'):
+        self.loader = ModelLoader(weights_path)
     
     def predict(self, features):
         """
@@ -32,22 +90,12 @@ class PropertyPredictor:
         Returns:
             dict with properties: stability, toxicity, solubility, bioavailability, novelty
         """
-        # TODO: Convert features to tensor if needed
-        # x = torch.tensor(features).float().unsqueeze(0)
-        # y = self.model(x)
-        y = self.model(features)
-        
-        return {
-            "stability": float(y[0]),
-            "toxicity": float(y[1]),
-            "solubility": float(y[2]),
-            "bioavailability": float(y[3]),
-            "novelty": float(y[4]),
-        }
+        return self.loader.predict(features)
 
 
 # Global predictor instance
 _predictor = None
+_last_predictions = None
 
 
 def get_predictor():
@@ -56,4 +104,15 @@ def get_predictor():
     if _predictor is None:
         _predictor = PropertyPredictor()
     return _predictor
+
+
+def get_last_predictions():
+    """Get last predictions (for debugging)"""
+    return _last_predictions
+
+
+def set_last_predictions(predictions):
+    """Set last predictions (for debugging)"""
+    global _last_predictions
+    _last_predictions = predictions
 

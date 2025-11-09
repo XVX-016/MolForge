@@ -156,5 +156,45 @@ export class MoleculeGraph {
   computeDegree(atomId: string): number {
     return this.getNeighbors(atomId).length;
   }
+
+  /**
+   * Get all angles around an atom
+   * Returns list of [leftAtomId, centralAtomId, rightAtomId] triples
+   */
+  getAnglesAround(atomId: string): Array<[string, string, string]> {
+    const angles: Array<[string, string, string]> = [];
+    const neighbors = this.getNeighbors(atomId);
+
+    // For each pair of neighbors, create an angle
+    for (let i = 0; i < neighbors.length; i++) {
+      for (let j = i + 1; j < neighbors.length; j++) {
+        angles.push([neighbors[i], atomId, neighbors[j]]);
+      }
+    }
+
+    return angles;
+  }
+
+  /**
+   * Get all angles in the molecule
+   */
+  getAllAngles(): Array<[string, string, string]> {
+    const angles: Array<[string, string, string]> = [];
+    const processed = new Set<string>();
+
+    this.atoms.forEach((atom, atomId) => {
+      const neighborAngles = this.getAnglesAround(atomId);
+      neighborAngles.forEach((angle) => {
+        // Create unique key for angle (sorted atom IDs)
+        const key = [angle[0], angle[1], angle[2]].sort().join("-");
+        if (!processed.has(key)) {
+          processed.add(key);
+          angles.push(angle);
+        }
+      });
+    });
+
+    return angles;
+  }
 }
 

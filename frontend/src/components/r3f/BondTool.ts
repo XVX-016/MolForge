@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useMoleculeStore } from '../../store/moleculeStore'
-import { updateAtomPosition, addBond } from '../../lib/engineAdapter'
+import { addBond } from '../../lib/engineAdapter'
 
 /**
  * BondTool - Handles bond creation between selected atoms
@@ -9,10 +9,22 @@ import { updateAtomPosition, addBond } from '../../lib/engineAdapter'
 export function useBondTool() {
   const selectedAtomId = useMoleculeStore((state) => state.selectedAtomId)
   const currentMolecule = useMoleculeStore((state) => state.currentMolecule)
+  const tool = useMoleculeStore((state) => state.tool)
+  const currentBondOrder = useMoleculeStore((state) => state.currentBondOrder)
   const firstSelectedRef = useRef<string | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
+    // Only work when bond tool is active
+    if (tool !== 'bond') {
+      firstSelectedRef.current = null
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      return
+    }
+
     // Reset timeout when selection changes
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
@@ -47,18 +59,18 @@ export function useBondTool() {
     )
 
     if (!existingBond) {
-      // Create bond
-      addBond(atom1, atom2)
+      // Create bond with current bond order
+      addBond(atom1, atom2, currentBondOrder)
     }
 
     // Reset after bond creation
     firstSelectedRef.current = null
-  }, [selectedAtomId, currentMolecule])
+  }, [selectedAtomId, currentMolecule, tool, currentBondOrder])
 
   // Handle Escape key to cancel bond creation
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && tool === 'bond') {
         firstSelectedRef.current = null
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current)
@@ -71,7 +83,7 @@ export function useBondTool() {
     return () => {
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [])
+  }, [tool])
 
   return {
     firstSelectedAtomId: firstSelectedRef.current,

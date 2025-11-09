@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import MoleculeViewer from '../components/MoleculeViewer'
+import ToolPanel from '../components/ToolPanel'
+import AtomPalette from '../components/AtomPalette'
 import { useMoleculeStore } from '../store/moleculeStore'
 
 export default function Dashboard(){
@@ -26,8 +28,10 @@ export default function Dashboard(){
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6"
+      className="space-y-6 relative"
     >
+      <ToolPanel />
+      <AtomPalette />
       <header className="flex items-center justify-between">
         <div className="text-xl font-semibold text-text-primary">BioSynth AI</div>
       </header>

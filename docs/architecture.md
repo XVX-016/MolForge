@@ -331,6 +331,124 @@ User Action → AtomMesh Handler → SelectionManager → Store Update
 - **Bond Management**: Engine tests for bond creation/removal
 - **Position Updates**: Integration tests for drag-to-move
 
+## ForceField Geometry Solver
+
+The ForceField system provides molecular mechanics-based geometry optimization for realistic 3D conformations.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              ForceField Engine                           │
+│  ┌─────────────────────────────────────────────────┐     │
+│  │         Energy Terms                            │     │
+│  │  - Bond Stretching (E = k*(d-d0)²)            │     │
+│  │  - Angle Bending (E = k*(θ-θ0)²)              │     │
+│  │  - Lennard-Jones Repulsion                     │     │
+│  └─────────────────────────────────────────────────┘     │
+│  ┌─────────────────────────────────────────────────┐     │
+│  │         Gradient Descent Optimizer              │     │
+│  │  - Compute forces on all atoms                 │     │
+│  │  - Update positions iteratively                │     │
+│  │  - Minimize total energy                       │     │
+│  └─────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Energy Terms
+
+**1. Bond Stretching**
+```
+E_stretch = k_bond * (d - d0)²
+```
+- `k_bond`: Force constant (kcal/mol/Å²)
+- `d`: Current bond length
+- `d0`: Equilibrium bond length (from covalent radii)
+- Force: `F = -2k(d - d0)` along bond vector
+
+**2. Angle Bending**
+```
+E_angle = k_angle * (θ - θ0)²
+```
+- `k_angle`: Force constant (kcal/mol/rad²)
+- `θ`: Current angle
+- `θ0`: Equilibrium angle (~109.5° for tetrahedral)
+- Forces distributed perpendicular to bond vectors
+
+**3. Lennard-Jones Repulsion**
+```
+E_lj = 4ε * ((σ/r)¹² - (σ/r)⁶)
+```
+- `ε`: Well depth (0.1 kcal/mol)
+- `σ`: Van der Waals radius (3.0 Å)
+- `r`: Distance between non-bonded atoms
+- Only applied to non-bonded pairs
+
+### Total Energy Equation
+
+```
+E_total = Σ E_stretch + Σ E_angle + Σ E_lj
+```
+
+### Gradient Descent Optimization
+
+**Algorithm:**
+1. Initialize forces for all atoms to zero
+2. Compute bond stretching forces → add to atoms
+3. Compute angle bending forces → add to atoms
+4. Compute non-bonded repulsion forces → add to atoms
+5. Update positions: `r_new = r_old + step * F`
+6. Repeat for N iterations
+
+**Parameters:**
+- `iterations`: Number of optimization steps (default: 20)
+- `step`: Learning rate / step size (default: 0.005)
+
+### Integration Points
+
+**After Atom Dragging:**
+- `updateAtomPosition()` → quick relaxation (5 iterations)
+- Smooths out distortions from manual dragging
+
+**After Bond Creation:**
+- `addBond()` → full relaxation (10 iterations)
+- Ensures new bonds have proper geometry
+
+**Future: WebWorker Optimization**
+- TODO: Move optimization to WebWorker for non-blocking UI
+- Currently runs asynchronously with `setTimeout`
+
+### Vec3 Utility
+
+**Vector Math Operations:**
+- `add()`, `sub()`, `mul()`, `div()` - Basic arithmetic
+- `dot()`, `cross()` - Vector products
+- `length()`, `normalize()` - Magnitude operations
+- `angleBetween()` - Angle calculation
+- `distance()` - Distance between vectors
+
+### Angle Detection
+
+**MoleculeGraph Methods:**
+- `getAnglesAround(atomId)`: Returns all angles centered on an atom
+- `getAllAngles()`: Returns all unique angles in molecule
+- Uses neighbor graph to find angle triples
+
+### Performance Considerations
+
+- Optimization runs asynchronously to avoid blocking UI
+- Small iteration counts for real-time feedback (5-10 iterations)
+- Full optimization can use more iterations (20-50) for final structure
+- WebWorker implementation planned for large molecules
+
+### Testing
+
+**Unit Tests:**
+- Bond force reduces stretched bonds
+- Repulsion pushes atoms apart
+- Optimization converges (energy decreases)
+- Angle detection works correctly
+
 ## Development Guidelines
 
 See `cursor.json` for detailed coding standards:
