@@ -14,6 +14,8 @@ vi.mock('@react-three/drei', () => {
     OrbitControls: () => React.createElement('div'),
     Html: ({ children }: any) => React.createElement('div', null, children),
     StatsGl: () => React.createElement('div'),
+    ContactShadows: () => React.createElement('div'),
+    Environment: () => React.createElement('div'),
   };
 });
 

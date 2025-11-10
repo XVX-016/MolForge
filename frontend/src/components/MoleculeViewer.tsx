@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, ContactShadows, Environment } from '@react-three/drei'
 import AtomMesh from './r3f/AtomMesh'
 import BondMesh from './r3f/BondMesh'
 import { CanvasClickHandler } from './r3f/CanvasClickHandler'
@@ -148,9 +148,9 @@ export default function MoleculeViewer() {
         className="rounded-lg overflow-hidden bg-aluminum-light"
       >
         <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 12], fov: 45 }}>
-          <ambientLight intensity={0.3} />
-          <directionalLight position={[5, 10, 7]} intensity={1.2} castShadow />
-          <spotLight position={[-5, -10, -7]} intensity={0.6} />
+          <ambientLight intensity={0.25} />
+          <directionalLight position={[5, 10, 7]} intensity={1.0} castShadow />
+          <hemisphereLight intensity={0.35} groundColor={0x888888 as any} />
         <Suspense fallback={null}>
             {atoms.map((atom) => (
               <AtomMesh
@@ -171,7 +171,10 @@ export default function MoleculeViewer() {
             ))}
             <InteractionLayer />
             <CanvasClickHandler />
+            <ContactShadows opacity={0.3} blur={2.5} far={12} resolution={256} color="#000000" />
         </Suspense>
+          {/* Use Environment if available; fallback is lights above */}
+          <Environment preset="city" />
           <OrbitControls
             enablePan={tool === 'select'} 
             enableZoom={true} 

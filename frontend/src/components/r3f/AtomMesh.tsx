@@ -123,6 +123,8 @@ export default function AtomMesh({ id, position, element }: AtomMeshProps) {
     }
   })
 
+  const segments = (typeof window !== 'undefined' && window.devicePixelRatio && window.devicePixelRatio > 1.5) ? 48 : 64
+
   return (
     <mesh
       ref={meshRef}
@@ -136,7 +138,7 @@ export default function AtomMesh({ id, position, element }: AtomMeshProps) {
       onPointerUp={handlePointerUp}
       cursor={isDragging ? 'grabbing' : 'pointer'}
     >
-      <sphereGeometry args={[radius, 64, 64]} />
+      <sphereGeometry args={[radius, segments, segments]} />
       <meshPhysicalMaterial
         color={color}
         roughness={0.15}
