@@ -16,6 +16,7 @@ vi.mock('@react-three/drei', () => {
     StatsGl: () => React.createElement('div'),
     ContactShadows: () => React.createElement('div'),
     Environment: () => React.createElement('div'),
+    Outlines: () => React.createElement('div'),
   };
 });
 
