@@ -6,4 +6,6 @@ export * from "./UndoStack";
 export * from "./MoleculeSerializer";
 export * from "./Vec3";
 export * from "./ForceField";
+export * from "./ValenceChecker";
+export * from "./AutoBond";
 

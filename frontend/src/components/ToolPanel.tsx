@@ -9,6 +9,8 @@ export default function ToolPanel() {
   const setTool = useMoleculeStore((state) => state.setTool)
   const currentBondOrder = useMoleculeStore((state) => state.currentBondOrder)
   const setBondOrder = useMoleculeStore((state) => state.setBondOrder)
+  const autoBond = useMoleculeStore((state) => state.autoBond)
+  const setAutoBond = useMoleculeStore((state) => state.setAutoBond)
   const canUndo = useHistoryStore((state) => state.canUndo)
   const canRedo = useHistoryStore((state) => state.canRedo)
 
@@ -139,6 +141,21 @@ export default function ToolPanel() {
         >
           ↷
         </motion.button>
+      </div>
+
+      {/* Auto-bond toggle */}
+      <div className="pt-2 border-t border-aluminum-dark space-y-1">
+        <div className="text-xs text-text-secondary text-center">Auto-Bond</div>
+        <button
+          onClick={() => setAutoBond(!autoBond)}
+          className={`w-24 mx-auto h-8 rounded-lg text-sm ${
+            autoBond ? 'bg-accent-blue text-white' : 'bg-aluminum-DEFAULT text-text-primary'
+          }`}
+          aria-pressed={autoBond}
+          aria-label="Toggle auto-bond mode"
+        >
+          {autoBond ? 'On' : 'Off'}
+        </button>
       </div>
     </motion.div>
   )

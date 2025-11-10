@@ -15,6 +15,7 @@ export type Tool = 'select' | 'add-atom' | 'bond' | 'delete'
 interface MoleculeState {
   // State
   currentMolecule: MoleculeGraph | null
+  autoBond: boolean
   selectedAtomId: string | null
   selectedBondId: string | null
   loadingState: 'idle' | 'loading' | 'success' | 'error'
@@ -37,10 +38,12 @@ interface MoleculeState {
   resetTool: () => void
   setAtomToAdd: (element: Element | null) => void
   setBondOrder: (order: number) => void
+  setAutoBond: (value: boolean) => void
 }
 
 const initialState = {
   currentMolecule: null,
+  autoBond: true,
   selectedAtomId: null,
   selectedBondId: null,
   loadingState: 'idle' as const,
@@ -172,6 +175,10 @@ export const useMoleculeStore = create<MoleculeState>((set, get) => ({
 
   setBondOrder: (order) => {
     set({ currentBondOrder: order })
+  },
+
+  setAutoBond: (value) => {
+    set({ autoBond: value })
   },
 }))
 

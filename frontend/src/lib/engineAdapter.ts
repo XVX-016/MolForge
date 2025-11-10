@@ -1,4 +1,4 @@
-import { MoleculeGraph, MoleculeSerializer, ForceField } from '@biosynth/engine'
+import { MoleculeGraph, MoleculeSerializer, ForceField, autoBondNewAtom } from '@biosynth/engine'
 import { useMoleculeStore } from '../store/moleculeStore'
 import { pushState } from '../store/historyStore'
 
@@ -113,8 +113,12 @@ export function addAtom(
   }
 
   // Add atom
-  molecule.addAtom({ element: element as any, position })
+  const newId = molecule.addAtom({ element: element as any, position })
   const cloned = molecule.clone()
+  // Auto-bond if enabled
+  if (store.autoBond && newId) {
+    autoBondNewAtom(cloned, newId)
+  }
   store.setMolecule(cloned)
   pushState()
 
