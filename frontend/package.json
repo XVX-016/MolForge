@@ -10,28 +10,29 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@biosynth/engine": "file:../packages/engine",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "8.15.9",
+    "axios": "1.6.8",
+    "clsx": "2.1.0",
+    "framer-motion": "11.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.22.0",
-    "axios": "1.6.8",
-    "zustand": "4.5.0",
-    "clsx": "2.1.0",
-    "framer-motion": "11.0.3",
     "three": "0.159.0",
-    "@react-three/fiber": "8.15.9",
-    "@react-three/drei": "^9.122.0",
-    "@biosynth/engine": "file:../packages/engine"
+    "zustand": "4.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@types/three": "^0.159.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "10.4.16",
+    "jsdom": "^27.1.0",
+    "postcss": "8.4.31",
+    "tailwindcss": "3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
-    "tailwindcss": "3.4.1",
-    "postcss": "8.4.31",
-    "autoprefixer": "10.4.16",
     "vitest": "^1.6.0"
   }
 }
