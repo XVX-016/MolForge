@@ -1,6 +1,8 @@
 /**
  * Ivory & Chrome Synthetic Metallic Palette
  * Futuristic synthetic-metal lab aesthetic
+ * 
+ * All colors must use these tokens - NO default Tailwind colors allowed
  */
 
 export const colors = {
@@ -23,4 +25,18 @@ export const colors = {
 } as const;
 
 export type ColorName = keyof typeof colors;
+
+/**
+ * CSS variable names for use in stylesheets
+ */
+export const cssVars = {
+  chrome: 'var(--color-chrome)',
+  ivory: 'var(--color-ivory)',
+  spaceGrey: 'var(--color-spaceGrey)',
+  ionBlack: 'var(--color-ionBlack)',
+  neonCyan: 'var(--color-neonCyan)',
+  plasmaTeal: 'var(--color-plasmaTeal)',
+  violetEdge: 'var(--color-violetEdge)',
+  frostedGlass: 'var(--color-frostedGlass)',
+} as const;
 

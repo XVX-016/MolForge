@@ -1,7 +1,15 @@
 /**
  * Design tokens for Ivory & Chrome theme
+ * 
+ * STRICT RULES:
+ * - NO default Tailwind colors (blue, gray-500, indigo, etc.)
+ * - All components MUST use these tokens
+ * - Buttons: chrome background + neonCyan hover edge
+ * - Cards: frostedGlass background + chrome border
+ * - Headings: ivory text
+ * - Interactive elements: neonCyan glow on hover
  */
-export { colors } from './colors';
+export { colors, cssVars } from './colors';
 
 export const theme = {
   colors: {
@@ -28,6 +36,12 @@ export const theme = {
     chrome: '0 4px 6px -1px rgba(192, 197, 210, 0.1), 0 2px 4px -1px rgba(192, 197, 210, 0.06)',
     glass: '0 8px 32px 0 rgba(15, 17, 21, 0.37)',
     neon: '0 0 20px rgba(139, 243, 255, 0.3)',
+    neonHover: '0 0 15px rgba(139, 243, 255, 0.4)',
+  },
+  
+  transitions: {
+    default: 'transition-all duration-200',
+    glow: 'transition-shadow duration-300',
   },
 } as const;
 
