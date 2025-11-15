@@ -15,9 +15,9 @@ export default function Button({
 	...rest
 }: ButtonProps) {
 	const variantClasses = {
-		primary: 'bg-plasma-neon text-ionBlack hover:shadow-neon-sm disabled:opacity-50 font-semibold',
-		secondary: 'bg-frostedGlass text-ivory border border-chrome/30 hover:border-neonCyan/50 hover:shadow-neon-sm disabled:opacity-50 backdrop-blur-sm',
-		danger: 'bg-violetEdge/20 text-violetEdge border border-violetEdge/30 hover:bg-violetEdge/30 disabled:opacity-50',
+		primary: 'bg-chrome text-spaceGrey border border-chrome/30 hover:border-neonCyan/50 hover:shadow-neon-sm disabled:opacity-50 font-semibold interactive-glow',
+		secondary: 'bg-frostedGlass text-ivory border border-chrome/30 hover:border-neonCyan/50 hover:shadow-neon-sm disabled:opacity-50 backdrop-blur-sm interactive-glow',
+		danger: 'bg-violetEdge/20 text-violetEdge border border-violetEdge/30 hover:bg-violetEdge/30 hover:border-violetEdge/50 disabled:opacity-50 interactive-glow',
 	};
 
 	const sizeClasses = {

@@ -3,17 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Element } from '@biosynth/engine'
 import { useMoleculeStore } from '../store/moleculeStore'
 
+// Element colors using Ivory & Chrome palette - distinct but theme-consistent
 const ELEMENTS: Array<{ element: Element; label: string; color: string }> = [
-  { element: 'H', label: 'H', color: '#3b82f6' },
-  { element: 'C', label: 'C', color: '#1e293b' },
-  { element: 'N', label: 'N', color: '#8b5cf6' },
-  { element: 'O', label: 'O', color: '#ef4444' },
-  { element: 'F', label: 'F', color: '#10b981' },
-  { element: 'S', label: 'S', color: '#f59e0b' },
-  { element: 'P', label: 'P', color: '#f97316' },
-  { element: 'Cl', label: 'Cl', color: '#84cc16' },
-  { element: 'Br', label: 'Br', color: '#991b1b' },
-  { element: 'I', label: 'I', color: '#7c3aed' },
+  { element: 'H', label: 'H', color: '#8BF3FF' }, // neonCyan
+  { element: 'C', label: 'C', color: '#C0C5D2' }, // chrome
+  { element: 'N', label: 'N', color: '#C6BDFE' }, // violetEdge
+  { element: 'O', label: 'O', color: '#3BC7C9' }, // plasmaTeal
+  { element: 'F', label: 'F', color: '#8BF3FF' }, // neonCyan (lighter variant)
+  { element: 'S', label: 'S', color: '#F6F7F8' }, // ivory
+  { element: 'P', label: 'P', color: '#C0C5D2' }, // chrome (darker)
+  { element: 'Cl', label: 'Cl', color: '#3BC7C9' }, // plasmaTeal
+  { element: 'Br', label: 'Br', color: '#2B2E33' }, // spaceGrey
+  { element: 'I', label: 'I', color: '#C6BDFE' }, // violetEdge
 ]
 
 export default function AtomPalette() {
@@ -39,7 +40,7 @@ export default function AtomPalette() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setAtomToAdd(el.element)}
-              className={`w-10 h-10 rounded-lg font-semibold text-white transition-all ${
+              className={`w-10 h-10 rounded-lg font-semibold text-ionBlack transition-all ${
                 atomToAdd === el.element
                   ? 'ring-2 ring-neonCyan ring-offset-2 shadow-neon-sm'
                   : ''

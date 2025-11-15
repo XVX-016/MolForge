@@ -7,53 +7,53 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary Colors
-        chrome: '#C0C5D2',
-        ivory: '#F6F7F8',
-        spaceGrey: '#2B2E33',
-        ionBlack: '#0F1115',
-        frostedGlass: 'rgba(255,255,255,0.06)',
+        // Primary Colors - MUST use CSS variables
+        chrome: 'var(--color-chrome)',
+        ivory: 'var(--color-ivory)',
+        spaceGrey: 'var(--color-spaceGrey)',
+        ionBlack: 'var(--color-ionBlack)',
+        frostedGlass: 'var(--color-frostedGlass)',
         
         // Accents
-        neonCyan: '#8BF3FF',
-        plasmaTeal: '#3BC7C9',
-        violetEdge: '#C6BDFE',
+        neonCyan: 'var(--color-neonCyan)',
+        plasmaTeal: 'var(--color-plasmaTeal)',
+        violetEdge: 'var(--color-violetEdge)',
         
-        // Legacy aliases for gradual migration
+        // Legacy aliases (deprecated - use direct colors)
         aluminum: {
-          light: '#F6F7F8',
-          DEFAULT: '#C0C5D2',
-          dark: '#2B2E33',
+          light: 'var(--color-ivory)',
+          DEFAULT: 'var(--color-chrome)',
+          dark: 'var(--color-spaceGrey)',
         },
         panel: {
-          DEFAULT: 'rgba(255,255,255,0.06)',
+          DEFAULT: 'var(--color-frostedGlass)',
           soft: 'rgba(255,255,255,0.03)',
         },
         accent: {
-          cyan: '#8BF3FF',
-          teal: '#3BC7C9',
-          violet: '#C6BDFE',
+          cyan: 'var(--color-neonCyan)',
+          teal: 'var(--color-plasmaTeal)',
+          violet: 'var(--color-violetEdge)',
         },
         text: {
-          primary: '#F6F7F8',
-          secondary: '#C0C5D2',
-          tertiary: '#2B2E33',
+          primary: 'var(--color-ivory)',
+          secondary: 'var(--color-chrome)',
+          tertiary: 'var(--color-spaceGrey)',
         },
       },
       backgroundImage: {
-        'chrome-gradient': 'linear-gradient(135deg, #E3E6EB, #C0C5D2)',
-        'ivory-gradient': 'linear-gradient(135deg, #FFFFFF, #F6F7F8)',
-        'plasma-neon': 'linear-gradient(135deg, #3BC7C9, #8BF3FF)',
+        'chrome-gradient': 'var(--gradient-chrome)',
+        'ivory-gradient': 'var(--gradient-ivory)',
+        'plasma-neon': 'var(--gradient-plasmaNeon)',
       },
       borderRadius: {
         xl: '22px',
         lg: '18px',
       },
       boxShadow: {
-        chrome: '0 4px 6px -1px rgba(192, 197, 210, 0.1), 0 2px 4px -1px rgba(192, 197, 210, 0.06)',
-        glass: '0 8px 32px 0 rgba(15, 17, 21, 0.37)',
-        neon: '0 0 20px rgba(139, 243, 255, 0.3)',
-        'neon-sm': '0 0 10px rgba(139, 243, 255, 0.2)',
+        chrome: 'var(--shadow-chrome)',
+        glass: 'var(--shadow-glass)',
+        neon: 'var(--shadow-neon)',
+        'neon-sm': 'var(--shadow-neon-hover)',
       },
     },
   },
