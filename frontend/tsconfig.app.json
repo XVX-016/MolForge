@@ -16,6 +16,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Paths */
+    "paths": {
+      "vite": ["./node_modules/vite"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
