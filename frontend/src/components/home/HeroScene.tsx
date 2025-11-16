@@ -1,6 +1,6 @@
 import React, { useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, EffectComposer, ChromaticAberration } from '@react-three/drei';
+import { OrbitControls, Environment, EffectComposer, ChromaticAberration, Bloom } from '@react-three/drei';
 import * as THREE from 'three';
 import { MoleculeGraph } from '@biosynth/engine';
 import AtomMesh from '../r3f/AtomMesh';
@@ -12,6 +12,19 @@ import { createMoleculeFromTemplate, getTemplateByName } from '../../data/molecu
 interface HeroSceneProps {
   molecule?: MoleculeGraph | null;
 }
+
+const ELEMENT_RADII: Record<string, number> = {
+  H: 0.55,
+  C: 1.0,
+  O: 0.9,
+  N: 0.95,
+  F: 0.9,
+  S: 1.2,
+  P: 1.15,
+  Cl: 1.1,
+  Br: 1.25,
+  I: 1.4,
+};
 
 function FloatingMolecule({ molecule }: { molecule: MoleculeGraph }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -31,25 +44,51 @@ function FloatingMolecule({ molecule }: { molecule: MoleculeGraph }) {
   
   return (
     <group ref={groupRef}>
-      {/* Atoms */}
-      {renderable.atoms.map((atom) => (
-        <AtomMesh
-          key={atom.id}
-          id={atom.id}
-          position={atom.position}
-          element={atom.element as any}
-        />
-      ))}
+      {/* Atoms with material override */}
+      {renderable.atoms.map((atom) => {
+        const radius = ELEMENT_RADII[atom.element] || 1.0;
+        return (
+          <mesh key={atom.id} position={atom.position}>
+            <sphereGeometry args={[radius, 64, 64]} />
+            <meshPhysicalMaterial
+              color="#C0C5D2"
+              metalness={0.9}
+              roughness={0.2}
+              envMapIntensity={1.5}
+            />
+          </mesh>
+        );
+      })}
       
-      {/* Bonds */}
-      {renderable.bonds.map((bond) => (
-        <BondMesh
-          key={bond.id}
-          from={bond.from}
-          to={bond.to}
-          order={bond.order}
-        />
-      ))}
+      {/* Bonds with material override */}
+      {renderable.bonds.map((bond) => {
+        const vFrom = new THREE.Vector3(...bond.from);
+        const vTo = new THREE.Vector3(...bond.to);
+        const diff = new THREE.Vector3().subVectors(vTo, vFrom);
+        const length = diff.length();
+        const mid = new THREE.Vector3().addVectors(vFrom, vTo).multiplyScalar(0.5);
+        const q = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          diff.clone().normalize()
+        );
+        const radius = bond.order === 1 ? 0.14 : bond.order === 2 ? 0.18 : 0.22;
+        
+        return (
+          <mesh
+            key={bond.id}
+            position={[mid.x, mid.y, mid.z]}
+            quaternion={[q.x, q.y, q.z, q.w]}
+          >
+            <cylinderGeometry args={[radius, radius, length, 48]} />
+            <meshPhysicalMaterial
+              color="#C0C5D2"
+              metalness={0.9}
+              roughness={0.2}
+              envMapIntensity={1.5}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
@@ -59,11 +98,14 @@ function SceneContent({ molecule }: { molecule: MoleculeGraph | null }) {
   
   return (
     <>
-      {/* Cold white/ivory lighting - NO blue */}
+      {/* Ivory & Chrome lighting - NO blue */}
       <ambientLight intensity={0.4} color="#F6F7F8" />
-      <directionalLight position={[5, 5, 5]} intensity={1.2} color="#FFFFFF" />
-      <directionalLight position={[-5, -5, -5]} intensity={0.6} color="#F6F7F8" />
-      <pointLight position={[0, 10, 0]} intensity={0.5} color="#FFFFFF" />
+      <pointLight position={[5, 5, 5]} intensity={1.4} color="#C0C5D2" />
+      <pointLight position={[-5, -5, -5]} intensity={1.4} color="#C0C5D2" />
+      
+      {/* Rim-light with plasmaTeal tone */}
+      <pointLight position={[0, 0, -8]} intensity={0.8} color="#3BC7C9" />
+      <pointLight position={[0, 8, 0]} intensity={0.6} color="#3BC7C9" />
       
       <FloatingMolecule molecule={molecule} />
       
@@ -84,6 +126,13 @@ function SceneContent({ molecule }: { molecule: MoleculeGraph | null }) {
       />
       
       <EffectComposer>
+        <Bloom
+          intensity={1.5}
+          luminanceThreshold={0.9}
+          luminanceSmoothing={0.9}
+          height={300}
+          opacity={0.8}
+        />
         <ChromaticAberration
           offset={[0.001, 0.001]}
           radialModulation={true}
@@ -149,9 +198,14 @@ export default function HeroScene({ molecule: propMolecule }: HeroSceneProps) {
   }
   
   return (
-    <div className="w-full h-full bg-ionBlack relative overflow-hidden">
-      {/* Subtle neonCyan edge bloom */}
-      <div className="absolute inset-0 bg-gradient-to-br from-neonCyan/5 via-transparent to-plasmaTeal/5 pointer-events-none" />
+    <div className="w-full h-full relative overflow-hidden frosted-glass border border-chrome/30 rounded-xl" style={{
+      background: 'linear-gradient(135deg, rgba(227, 230, 235, 0.1), rgba(192, 197, 210, 0.05))',
+      borderImage: 'linear-gradient(135deg, #E3E6EB, #C0C5D2) 1'
+    }}>
+      {/* neonCyan glow bloom */}
+      <div className="absolute inset-0 bg-gradient-to-br from-neonCyan/10 via-transparent to-neonCyan/5 pointer-events-none" style={{
+        boxShadow: 'inset 0 0 60px rgba(139, 243, 255, 0.2)'
+      }} />
       <Canvas
         camera={{ position: [0, 0, 8], fov: 50 }}
         gl={{ antialias: true, alpha: true, toneMappingExposure: 1.2 }}

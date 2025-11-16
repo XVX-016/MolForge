@@ -39,6 +39,17 @@ export default function AppShell({ children }: AppShellProps) {
 								Dashboard
 							</RLink>
 							<RLink
+								to="/welcome"
+								onClick={() => setMobileOpen(false)}
+								className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
+									isActive('/welcome') 
+										? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
+										: 'text-chrome hover:text-ivory hover:bg-frostedGlass'
+								}`}
+							>
+								Welcome
+							</RLink>
+							<RLink
 								to="/lab"
 								onClick={() => setMobileOpen(false)}
 								className={`block px-3 py-2 rounded-lg transition-all duration-200 ${

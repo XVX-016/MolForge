@@ -35,17 +35,27 @@ export default function Navbar({ onToggleMenu }: NavbarProps) {
 							className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
 								isActive('/', true) 
 									? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
-									: 'text-chrome hover:text-ivory hover:bg-frostedGlass'
+									: 'text-chrome hover:text-ivory hover:bg-frostedGlass hover:border-b-2 hover:border-neonCyan'
 							}`}
 						>
 							Dashboard
+						</RLink>
+						<RLink
+							to="/welcome"
+							className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+								isActive('/welcome') 
+									? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
+									: 'text-chrome hover:text-ivory hover:bg-frostedGlass hover:border-b-2 hover:border-neonCyan'
+							}`}
+						>
+							Welcome
 						</RLink>
 						<RLink
 							to="/lab"
 							className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
 								isActive('/lab') 
 									? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
-									: 'text-chrome hover:text-ivory hover:bg-frostedGlass'
+									: 'text-chrome hover:text-ivory hover:bg-frostedGlass hover:border-b-2 hover:border-neonCyan'
 							}`}
 						>
 							Lab
@@ -55,7 +65,7 @@ export default function Navbar({ onToggleMenu }: NavbarProps) {
 							className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
 								isActive('/library') 
 									? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
-									: 'text-chrome hover:text-ivory hover:bg-frostedGlass'
+									: 'text-chrome hover:text-ivory hover:bg-frostedGlass hover:border-b-2 hover:border-neonCyan'
 							}`}
 						>
 							Library
@@ -65,7 +75,7 @@ export default function Navbar({ onToggleMenu }: NavbarProps) {
 							className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
 								isActive('/profile') 
 									? 'bg-plasma-neon text-ionBlack shadow-neon-sm' 
-									: 'text-chrome hover:text-ivory hover:bg-frostedGlass'
+									: 'text-chrome hover:text-ivory hover:bg-frostedGlass hover:border-b-2 hover:border-neonCyan'
 							}`}
 						>
 							Profile
