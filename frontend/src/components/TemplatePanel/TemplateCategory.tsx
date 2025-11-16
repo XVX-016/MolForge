@@ -1,46 +1,35 @@
-import React from 'react';
-import { TemplateItem, TemplateItemProps } from './TemplateItem';
+import React, { useState } from 'react';
+import { TemplateItem } from './TemplateItem';
 
-export interface TemplateCategoryProps {
-  title: string;
-  templates: Array<{
-    id: string;
-    name: string;
-    category: string;
-  }>;
-  onTemplateClick: (templateId: string) => void;
-  onDragStart: (e: React.DragEvent, templateId: string) => void;
-  onDragEnd: () => void;
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  data: any;
 }
 
-export const TemplateCategory: React.FC<TemplateCategoryProps> = ({
-  title,
-  templates,
-  onTemplateClick,
-  onDragStart,
-  onDragEnd,
-}) => {
-  if (templates.length === 0) return null;
+interface TemplateCategoryProps {
+  category: string;
+  items: Template[];
+}
+
+export const TemplateCategory: React.FC<TemplateCategoryProps> = ({ category, items }) => {
+  const [open, setOpen] = useState(true);
 
   return (
-    <div className="mb-6">
-      <h4 className="text-sm font-bold text-chrome mb-3 uppercase tracking-wider">
-        {title}
-      </h4>
-      <div className="grid grid-cols-2 gap-2">
-        {templates.map((template) => (
-          <TemplateItem
-            key={template.id}
-            id={template.id}
-            name={template.name}
-            category={template.category}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            onClick={() => onTemplateClick(template.id)}
-          />
-        ))}
+    <div className="template-category">
+      <div className="template-category-header" onClick={() => setOpen(o => !o)}>
+        <span>{category}</span>
+        <span className="count">{items.length}</span>
       </div>
+
+      {open && (
+        <div className="template-category-grid">
+          {items.map(t => (
+            <TemplateItem key={t.id} template={t} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
-

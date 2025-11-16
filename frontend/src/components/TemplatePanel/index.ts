@@ -1,6 +1,4 @@
-export { TemplatePanel } from './TemplatePanel';
-export { TemplateItem } from './TemplateItem';
-export { TemplateCategory } from './TemplateCategory';
-export type { TemplateItemProps } from './TemplateItem';
-export type { TemplateCategoryProps } from './TemplateCategory';
-
+export * from './TemplatePanel';
+export * from './TemplateItem';
+export * from './TemplateCategory';
+export * from './TemplateSearch';

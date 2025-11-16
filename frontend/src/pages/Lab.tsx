@@ -40,28 +40,28 @@ export default function Lab() {
 	};
 
 	return (
-		<div className="grid grid-cols-12 gap-4">
-			<div className="col-span-12 lg:col-span-3 space-y-4">
-				<div className="frosted-glass rounded-xl shadow-glass border border-chrome/20 p-4">
-					<ToolPanel />
-				</div>
-				<div className="frosted-glass rounded-xl shadow-glass border border-chrome/20 p-4">
-					<TemplatePanel />
-				</div>
-			</div>
-			<div className="col-span-12 lg:col-span-6">
-				<div className="relative frosted-glass rounded-xl shadow-glass border border-chrome/20 p-2 h-[70vh] lg:h-[78vh] bg-spaceGrey">
-					<MoleculeViewer />
-					<div className="absolute bottom-3 right-3">
-						<Button onClick={handleSave} disabled={!molecule || saving}>
-							{saving ? 'Saving...' : 'Save'}
-						</Button>
+		<div className="lab-layout">
+			<TemplatePanel />
+			<div className="grid grid-cols-12 gap-4 flex-1">
+				<div className="col-span-12 lg:col-span-3">
+					<div className="frosted-glass rounded-xl shadow-glass border border-chrome/20 p-4">
+						<ToolPanel />
 					</div>
 				</div>
-			</div>
-			<div className="col-span-12 lg:col-span-3">
-				<div className="frosted-glass rounded-xl shadow-glass border border-chrome/20 p-4">
-					<PropertiesPanel />
+				<div className="col-span-12 lg:col-span-6">
+					<div className="relative frosted-glass rounded-xl shadow-glass border border-chrome/20 p-2 h-[70vh] lg:h-[78vh] bg-spaceGrey">
+						<MoleculeViewer />
+						<div className="absolute bottom-3 right-3">
+							<Button onClick={handleSave} disabled={!molecule || saving}>
+								{saving ? 'Saving...' : 'Save'}
+							</Button>
+						</div>
+					</div>
+				</div>
+				<div className="col-span-12 lg:col-span-3">
+					<div className="frosted-glass rounded-xl shadow-glass border border-chrome/20 p-4">
+						<PropertiesPanel />
+					</div>
 				</div>
 			</div>
 		</div>

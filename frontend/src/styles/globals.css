@@ -47,6 +47,11 @@
     color: var(--color-ivory);
   }
   
+  /* Lab layout */
+  .lab-layout {
+    @apply flex h-full w-full;
+  }
+
   /* Base layer with frostedGlass overlay effect */
   body::before {
     content: '';
