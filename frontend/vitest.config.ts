@@ -9,7 +9,6 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  // @ts-expect-error - Vitest uses its own Vite instance, but plugins are compatible at runtime
   plugins: [
     react(),
   ],
