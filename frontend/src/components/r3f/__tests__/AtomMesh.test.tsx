@@ -1,4 +1,3 @@
-import '../../../tests/setupMocks';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
@@ -13,28 +12,15 @@ vi.mock('../SelectionManager', () => ({
     onSelect: vi.fn(),
     startDrag: vi.fn(),
     endDrag: vi.fn(),
+    getHoveredAtomId: vi.fn(() => null),
+    getSelectedAtomId: vi.fn(() => null),
+    getDraggingAtomId: vi.fn(() => null),
+    isHovered: vi.fn(() => false),
+    isSelected: vi.fn(() => false),
+    isDragging: vi.fn(() => false),
+    reset: vi.fn(),
+    on: vi.fn(),
   },
-}));
-
-// Mock useFrame
-vi.mock('@react-three/fiber', async () => {
-  const actual = await vi.importActual('@react-three/fiber');
-  return {
-    ...actual,
-    useFrame: vi.fn((callback) => {
-      // Simulate frame updates
-      if (typeof callback === 'function') {
-        callback({ clock: { elapsedTime: 0 } });
-      }
-    }),
-  };
-});
-
-// Mock Outlines component
-vi.mock('@react-three/drei', () => ({
-  Outlines: ({ color, thickness }: { color: number; thickness: number }) => (
-    <div data-testid="outlines" data-color={color} data-thickness={thickness} />
-  ),
 }));
 
 describe('AtomMesh', () => {
