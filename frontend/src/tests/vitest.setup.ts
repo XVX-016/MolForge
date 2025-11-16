@@ -17,21 +17,12 @@ import '@testing-library/jest-dom';
 /**
  * Harden useSyncExternalStore usage in tests that may call renderers expecting client environment.
  * We fallback to returning the snapshot directly.
+ * 
+ * NOTE: We don't mock React itself as it can break react-dom. Instead, we only provide
+ * a shim for useSyncExternalStore if needed, but let the actual React be used.
  */
-vi.mock('react', async () => {
-  const actual = await vi.importActual<typeof React>('react');
-  return {
-    ...actual,
-    // Safe shim for useSyncExternalStore used by some libraries (zustand, react-dom internals)
-    useSyncExternalStore: (subscribe: any, getSnapshot: any, getServerSnapshot?: any) => {
-      try {
-        // prefer server snapshot if provided and running in server context (not needed in jsdom)
-        if (typeof getServerSnapshot === 'function') return getServerSnapshot();
-      } catch {}
-      return getSnapshot();
-    },
-  };
-});
+// Don't mock React - let it work normally with react-dom
+// If useSyncExternalStore issues arise, we can add a polyfill, but for now let React work as-is
 
 // -------------------- THREE / R3F / DREI lightweight mocks --------------------
 /**
@@ -39,6 +30,7 @@ vi.mock('react', async () => {
  * Keeps the shape of the API used by the app while avoiding WebGL.
  */
 vi.mock('@react-three/fiber', async () => {
+  const React = await import('react');
   // minimal wrapper: Canvas renders children into a div
   return {
     Canvas: ({ children, ...rest }: any) => {
@@ -57,6 +49,7 @@ vi.mock('@react-three/fiber', async () => {
 });
 
 vi.mock('@react-three/drei', async () => {
+  const React = await import('react');
   return {
     OrbitControls: (props: any) => React.createElement('div', { 'data-testid': 'orbit-controls', ...props }, null),
     Html: (props: any) => React.createElement('div', { 'data-testid': 'html', ...props }, null),
@@ -178,60 +171,7 @@ function makeFakeStore(template: Record<string, any>): AnyStore {
   return store;
 }
 
-/**
- * Attempt to replace the given module import paths with the fake store.
- * This tries several common relative/absolute candidate paths used in frontend codebases.
- *
- * Example usage:
- *   mockPaths('moleculeStore', fakeStore)
- * will attempt to vi.mock all of:
- *   ../store/moleculeStore
- *   ../stores/moleculeStore
- *   src/store/moleculeStore
- *   src/stores/moleculeStore
- *   ./store/moleculeStore
- */
-function mockPaths(moduleBasename: string, fakeStore: AnyStore) {
-  const candidates = [
-    `../store/${moduleBasename}`,
-    `../stores/${moduleBasename}`,
-    `../../store/${moduleBasename}`,
-    `../../stores/${moduleBasename}`,
-    `../../../store/${moduleBasename}`,
-    `../../../stores/${moduleBasename}`,
-    `src/store/${moduleBasename}`,
-    `src/stores/${moduleBasename}`,
-    `./store/${moduleBasename}`,
-    `./stores/${moduleBasename}`,
-  ];
-
-  for (const p of candidates) {
-    try {
-      // Use vi.mock with the path pattern
-      vi.mock(p, () => {
-        // Many modules export a hook like `useMoleculeStore`; attempt to preserve that shape
-        const hookName = `use${capitalize(moduleBasename)}`;
-        const exportObj: any = {};
-        exportObj[hookName] = (selector?: (state: any) => any) => {
-          if (selector) {
-            return selector(fakeStore);
-          }
-          return fakeStore;
-        };
-        // Also export the store itself under common names
-        exportObj[`${moduleBasename}`] = fakeStore;
-        // Export getState and setState directly if needed
-        exportObj[hookName].getState = () => fakeStore;
-        exportObj[hookName].setState = fakeStore.setState;
-        return exportObj;
-      });
-    } catch (e) {
-      // resolution failed - ignore candidate
-    }
-  }
-}
-
-function capitalize(s: string) { return s.charAt(0).toUpperCase() + s.slice(1); }
+// Note: mockPaths function removed - using direct vi.mock calls instead for better reliability
 
 // -------------------- Auto-mock common stores used in BIOSYNTH tests --------------------
 // Create store templates
@@ -309,44 +249,11 @@ vi.mock('../store/moleculeStore', () => {
   return { useMoleculeStore };
 });
 
-// Mock historyStore
-vi.mock('../store/historyStore', () => {
-  const useHistoryStore = (selector?: (state: any) => any) => {
-    if (selector) {
-      return selector(fakeHistoryStore);
-    }
-    return fakeHistoryStore;
-  };
-  useHistoryStore.getState = () => fakeHistoryStore;
-  useHistoryStore.setState = fakeHistoryStore.setState;
-  
-  // Mock the exported functions
-  const pushState = vi.fn();
-  const undo = vi.fn();
-  const redo = vi.fn();
-  const clearHistory = vi.fn();
-  
-  return { 
-    useHistoryStore,
-    pushState,
-    undo,
-    redo,
-    clearHistory,
-  };
-});
+// Don't mock historyStore - let tests use the real store
+// Tests that need mocks can create their own
 
-// Mock profileStore
-vi.mock('../store/profileStore', () => {
-  const useProfileStore = (selector?: (state: any) => any) => {
-    if (selector) {
-      return selector(fakeProfileStore);
-    }
-    return fakeProfileStore;
-  };
-  useProfileStore.getState = () => fakeProfileStore;
-  useProfileStore.setState = fakeProfileStore.setState;
-  return { useProfileStore };
-});
+// Don't mock profileStore - let tests use the real store
+// Tests that need mocks can create their own
 
 // Also mock from deeper paths (for components in subdirectories)
 vi.mock('../../store/moleculeStore', () => {
@@ -386,17 +293,7 @@ vi.mock('../../../store/moleculeStore', () => {
  * Usage:
  *   import { renderWithProviders } from './tests/test-utils'
  *   renderWithProviders(<MyComponent />)
+ * 
+ * NOTE: Moved to test-utils.tsx to avoid importing react-dom in setup file
  */
-import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-
-export function renderWithProviders(ui: React.ReactElement, options = {}) {
-  return render(
-    React.createElement(MemoryRouter, {}, React.createElement(React.Suspense, { fallback: null }, ui)),
-    options
-  );
-}
-
-// Attach to globalThis for ease of use inside tests (optional)
-(globalThis as any).renderWithProviders = renderWithProviders;
 
