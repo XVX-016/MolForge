@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { listMolecules, getMolecule, deleteMolecule, MoleculeItem } from '../lib/api'
+import { listMolecules, getMolecule, deleteMolecule } from '../lib/api'
+import type { MoleculeItem } from '../lib/api'
 import MoleculeCard from '../components/MoleculeCard'
 import { useMoleculeStore } from '../store/moleculeStore'
 import { moleculeFromJSON } from '../lib/engineAdapter'

@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { MoleculeItem } from '../lib/api'
+import type { MoleculeItem } from '../lib/api'
 
 interface MoleculeCardProps {
   item: MoleculeItem

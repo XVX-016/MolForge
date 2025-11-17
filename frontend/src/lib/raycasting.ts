@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { Raycaster, Vector3, Intersection } from 'three'
+import { Raycaster, Vector3 } from 'three'
 
 /**
  * Get atom under cursor using raycasting

@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import MoleculeViewer from '../components/MoleculeViewer'
 import HeroScene from '../components/home/HeroScene'
 import { useMoleculeStore } from '../store/moleculeStore'
-import { listMolecules, MoleculeItem } from '../lib/api'
+import { listMolecules } from '../lib/api'
+import type { MoleculeItem } from '../lib/api'
 import Card from '../components/ui/Card'
 
 export default function Dashboard(){
