@@ -3,7 +3,13 @@ ONNX-based predictor for accelerated inference
 """
 import os
 import numpy as np
-import onnxruntime as ort
+
+try:
+    import onnxruntime as ort
+    ONNXRUNTIME_AVAILABLE = True
+except ImportError:
+    ONNXRUNTIME_AVAILABLE = False
+    ort = None
 
 
 class ONNXPredictor:
@@ -17,6 +23,11 @@ class ONNXPredictor:
         Args:
             onnx_path: Path to ONNX model file
         """
+        if not ONNXRUNTIME_AVAILABLE:
+            raise ImportError(
+                "onnxruntime is not installed. Install it with: pip install onnxruntime"
+            )
+        
         self.onnx_path = onnx_path
         
         if not os.path.exists(onnx_path):
@@ -68,7 +79,15 @@ _onnx_predictor = None
 
 
 def get_onnx_predictor(onnx_path: str = 'backend/weights/predictor.onnx'):
-    """Get or create global ONNX predictor instance"""
+    """
+    Get or create global ONNX predictor instance
+    
+    Returns:
+        ONNXPredictor instance if onnxruntime is available, None otherwise
+    """
+    if not ONNXRUNTIME_AVAILABLE:
+        return None
+    
     global _onnx_predictor
     if _onnx_predictor is None:
         _onnx_predictor = ONNXPredictor(onnx_path)

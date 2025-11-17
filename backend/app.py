@@ -1,6 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
 from backend.routes import predict as predict_router
 from backend.routes import generate as generate_router
 from backend.routes import library as library_router
@@ -54,9 +60,14 @@ def predict_fast(payload: PredictFastIn):
     
     try:
         predictor = get_onnx_predictor()
+        if predictor is None:
+            # Fallback to regular predictor if ONNX not available
+            from backend.routes.predict import predict
+            from backend.routes.predict import PredictIn
+            return predict(PredictIn(smiles=payload.smiles))
         properties = predictor.predict(features)
         return PredictOut(properties=properties)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, ImportError) as e:
         # Fallback to regular predictor if ONNX not available
         from backend.routes.predict import predict
         from backend.routes.predict import PredictIn

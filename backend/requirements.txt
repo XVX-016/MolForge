@@ -1,20 +1,41 @@
+##############################
+# Core Framework
+##############################
 fastapi==0.110.0
 uvicorn==0.29.0
-pydantic==2.6.3
+pydantic==2.9.2
 python-dotenv==1.0.1
+
+##############################
+# Numerical / ML
+##############################
 numpy==1.26.4
 torch==2.4.1
 torchvision==0.19.1
 torchaudio==2.4.1
-transformers==4.39.0
-tokenizers==0.15.2
-onnxruntime==1.17.0
-rdkit-pypi==2023.9.5
-pytest==7.4.2
+transformers==4.41.2
+tokenizers==0.19.1
+onnxruntime==1.19.2
+pandas==2.2.2
+tqdm==4.66.4
+
+##############################
+# Chemistry / Molecules
+##############################
+rdkit-pypi==2022.9.5
+pillow==10.4.0
+
+##############################
+# Backend & DB
+##############################
+sqlmodel==0.0.27
 httpx==0.27.0
-sqlmodel==0.0.8
 python-multipart==0.0.6
-pillow==10.1.0
-rq==1.15.1
 redis==5.0.1
+rq==1.15.1
+
+##############################
+# Testing
+##############################
+pytest==7.4.2
 
