@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useMoleculeStore, Tool } from '../store/moleculeStore'
+import { useMoleculeStore } from '../store/moleculeStore'
+import type { Tool } from '../store/moleculeStore'
 import { useHistoryStore } from '../store/historyStore'
 import { undo, redo } from '../store/historyStore'
 import { createBondSafe } from '../kernel/bonds'
