@@ -144,7 +144,7 @@
   }
   
   .interactive-glow:hover {
-    @apply shadow-neon-hover;
+    box-shadow: var(--shadow-neon-hover);
     border-color: var(--color-midGrey);
   }
 }
@@ -225,6 +225,11 @@
   
   .border-violetEdge {
     border-color: var(--color-violetEdge);
+  }
+
+  /* Shadow utilities */
+  .shadow-neon-hover {
+    box-shadow: var(--shadow-neon-hover);
   }
 }
 

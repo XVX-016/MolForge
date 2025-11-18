@@ -84,6 +84,7 @@ export default {
         neon: '0 4px 12px rgba(0, 0, 0, 0.06)',
         'neon-sm': '0 4px 12px rgba(0, 0, 0, 0.06)',
         'neon-glow': '0 4px 16px rgba(0, 0, 0, 0.08)',
+        'neon-hover': '0 4px 16px rgba(0, 0, 0, 0.08)',
       },
       backdropBlur: {
         xs: "2px",
