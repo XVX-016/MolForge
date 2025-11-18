@@ -10,6 +10,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -47,9 +48,13 @@ jobs:
 
       - name: Run Vitest (Frontend)
         run: cd frontend && npm test -- --run --reporter=verbose
+        continue-on-error: false
+        timeout-minutes: 5
 
       - name: Run Vitest (Engine)
         run: cd packages/engine && npm test -- --run --reporter=verbose
+        continue-on-error: false
+        timeout-minutes: 5
 
       - name: Build Frontend
         run: cd frontend && npm run build
