@@ -4,7 +4,7 @@ Centralized configuration management
 """
 import os
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, List
 
 # Load environment variables
 load_dotenv()
@@ -25,12 +25,19 @@ class Settings:
     API_DESCRIPTION: str = "Backend API for MolForge molecular design platform"
     
     # CORS
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ]
+    # Allow CORS origins from environment variable or default to localhost
+    # Format in env: "http://localhost:5173,https://your-app.web.app"
+    _cors_origins_env = os.getenv("CORS_ORIGINS", "")
+    CORS_ORIGINS: List[str] = (
+        [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+        if _cors_origins_env
+        else [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+        ]
+    )
     
     # Model paths
     MODEL_WEIGHTS_PATH: str = os.getenv(
