@@ -26,15 +26,18 @@ class Settings:
     
     # CORS
     # Allow CORS origins from environment variable or default to localhost
-    CORS_ORIGINS: List[str] = os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
-    ).split(",") if os.getenv("CORS_ORIGINS") else [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ]
+    # Format in env: "http://localhost:5173,https://your-app.web.app"
+    _cors_origins_env = os.getenv("CORS_ORIGINS", "")
+    CORS_ORIGINS: List[str] = (
+        [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+        if _cors_origins_env
+        else [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+        ]
+    )
     
     # Model paths
     MODEL_WEIGHTS_PATH: str = os.getenv(
