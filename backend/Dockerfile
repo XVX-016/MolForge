@@ -1,40 +1,33 @@
-FROM rdkit/rdkit:2023.09.1-py3.11-slim
+FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Upgrade pip first
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    wget \
+    cmake \
+    git \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install CPU-only PyTorch FIRST (before other deps to avoid conflicts)
-# Using CPU-only wheels reduces size from ~800MB to ~120MB
-# This MUST be installed separately to ensure CPU-only version
-RUN pip install --no-cache-dir \
-    torch==2.4.1+cpu \
-    torchvision==0.19.1+cpu \
-    torchaudio==2.4.1+cpu \
-    --index-url https://download.pytorch.org/whl/cpu
+# Install Miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/conda && \
+    rm /tmp/miniconda.sh
+ENV PATH="/opt/conda/bin:$PATH"
 
-# Install ML dependencies (transformers, onnxruntime, etc.)
-# Build context is repo root, so use backend/ prefix
-COPY backend/requirements-model.txt .
-RUN pip install --no-cache-dir -r requirements-model.txt
+# Create environment and install RDKit + other Python dependencies
+RUN conda install -y -c conda-forge rdkit=2023.09 python=3.11 && \
+    conda clean -afy
 
-# Install lightweight dependencies
-COPY backend/requirements.txt .
+# Copy project requirements (excluding torch if we install separately)
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code (build context is repo root, so use backend/ prefix)
-COPY backend/ .
+# Copy app code
+COPY . .
 
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-# PORT is provided by platform (Railway or Cloud Run)
-# Railway uses $PORT, Cloud Run uses 8080
-ENV PORT=8080
-
-EXPOSE ${PORT}
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8080}/health')" || exit 1
-
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
+EXPOSE $PORT
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
