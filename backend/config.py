@@ -25,7 +25,11 @@ class Settings:
     API_DESCRIPTION: str = "Backend API for MolForge molecular design platform"
     
     # CORS
-    CORS_ORIGINS: List[str] = [
+    # Allow CORS origins from environment variable or default to localhost
+    CORS_ORIGINS: List[str] = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174"
+    ).split(",") if os.getenv("CORS_ORIGINS") else [
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
