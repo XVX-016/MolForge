@@ -3,7 +3,8 @@ FROM rdkit/rdkit:2023.09.1-py3.11-slim
 WORKDIR /app
 
 # Upgrade pip, install CPU PyTorch
-COPY requirements-model.txt .
+# Build context is repo root, so use backend/ prefix
+COPY backend/requirements-model.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir torch==2.4.1+cpu \
         torchvision==0.19.1+cpu \
@@ -12,11 +13,11 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements-model.txt
 
 # Install lightweight dependencies
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code (context is already /backend, so no backend/ prefix needed)
-COPY . .
+# Copy backend code (build context is repo root, so use backend/ prefix)
+COPY backend/ .
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1

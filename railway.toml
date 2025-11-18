@@ -1,9 +1,9 @@
 # Railway configuration file
-# This file should be in the backend/ folder when Directory is set to /backend in Railway
+# This file should be in the repo root when Directory is set to "." (repo root) in Railway
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "backend/Dockerfile"
 
 [deploy]
 startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
