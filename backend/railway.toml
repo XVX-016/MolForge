@@ -1,6 +1,5 @@
 # Railway configuration file
-# Note: Railway will use railway.toml from repo root instead
-# This file is kept for reference but root railway.toml takes precedence
+# This file should be in the backend/ folder when Directory is set to /backend in Railway
 
 [build]
 builder = "DOCKERFILE"
