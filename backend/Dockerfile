@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -18,11 +17,16 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -
     rm /tmp/miniconda.sh
 ENV PATH="/opt/conda/bin:$PATH"
 
-# Create environment and install RDKit + other Python dependencies
+# Accept Conda Terms of Service for main and r channels
+RUN conda config --set always_yes yes --set changeps1 no && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# Install RDKit + Python 3.11 from conda-forge
 RUN conda install -y -c conda-forge rdkit=2023.09 python=3.11 && \
     conda clean -afy
 
-# Copy project requirements (excluding torch if we install separately)
+# Copy requirements (if any)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

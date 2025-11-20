@@ -132,15 +132,15 @@ function SceneContent({ molecule }: { molecule: MoleculeGraph | null }) {
 }
 
 function PostProcessingEffects() {
-  const { gl } = useThree();
+  const { gl, size } = useThree();
+  const [isReady, setIsReady] = React.useState(false);
+  const [hasError, setHasError] = React.useState(false);
 
-  const supportsComposer = useMemo(() => {
-    if (!gl) return false;
-    return gl.capabilities.isWebGL2 || gl.extensions.has('WEBGL_draw_buffers');
-  }, [gl]);
-
-  const passes = useMemo(
-    () => [
+  // ALWAYS call all hooks unconditionally before any early returns
+  // Create effects using useMemo - always called, but may return null
+  const bloomEffect = React.useMemo(() => {
+    if (!Bloom) return null;
+    return (
       <Bloom
         key="bloom"
         intensity={1.5}
@@ -148,22 +148,86 @@ function PostProcessingEffects() {
         luminanceSmoothing={0.9}
         height={300}
         opacity={0.8}
-      />,
+      />
+    );
+  }, []);
+
+  const chromaticEffect = React.useMemo(() => {
+    if (!ChromaticAberration) return null;
+    return (
       <ChromaticAberration
         key="chromatic"
         offset={[0.001, 0.001]}
         radialModulation
         modulationOffset={0.15}
-      />,
-    ],
-    []
-  );
+      />
+    );
+  }, []);
 
-  if (!supportsComposer) {
+  // Filter effects array - always called
+  const effects = React.useMemo(() => {
+    return [bloomEffect, chromaticEffect].filter(Boolean);
+  }, [bloomEffect, chromaticEffect]);
+
+  React.useEffect(() => {
+    // Wait for WebGL context to be fully initialized
+    if (!gl) {
+      setIsReady(false);
+      return;
+    }
+
+    // Small delay to ensure WebGL is ready
+    const timer = setTimeout(() => {
+      try {
+        // Check if WebGL2 or required extensions are available
+        const isWebGL2 = gl.capabilities?.isWebGL2 || false;
+        const hasDrawBuffers = gl.extensions?.has?.('WEBGL_draw_buffers') || false;
+        const hasSupport = isWebGL2 || hasDrawBuffers;
+        
+        // Also check if size is valid
+        const hasValidSize = size && size.width > 0 && size.height > 0;
+        
+        setIsReady(hasSupport && hasValidSize);
+        setHasError(false);
+      } catch (error) {
+        console.warn('Post-processing not supported:', error);
+        setIsReady(false);
+        setHasError(true);
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [gl, size]);
+
+  // Now we can do early returns - all hooks have been called
+  if (hasError || !isReady) {
     return null;
   }
 
-  return <EffectComposer>{passes}</EffectComposer>;
+  // Verify all effects are imported and defined
+  if (!Bloom || !ChromaticAberration || !EffectComposer) {
+    console.warn('Post-processing effects not available');
+    return null;
+  }
+
+  // Double-check: ensure we have valid effects
+  if (!effects || effects.length === 0) {
+    console.warn('No valid post-processing effects to render');
+    return null;
+  }
+
+  // Render with error boundary
+  try {
+    return (
+      <EffectComposer>
+        {effects}
+      </EffectComposer>
+    );
+  } catch (error) {
+    console.error('EffectComposer render error:', error);
+    setHasError(true);
+    return null;
+  }
 }
 
 export default function HeroScene({ molecule: propMolecule }: HeroSceneProps) {
