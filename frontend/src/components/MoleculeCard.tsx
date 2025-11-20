@@ -33,9 +33,22 @@ export default function MoleculeCard({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  const has3DData = item.molfile
+  const has3DData = !!(item.molfile && item.molfile.trim().length > 0)
   const show3D = hovered && inView && has3DData
-  const showThumbnail = item.thumbnail_b64 && !show3D
+  // Show thumbnail as background if it exists, or as fallback if no 3D data
+  const showThumbnail = !!(item.thumbnail_b64 && (!has3DData || !show3D))
+  
+  // Debug logging (only log once per molecule to reduce noise)
+  React.useEffect(() => {
+    if (!item.molfile && !item.thumbnail_b64) {
+      console.log('MoleculeCard - No preview data:', {
+        name: item.name,
+        molfile: item.molfile,
+        thumbnail: !!item.thumbnail_b64,
+        has3DData
+      });
+    }
+  }, [item.name]); // Only log when name changes
 
   return (
     <motion.div
@@ -51,29 +64,34 @@ export default function MoleculeCard({
     >
       {/* 3D Viewer or Thumbnail with lazy loading */}
       <div className="h-40 bg-offwhite rounded-lg overflow-hidden mb-3 relative">
-        {/* Thumbnail fallback */}
-        {showThumbnail && (
+        {/* Background thumbnail (shown when not hovering or as fallback) */}
+        {showThumbnail && item.thumbnail_b64 && (
           <img
-            src={item.thumbnail_b64?.startsWith('data:') 
+            src={item.thumbnail_b64.startsWith('data:') 
               ? item.thumbnail_b64 
               : `data:image/png;base64,${item.thumbnail_b64}`}
             alt={item.name}
             className={`w-full h-full object-contain transition-opacity duration-300 ${
-              show3D ? 'opacity-30 blur-sm' : 'opacity-100'
+              show3D ? 'opacity-20 blur-sm' : 'opacity-100'
             }`}
+            onError={(e) => {
+              // Hide broken image
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
           />
         )}
         
         {/* Lazy-mounted 3D Viewer - only renders when hovered and in viewport */}
-        {show3D && (
+        {show3D && item.molfile && (
           <motion.div
-            className="absolute inset-0"
+            className="absolute inset-0 z-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
+            key={`3d-${item.id}-${hovered}`}
           >
             <BarbellViewer
-              molfile={item.molfile || null}
+              molfile={item.molfile}
               mode="card"
               height={160}
             />
@@ -82,8 +100,9 @@ export default function MoleculeCard({
         
         {/* Fallback when no data available */}
         {!has3DData && !showThumbnail && (
-          <div className="w-full h-full flex items-center justify-center text-midGrey text-sm">
-            No preview
+          <div className="w-full h-full flex flex-col items-center justify-center text-midGrey text-sm bg-zinc-100">
+            <div className="text-xs mb-1">No preview</div>
+            <div className="text-xs opacity-60">{item.name}</div>
           </div>
         )}
       </div>

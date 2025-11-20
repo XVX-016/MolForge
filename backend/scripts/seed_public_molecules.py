@@ -7,10 +7,19 @@ import sys
 from pathlib import Path
 import json
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add project root to path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from backend.services.thumbnail_service import ThumbnailService
+try:
+    from backend.services.thumbnail_service import ThumbnailService
+    THUMBNAIL_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: ThumbnailService not available ({e})")
+    print("Will generate SQL with NULL placeholders for molfile and thumbnail_b64")
+    print("You can generate these later using the backend API or manually.\n")
+    THUMBNAIL_SERVICE_AVAILABLE = False
+    ThumbnailService = None
 
 # 20 common molecules (reduced from 50 for initial seeding)
 SAMPLE_MOLECULES = [
@@ -43,6 +52,17 @@ SAMPLE_MOLECULES = [
 def generate_molecule_data(mol_data: dict) -> dict:
     """Generate complete molecule data with molfile and thumbnail"""
     print(f"Processing {mol_data['name']}...")
+    
+    if not THUMBNAIL_SERVICE_AVAILABLE:
+        # Return data without molfile/thumbnail - user can generate these later
+        return {
+            'name': mol_data['name'],
+            'formula': mol_data['formula'],
+            'smiles': mol_data['smiles'],
+            'molfile': None,
+            'thumbnail_b64': None,
+            'metadata': json.dumps({'description': f'Common molecule: {mol_data["name"]}'}),
+        }
     
     try:
         # Generate 3D molfile
@@ -81,7 +101,7 @@ def generate_sql_inserts():
     for mol_data in SAMPLE_MOLECULES:
         result = generate_molecule_data(mol_data)
         molecules.append(result)
-        print(f"  ✓ {result['name']} - {result['formula']}")
+        print(f"  [OK] {result['name']} - {result['formula']}")
     
     print("\n" + "="*60)
     print("SQL INSERT statements for public_molecules:")

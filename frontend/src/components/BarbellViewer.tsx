@@ -106,8 +106,11 @@ function MoleculeScene({
       const atoms = parsed.atoms;
       const bonds = parsed.bonds;
 
+      console.log('BarbellViewer parsed:', { atomCount: atoms.length, bondCount: bonds.length });
+
       // Calculate centroid
       if (atoms.length === 0) {
+        console.warn('BarbellViewer: No atoms parsed from molfile');
         return { atoms: [], bonds: [], centroid: new THREE.Vector3(0, 0, 0) };
       }
 

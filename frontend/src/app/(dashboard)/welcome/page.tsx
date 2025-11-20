@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import HeroScene from '../../../components/home/HeroScene';
+import BarbellViewer from '../../../components/BarbellViewer';
+import { listPublicMolecules } from '../../../lib/publicMoleculeStore';
 
 export default function WelcomePage() {
   const sceneRef = useRef<HTMLDivElement>(null);
   const [showScene, setShowScene] = React.useState(false);
+  const [benzeneMolfile, setBenzeneMolfile] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +27,61 @@ export default function WelcomePage() {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Load benzene from public_molecules
+  useEffect(() => {
+    let cancelled = false;
+    
+    // Properly formatted benzene molfile (C6H6 with 6 carbons in ring)
+    const fallbackBenzeneMolfile = `
+
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000   -1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  2  0  0  0  0
+  5  6  1  0  0  0  0
+  6  1  2  0  0  0  0
+M  END
+`;
+    
+    const loadBenzene = async () => {
+      try {
+        const allMolecules = await listPublicMolecules();
+        const benzene = allMolecules.find(m => 
+          m.name.toLowerCase() === 'benzene' || 
+          m.formula === 'C6H6'
+        );
+        
+        if (benzene && benzene.molfile && benzene.molfile.trim() && !cancelled) {
+          setBenzeneMolfile(benzene.molfile);
+        } else if (!cancelled) {
+          setBenzeneMolfile(fallbackBenzeneMolfile);
+        }
+      } catch (error) {
+        console.error('Failed to load benzene molecule:', error);
+        if (!cancelled) {
+          setBenzeneMolfile(fallbackBenzeneMolfile);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBenzene();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -142,9 +200,24 @@ export default function WelcomePage() {
               }}
             />
             
-            {/* Hero Scene */}
+            {/* Hero Molecule Viewer */}
             <div className="relative w-full h-full z-10">
-              <HeroScene />
+              {loading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-chrome">Loading molecule...</div>
+                </div>
+              ) : benzeneMolfile ? (
+                <BarbellViewer
+                  molfile={benzeneMolfile}
+                  mode="hero"
+                  height={500}
+                  className="w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-chrome">No molecule data available</div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
