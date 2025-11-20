@@ -103,9 +103,10 @@ function SceneContent({ molecule }: { molecule: MoleculeGraph | null }) {
         enableZoom={false}
         enablePan={false}
         autoRotate
-        autoRotateSpeed={0.5}
-        minPolarAngle={Math.PI / 3}
-        maxPolarAngle={Math.PI / 2.2}
+        autoRotateSpeed={0.4}
+        minPolarAngle={0.05}
+        maxPolarAngle={Math.PI - 0.05}
+        rotateSpeed={0.8}
       />
 
       <Environment environmentIntensity={0.8} environmentRotation={[0, 0, 0]} preset="city" />
@@ -153,7 +154,7 @@ function PostProcessingEffects() {
   const [isReady, setIsReady] = React.useState(false);
   const [hasError, setHasError] = React.useState(false);
 
-  const areImportsAvailable = Boolean(EffectComposer && Bloom && ChromaticAberration);
+  const chromaticOffset = React.useMemo(() => new THREE.Vector2(0.0006, 0.0006), []);
 
   const supportsPostProcessing = React.useMemo(() => {
     try {
@@ -174,45 +175,24 @@ function PostProcessingEffects() {
     let mounted = true;
     const t = setTimeout(() => {
       if (!mounted) return;
-      setIsReady(Boolean(gl) && supportsPostProcessing && areImportsAvailable);
-      setHasError(!supportsPostProcessing || !areImportsAvailable ? true : false);
+      setIsReady(Boolean(gl) && supportsPostProcessing);
+      setHasError(!supportsPostProcessing);
     }, 50);
     return () => {
       mounted = false;
       clearTimeout(t);
     };
-  }, [gl, supportsPostProcessing, areImportsAvailable]);
+  }, [gl, supportsPostProcessing]);
 
   if (!isReady || hasError) {
-    if (!areImportsAvailable) {
-      // eslint-disable-next-line no-console
-      console.warn('[PostProcessingEffects] imports missing (EffectComposer/Bloom/ChromaticAberration).');
-    }
     return null;
   }
 
   try {
     return (
       <EffectComposer multisampling={4}>
-        {Bloom ? (
-          <Bloom
-            intensity={1.5}
-            luminanceThreshold={0.9}
-            luminanceSmoothing={0.9}
-            height={300}
-            opacity={0.8}
-            key="bloom"
-          />
-        ) : null}
-
-        {ChromaticAberration ? (
-          <ChromaticAberration
-            offset={[0.001, 0.001]}
-            radialModulation
-            modulationOffset={0.15}
-            key="chromatic"
-          />
-        ) : null}
+        <Bloom intensity={0.6} luminanceThreshold={0.98} luminanceSmoothing={0.6} height={200} opacity={0.45} />
+        <ChromaticAberration offset={chromaticOffset} radialModulation={false} modulationOffset={0.06} />
       </EffectComposer>
     );
   } catch (err) {
