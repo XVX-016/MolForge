@@ -50,13 +50,7 @@ export default function LibraryPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (userId) {
-      loadMolecules();
-    }
-  }, [userId]);
-
-  const loadMolecules = async () => {
+  const loadMolecules = React.useCallback(async () => {
     if (!userId) return;
     
     setLoading(true);
@@ -68,7 +62,37 @@ export default function LibraryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadMolecules();
+      
+      // Set up realtime subscription for molecules table
+      if (supabase) {
+        const channel = supabase
+          .channel('molecules-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'molecules',
+              filter: `user_id=eq.${userId}`,
+            },
+            () => {
+              // Reload molecules when changes occur
+              loadMolecules();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    }
+  }, [userId, loadMolecules]);
 
   const openInLab = async (molecule: SupabaseMolecule) => {
     try {
@@ -76,8 +100,8 @@ export default function LibraryPage() {
         const moleculeGraph = moleculeFromJSON(molecule.json_graph);
         if (moleculeGraph) {
           setMolecule(moleculeGraph);
-          // Navigate to dashboard/lab
-          window.location.href = '/';
+          // Navigate to lab page
+          window.location.href = '/lab';
         }
       } else {
         alert('Molecule data not available');
@@ -101,17 +125,36 @@ export default function LibraryPage() {
     }
   };
 
-  const filtered = useMemo(() => {
-    if (!q.trim()) return items;
+  // Use Supabase search when query is provided
+  useEffect(() => {
+    if (!userId) return;
     
-    const query = q.trim().toLowerCase();
-    return items.filter(
-      (i) =>
-        i.name.toLowerCase().includes(query) ||
-        (i.smiles || '').toLowerCase().includes(query) ||
-        (i.formula || '').toLowerCase().includes(query)
-    );
-  }, [items, q]);
+    const searchTimeout = setTimeout(async () => {
+      if (q.trim()) {
+        setLoading(true);
+        try {
+          const results = await searchMolecules(userId, q.trim());
+          setItems(results);
+        } catch (error) {
+          console.error('Search error:', error);
+          // Fallback: reload all molecules on error
+          loadMolecules();
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        // If search is cleared, reload all molecules
+        loadMolecules();
+      }
+    }, 300); // Debounce search
+
+    return () => clearTimeout(searchTimeout);
+  }, [q, userId, loadMolecules]);
+
+  const filtered = useMemo(() => {
+    // Items are already filtered by Supabase search or contain all molecules
+    return items;
+  }, [items]);
 
   const { data: paged, totalPages } = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -161,7 +204,7 @@ export default function LibraryPage() {
               setQ(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by name or SMILES..."
+            placeholder="Search by name, formula, or SMILES..."
             className="w-64 rounded-lg border border-lightGrey bg-white text-black px-3 py-2 outline-none focus:ring-2 focus:ring-darkGrey/20 focus:border-darkGrey placeholder:text-midGrey"
           />
           <button
@@ -191,6 +234,8 @@ export default function LibraryPage() {
                 id: parseInt(item.id || '0'),
                 name: item.name,
                 smiles: item.smiles,
+                formula: item.formula,
+                molfile: item.molfile,
                 properties: item.properties,
                 thumbnail_b64: item.thumbnail_b64,
                 created_at: item.created_at,

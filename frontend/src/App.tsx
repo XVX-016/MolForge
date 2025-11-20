@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppShell from './layouts/AppShell';
 import Dashboard from './pages/Dashboard';
-import Library from './pages/Library';
+import LibraryPage from './pages/LibraryPage';
 import Lab from './pages/Lab';
 import Profile from './pages/Profile';
 import Models from './pages/Models';
@@ -16,7 +16,7 @@ export default function App() {
 			<Routes>
 				<Route path="/" element={<Dashboard />} />
 				<Route path="/lab" element={<Lab />} />
-				<Route path="/library" element={<Library />} />
+				<Route path="/library" element={<LibraryPage />} />
 				<Route path="/models" element={<Models />} />
 				<Route path="/docs" element={<Docs />} />
 				<Route path="/profile" element={<Profile />} />

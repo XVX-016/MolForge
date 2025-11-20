@@ -1,43 +1,87 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
 import type { MoleculeItem } from '../lib/api'
+import Molecule3DViewer from './Molecule3DViewer'
 
 interface MoleculeCardProps {
-  item: MoleculeItem
+  item: MoleculeItem & { molfile?: string | null; formula?: string | null }
   onOpen: () => void
   onDelete: () => void
 }
 
 export default function MoleculeCard({ item, onOpen, onDelete }: MoleculeCardProps) {
+  const [loaded, setLoaded] = useState(false)
+  
+  // Lazy load 3D viewer only when card enters viewport
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+    rootMargin: '50px', // Start loading slightly before card is visible
+  })
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
+  const has3DData = item.molfile || item.smiles
+  const showThumbnail = item.thumbnail_b64 && (!loaded || !has3DData)
+
   return (
     <motion.div
+      ref={ref}
+      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -6, boxShadow: '0px 10px 30px rgba(0,0,0,0.10)' }}
       className="bg-white p-4 rounded-xl shadow-neon border border-lightGrey hover:shadow-neon-hover hover:border-midGrey transition-all"
     >
-      {/* Thumbnail */}
-      <div className="h-40 bg-offwhite rounded-lg flex items-center justify-center overflow-hidden mb-3">
-        {item.thumbnail_b64 ? (
+      {/* 3D Viewer or Thumbnail with lazy loading */}
+      <div className="h-40 bg-offwhite rounded-lg overflow-hidden mb-3 relative">
+        {/* Thumbnail fallback (blurred background while loading) */}
+        {showThumbnail && (
           <img
             src={item.thumbnail_b64}
             alt={item.name}
-            className="max-h-full max-w-full object-contain"
+            className={`w-full h-full object-contain transition-opacity duration-300 ${
+              loaded && has3DData ? 'opacity-30 blur-sm' : 'opacity-100'
+            }`}
           />
-        ) : (
-          <div className="text-midGrey text-sm">No preview</div>
+        )}
+        
+        {/* Lazy-mounted 3D Viewer - only renders when in viewport */}
+        {inView && has3DData && (
+          <div className={loaded ? 'opacity-100' : 'opacity-0'}>
+            <Molecule3DViewer
+              molfile={item.molfile || undefined}
+              smiles={item.smiles || undefined}
+              height={160}
+              backgroundColor="#f5f5f5"
+              autorotate={false}
+              onLoaded={() => setLoaded(true)}
+            />
+          </div>
+        )}
+        
+        {/* Fallback when no data available */}
+        {!has3DData && !showThumbnail && (
+          <div className="w-full h-full flex items-center justify-center text-midGrey text-sm">
+            No preview
+          </div>
         )}
       </div>
 
       {/* Info */}
-      <h3 className="font-semibold text-black mb-1 truncate">{item.name}</h3>
+      <h3 className="font-semibold text-lg text-black mb-1 truncate">{item.name}</h3>
+      {item.formula && (
+        <div className="text-sm text-darkGrey mb-1">
+          Formula: <span className="font-mono">{item.formula}</span>
+        </div>
+      )}
       {item.smiles && (
-        <div className="text-xs text-darkGrey mb-2 font-mono truncate" title={item.smiles}>
-          {item.smiles}
+        <div className="text-xs text-midGrey mb-2 font-mono truncate" title={item.smiles}>
+          SMILES: {item.smiles}
         </div>
       )}
       <div className="text-xs text-midGrey mb-3">{formatDate(item.created_at)}</div>

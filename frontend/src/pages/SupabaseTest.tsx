@@ -89,14 +89,29 @@ export default function SupabaseTest() {
       if (!userId) {
         // Sign in anonymously
         const { data, error } = await supabase.auth.signInAnonymously();
-        if (error) throw error;
+        if (error) {
+          console.error('Auth error details:', error);
+          addResult('Authentication', 'error', `Error: ${error.message}`);
+          
+          if (error.message.includes('Anonymous sign-ins are disabled')) {
+            addResult('Setup Required', 'error', 'Please enable Anonymous authentication in Supabase Dashboard → Authentication → Providers');
+          } else if (error.message.includes('Email rate limit exceeded')) {
+            addResult('Setup Required', 'error', 'Rate limit exceeded. Wait a moment and try again.');
+          } else if (error.message.includes('Invalid API key')) {
+            addResult('Setup Required', 'error', 'Invalid API key. Check your VITE_SUPABASE_ANON_KEY in .env file.');
+          } else {
+            addResult('Setup Required', 'error', `Check Supabase Dashboard → Authentication → Providers. Error code: ${error.status || 'unknown'}`);
+          }
+          return;
+        }
         addResult('Anonymous Sign In', 'success', `Signed in as: ${data.user?.id}`);
         setUserId(data.user?.id || null);
       } else {
         addResult('Authentication', 'success', `Already signed in as: ${userId}`);
       }
     } catch (error: any) {
-      addResult('Authentication', 'error', `Error: ${error.message}`);
+      console.error('Auth exception:', error);
+      addResult('Authentication', 'error', `Error: ${error.message || 'Unknown error'}`);
     }
   };
 

@@ -5,6 +5,7 @@ export interface SupabaseMolecule {
   name: string;
   smiles?: string;
   formula?: string;
+  molfile?: string; // V2000/V3000 molfile for 3D coordinates
   json_graph?: string;
   properties?: string;
   thumbnail_b64?: string;
@@ -131,5 +132,28 @@ export async function searchMolecules(
   }
 
   return data || [];
+}
+
+/**
+ * Update a molecule for a specific user
+ */
+export async function updateMolecule(
+  userId: string,
+  moleculeId: string,
+  updates: Partial<Omit<SupabaseMolecule, 'id' | 'user_id' | 'created_at'>>
+): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured. Please check your .env file and Supabase setup.');
+  }
+  
+  const { error } = await supabase
+    .from('molecules')
+    .update(updates)
+    .eq('id', moleculeId)
+    .eq('user_id', userId);
+
+  if (error) {
+    throw new Error(`Failed to update molecule: ${error.message}`);
+  }
 }
 

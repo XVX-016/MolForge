@@ -112,6 +112,14 @@ export async function deleteMolecule(id: number): Promise<{ status: string; id: 
 }
 
 /**
+ * Convert SMILES to 3D molfile
+ */
+export async function convertSMILESToMolfile(smiles: string): Promise<{ molfile: string }> {
+  const response = await apiClient.post<{ molfile: string }>('/convert/smiles', { smiles })
+  return response.data
+}
+
+/**
  * Admin Items API
  */
 export interface Item {
