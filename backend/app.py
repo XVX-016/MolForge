@@ -11,6 +11,7 @@ from backend.routes import generate as generate_router
 from backend.routes import library as library_router
 from backend.routes import admin as admin_router
 from backend.routes import convert as convert_router
+from backend.routes import thumbnails as thumbnails_router
 from backend.db import init_db
 from backend.services.prediction_service import PredictionService
 from backend.models.schemas.prediction_schema import PredictOut, PredictIn
@@ -38,6 +39,7 @@ app.include_router(generate_router.router, prefix="/generate", tags=["generate"]
 app.include_router(library_router.router, tags=["molecules"])
 app.include_router(admin_router.router, tags=["admin"])
 app.include_router(convert_router.router, tags=["convert"])
+app.include_router(thumbnails_router.router, tags=["thumbnails"])
 
 
 class PredictFastIn(BaseModel):

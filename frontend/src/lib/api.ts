@@ -120,6 +120,55 @@ export async function convertSMILESToMolfile(smiles: string): Promise<{ molfile:
 }
 
 /**
+ * Thumbnail Generation API
+ */
+export interface GenerateThumbnailRequest {
+  molfile?: string
+  smiles?: string
+  size?: [number, number]
+  format?: 'PNG' | 'SVG'
+}
+
+export interface GenerateThumbnailBase64Request {
+  molfile?: string
+  smiles?: string
+  size?: [number, number]
+}
+
+/**
+ * Generate thumbnail image (returns image blob)
+ */
+export async function generateThumbnail(request: GenerateThumbnailRequest): Promise<Blob> {
+  const response = await apiClient.post('/thumbnails/generate', request, {
+    responseType: 'blob',
+  })
+  return response.data
+}
+
+/**
+ * Generate thumbnail as base64 string
+ */
+export async function generateThumbnailBase64(
+  request: GenerateThumbnailBase64Request
+): Promise<{ thumbnail_b64: string }> {
+  const response = await apiClient.post<{ thumbnail_b64: string }>(
+    '/thumbnails/generate-base64',
+    request
+  )
+  return response.data
+}
+
+/**
+ * Generate optimized 3D molfile
+ */
+export async function generate3DMolfile(
+  request: GenerateThumbnailBase64Request
+): Promise<{ molfile: string }> {
+  const response = await apiClient.post<{ molfile: string }>('/thumbnails/generate-3d', request)
+  return response.data
+}
+
+/**
  * Admin Items API
  */
 export interface Item {

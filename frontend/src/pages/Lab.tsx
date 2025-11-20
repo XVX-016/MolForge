@@ -9,7 +9,7 @@ import { saveMolecule as saveMoleculeToSupabase } from '../lib/supabaseMoleculeS
 import { moleculeToJSON, getCanvasThumbnail } from '../lib/engineAdapter';
 import { MoleculeSerializer, MoleculeGraph } from '@biosynth/engine';
 import { supabase } from '../supabase';
-import { convertSMILESToMolfile } from '../lib/api';
+import { convertSMILESToMolfile, generateThumbnailBase64 } from '../lib/api';
 
 export default function Lab() {
 	const molecule = useMoleculeStore((s) => s.currentMolecule);
@@ -56,7 +56,7 @@ export default function Lab() {
 		try {
 			const jsonGraph = moleculeToJSON(molecule);
 			const smiles = MoleculeSerializer.toSMILES(molecule);
-			const thumbnail = getCanvasThumbnail();
+			let thumbnail = getCanvasThumbnail();
 			const properties = backendPredictions ? JSON.stringify(backendPredictions) : undefined;
 			
 			// Calculate formula if possible
@@ -71,6 +71,17 @@ export default function Lab() {
 				} catch (e: any) {
 					console.warn('Failed to generate molfile:', e);
 					// Continue without molfile - it's optional
+				}
+			}
+			
+			// Generate thumbnail from backend if canvas thumbnail not available
+			if (!thumbnail && smiles && smiles.trim()) {
+				try {
+					const thumbResult = await generateThumbnailBase64({ smiles });
+					thumbnail = thumbResult.thumbnail_b64;
+				} catch (e: any) {
+					console.warn('Failed to generate thumbnail from backend:', e);
+					// Continue without thumbnail - it's optional
 				}
 			}
 			
