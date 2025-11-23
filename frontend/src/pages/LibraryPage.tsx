@@ -21,7 +21,6 @@ import {
   type PublicMolecule 
 } from '../lib/publicMoleculeStore';
 import MoleculeCard from '../components/MoleculeCard';
-import SearchBar from '../components/SearchBar';
 
 export default function LibraryPage() {
   const [tab, setTab] = useState<'public' | 'user'>('public');
@@ -246,6 +245,14 @@ export default function LibraryPage() {
     };
   }, [filtered, page, pageSize]);
 
+  // Reset page when filtered items change significantly (e.g., after search or tab change)
+  useEffect(() => {
+    const maxPage = Math.ceil(filtered.length / pageSize);
+    if (maxPage > 0 && page > maxPage) {
+      setPage(1);
+    }
+  }, [filtered.length, pageSize, page]);
+
   useEffect(() => {
     if (page > totalPages && totalPages > 0) {
       setPage(1);
@@ -337,22 +344,47 @@ export default function LibraryPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <SearchBar
-            value={q}
-            onChange={(query) => {
-              setQ(query);
-              setPage(1);
-            }}
-            placeholder="Search by name, formula, or SMILES..."
-          />
+          <div className="flex-1 relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-midGrey pointer-events-none">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M19 19L14.65 14.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search by name, formula, or SMILES..."
+              className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-darkGrey/20 focus:border-darkGrey placeholder:text-midGrey"
+            />
+          </div>
           <button
             onClick={loadMolecules}
-            className="btn-secondary px-4 py-2 whitespace-nowrap"
+            className="btn-secondary p-2 rounded-full hover:bg-zinc-200 transition-colors"
+            title="Refresh"
           >
-            Refresh
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5 2.5V7.5H12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2.5 10C2.5 13.5899 5.41015 16.5 9 16.5C10.8874 16.5 12.6082 15.7241 13.875 14.5L17.5 10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2.5 17.5L2.5 12.5H7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17.5 10C17.5 6.41015 14.5899 3.5 11 3.5C9.11258 3.5 7.39182 4.27588 6.125 5.5L2.5 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
         </div>
       </header>
+
+      {/* Info about 3D previews */}
+      {filtered.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> 3D previews appear on hover when molecules have molfile data. 
+            Thumbnails are shown as fallback. Molecules saved from the Lab automatically include 3D data.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-12 text-midGrey">Loading molecules...</div>

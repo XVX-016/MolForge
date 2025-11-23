@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import MoleculeViewer from '../components/MoleculeViewer'
 import BenzeneGLBViewer from '../components/BenzeneGLBViewer'
 import { useMoleculeStore } from '../store/moleculeStore'
@@ -8,6 +9,7 @@ import type { MoleculeItem } from '../lib/api'
 import Card from '../components/ui/Card'
 
 export default function Dashboard(){
+  const navigate = useNavigate()
   const currentMolecule = useMoleculeStore((state) => state.currentMolecule)
   const [recent, setRecent] = useState<MoleculeItem[]>([])
 
@@ -41,18 +43,24 @@ export default function Dashboard(){
             Build, analyze, and explore molecular structures with cutting-edge AI-powered tools.
           </p>
           <div className="flex gap-4">
-            <button className="btn-primary px-6 py-3">
+            <button 
+              onClick={() => navigate('/lab')}
+              className="btn-primary px-6 py-3"
+            >
               Generate Molecule
             </button>
-            <button className="btn-secondary px-6 py-3">
+            <button 
+              onClick={() => navigate('/library')}
+              className="btn-secondary px-6 py-3"
+            >
               Explore Library
             </button>
           </div>
         </div>
-        <div className="w-full h-[400px] rounded-xl overflow-hidden border border-lightGrey shadow-neon bg-white">
+        <div className="w-full h-[500px] rounded-xl overflow-hidden border border-lightGrey shadow-neon bg-white">
           <BenzeneGLBViewer
             mode="hero"
-            height={400}
+            height={500}
             className="w-full h-full"
           />
         </div>

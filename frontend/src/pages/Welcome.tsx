@@ -114,7 +114,7 @@ export default function Welcome() {
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: showScene ? 1 : 0, x: showScene ? 0 : 50 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="relative h-[500px] lg:h-full min-h-[500px]"
+          className="relative h-[600px] lg:h-full min-h-[600px]"
         >
           <div
             className="w-full h-full rounded-xl relative overflow-hidden"
@@ -147,7 +147,7 @@ export default function Welcome() {
             <div className="relative w-full h-full z-10">
               <BenzeneGLBViewer
                 mode="hero"
-                height={500}
+                height={600}
                 className="w-full h-full"
               />
             </div>

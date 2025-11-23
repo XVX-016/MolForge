@@ -109,9 +109,14 @@ export default function MoleculeCard({
         
         {/* Fallback when no data available */}
         {!has3DData && !showThumbnail && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-midGrey text-sm bg-zinc-100">
+          <div className="w-full h-full flex flex-col items-center justify-center text-midGrey text-sm bg-zinc-100 relative group">
             <div className="text-xs mb-1">No preview</div>
             <div className="text-xs opacity-60">{item.name}</div>
+            <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-black/80 text-white text-xs px-2 py-1 rounded text-center">
+                3D preview requires molfile data. Thumbnails are generated when molecules are saved.
+              </div>
+            </div>
           </div>
         )}
       </div>
