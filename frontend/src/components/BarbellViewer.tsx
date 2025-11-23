@@ -312,9 +312,9 @@ export default function BarbellViewer({
         />
         {interactive && (
           <OrbitControls
-            enablePan={mode === 'card' ? false : true}
-            enableZoom={mode === 'card' ? false : true}
-            enableRotate={mode === 'card' ? false : true}
+            enablePan={false}
+            enableZoom={false}
+            enableRotate={true}
             enableDamping={true}
             dampingFactor={0.05}
             autoRotate={mode === 'card' ? (autorotate && hovered) : autorotate}

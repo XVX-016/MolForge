@@ -177,15 +177,25 @@ export default function Docs() {
 			className="max-w-4xl mx-auto space-y-8"
 		>
 			{/* Header */}
-			<div className="space-y-2">
+			<motion.div 
+				className="space-y-2"
+				initial={{ opacity: 0, y: -20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.1 }}
+			>
 				<h1 className="text-4xl font-bold text-black">Documentation</h1>
 				<p className="text-darkGrey text-lg">
 					Complete guide to using MolForge
 				</p>
-			</div>
+			</motion.div>
 
 			{/* Section Navigation */}
-			<div className="flex flex-wrap gap-2 border-b border-lightGrey pb-4">
+			<motion.div 
+				className="flex flex-wrap gap-2 border-b border-lightGrey pb-4"
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.2 }}
+			>
 				{sections.map((section) => (
 					<button
 						key={section.id}
@@ -199,12 +209,19 @@ export default function Docs() {
 						{section.title}
 					</button>
 				))}
-			</div>
+			</motion.div>
 
 			{/* Active Section Content */}
-			<Card className="p-8">
+			<motion.div
+				key={activeSection}
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.1 }}
+			>
+				<Card className="p-8">
 				{sections.find((s) => s.id === activeSection)?.content}
 			</Card>
+			</motion.div>
 		</motion.div>
 	);
 }

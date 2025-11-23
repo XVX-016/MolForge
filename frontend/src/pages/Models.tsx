@@ -70,17 +70,28 @@ export default function Models() {
 			className="space-y-8"
 		>
 			{/* Header */}
-			<div className="space-y-2">
+			<motion.div 
+				className="space-y-2"
+				initial={{ opacity: 0, y: -20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.1 }}
+			>
 				<h1 className="text-4xl font-bold text-black">AI Models</h1>
 				<p className="text-darkGrey text-lg">
 					Explore our machine learning models for molecular design and analysis
 				</p>
-			</div>
+			</motion.div>
 
 			{/* Model Grid */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				{models.map((model) => (
-					<Card key={model.id} className="p-6 hover:shadow-neon-hover transition-shadow">
+				{models.map((model, index) => (
+					<motion.div
+						key={model.id}
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
+					>
+						<Card className="p-6 hover:shadow-neon-hover transition-shadow">
 						<div className="space-y-4">
 							<div className="flex items-start justify-between">
 								<div>
@@ -121,11 +132,17 @@ export default function Models() {
 							</div>
 						</div>
 					</Card>
+					</motion.div>
 				))}
 			</div>
 
 			{/* Additional Info */}
-			<Card className="p-6 bg-offwhite">
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.6 }}
+			>
+				<Card className="p-6 bg-offwhite">
 				<h3 className="text-xl font-semibold text-black mb-3">Model Access</h3>
 				<p className="text-darkGrey mb-4">
 					All models are accessible via REST API endpoints. Check the{' '}
@@ -143,6 +160,7 @@ export default function Models() {
 					</button>
 				</div>
 			</Card>
+			</motion.div>
 		</motion.div>
 	);
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import MoleculeViewer from '../components/MoleculeViewer';
 import ToolPanel from '../components/ToolPanel';
 import PropertiesPanel from '../components/PropertiesPanel';
@@ -184,22 +185,58 @@ export default function Lab() {
 	};
 
 	return (
-		<div className="lab-layout">
+		<motion.div 
+			className="lab-layout"
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{ duration: 0.3 }}
+		>
 			{loadingMolecule && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-6">
+				<motion.div 
+					className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.2 }}
+				>
+					<motion.div 
+						className="bg-white rounded-lg p-6"
+						initial={{ scale: 0.9, opacity: 0 }}
+						animate={{ scale: 1, opacity: 1 }}
+						transition={{ duration: 0.3 }}
+					>
 						<div className="text-center">Loading molecule...</div>
-					</div>
-				</div>
+					</motion.div>
+				</motion.div>
 			)}
-			<TemplatePanel />
-			<div className="grid grid-cols-12 gap-4 flex-1">
-				<div className="col-span-12 lg:col-span-3">
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, delay: 0.1 }}
+			>
+				<TemplatePanel />
+			</motion.div>
+			<motion.div 
+				className="grid grid-cols-12 gap-4 flex-1"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 0.4, delay: 0.2 }}
+			>
+				<motion.div 
+					className="col-span-12 lg:col-span-3"
+					initial={{ opacity: 0, x: -20 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.4, delay: 0.3 }}
+				>
 					<div className="bg-white rounded-xl shadow-neon border border-lightGrey p-4">
 						<ToolPanel />
 					</div>
-				</div>
-				<div className="col-span-12 lg:col-span-6">
+				</motion.div>
+				<motion.div 
+					className="col-span-12 lg:col-span-6"
+					initial={{ opacity: 0, scale: 0.98 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ duration: 0.4, delay: 0.35 }}
+				>
 					<div className="relative rounded-xl shadow-neon border border-lightGrey p-2 h-[70vh] lg:h-[78vh] bg-offwhite">
 						<MoleculeViewer />
 						<div className="absolute bottom-3 right-3">
@@ -208,14 +245,19 @@ export default function Lab() {
 							</Button>
 						</div>
 					</div>
-				</div>
-				<div className="col-span-12 lg:col-span-3">
+				</motion.div>
+				<motion.div 
+					className="col-span-12 lg:col-span-3"
+					initial={{ opacity: 0, x: 20 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.4, delay: 0.4 }}
+				>
 					<div className="bg-white rounded-xl shadow-neon border border-lightGrey p-4">
 						<PropertiesPanel />
 					</div>
-				</div>
-			</div>
-		</div>
+				</motion.div>
+			</motion.div>
+		</motion.div>
 	);
 }
 

@@ -82,7 +82,12 @@ export default function Library() {
       transition={{ duration: 0.3 }}
       className="p-8 space-y-6"
     >
-      <header className="flex items-center justify-between gap-4 flex-wrap">
+      <motion.header 
+        className="flex items-center justify-between gap-4 flex-wrap"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <div className="min-w-0">
           <h1 className="text-3xl font-bold text-black truncate">Molecule Library</h1>
           <p className="text-darkGrey mt-1">Your saved molecular structures</p>
@@ -101,7 +106,7 @@ export default function Library() {
             Refresh
           </button>
         </div>
-      </header>
+      </motion.header>
 
       {loading ? (
         <div className="text-center py-12 text-midGrey">Loading molecules...</div>
@@ -111,21 +116,37 @@ export default function Library() {
           <p className="text-midGrey text-sm">Try clearing the search or saving molecules in the Lab</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paged.map((item) => (
-            <MoleculeCard
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          {paged.map((item, index) => (
+            <motion.div
               key={item.id}
-              item={item}
-              onOpen={() => openInLab(item.id)}
-              onDelete={() => remove(item.id)}
-            />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 + index * 0.05 }}
+            >
+              <MoleculeCard
+                item={item}
+                onOpen={() => openInLab(item.id)}
+                onDelete={() => remove(item.id)}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Pagination */}
       {filtered.length > 0 && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
+        <motion.div 
+          className="flex items-center justify-center gap-2 pt-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+        >
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
@@ -143,7 +164,7 @@ export default function Library() {
           >
             Next
           </button>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   )

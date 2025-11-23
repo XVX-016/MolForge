@@ -94,7 +94,7 @@ export default function Dashboard(){
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto px-6">
         {/* Left Section - Text Content */}
         <motion.div 
-          className="space-y-6"
+          className="space-y-6 flex flex-col justify-center"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -152,44 +152,36 @@ export default function Dashboard(){
           </div>
         </motion.div>
 
-        {/* Right Section - 3D Viewer (Caffeine) */}
+        {/* Right Section - 3D Viewer (Caffeine) - Floating, no boundary card */}
         <motion.div
-          className="flex justify-center items-center"
+          className="flex justify-center items-center relative w-full"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.12 }}
         >
-          <div className="w-full max-w-[480px] h-[420px] rounded-2xl overflow-hidden border border-lightGrey shadow-xl bg-white relative">
-            {/* Subtle glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/40 to-transparent pointer-events-none" />
-            
-            {/* 3D Viewer */}
-            <div className="relative w-full h-full z-10">
-              {caffeineMolfile ? (
-                <BarbellViewer
-                  molfile={caffeineMolfile}
-                  mode="hero"
-                  autorotate={true}
-                  interactive={true}
-                  atomScale={0.28}
-                  bondRadius={0.06}
-                  height={420}
-                  className="w-full h-full"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                  <div className="text-center">
-                    <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <div className="text-sm text-gray-500">Loading molecule...</div>
-                  </div>
+          {/* Subtle soft glow behind molecule */}
+          <div className="absolute inset-0 blur-3xl bg-indigo-300/20 rounded-full -z-10 opacity-60" />
+          
+          {/* 3D Viewer - Floating, no container, properly sized to match left column */}
+          <div className="relative w-full max-w-[550px] aspect-square z-10">
+            {caffeineMolfile ? (
+              <BarbellViewer
+                molfile={caffeineMolfile}
+                mode="hero"
+                autorotate={true}
+                interactive={true}
+                atomScale={0.38}
+                bondRadius={0.08}
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <div className="text-sm text-gray-500">Loading molecule...</div>
                 </div>
-              )}
-            </div>
-            
-            {/* Label */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/75 text-white px-4 py-2 rounded-full text-sm backdrop-blur-sm">
-              Molecule Preview: Caffeine (C₈H₁₀N₄O₂)
-            </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
