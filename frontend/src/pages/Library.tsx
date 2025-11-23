@@ -108,7 +108,7 @@ export default function Library() {
           <p className="text-midGrey text-sm">Try clearing the search or saving molecules in the Lab</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paged.map((item) => (
             <MoleculeCard
               key={item.id}
