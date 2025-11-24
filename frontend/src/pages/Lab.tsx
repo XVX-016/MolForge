@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import MoleculeViewer from '../components/MoleculeViewer';
 import ToolPanel from '../components/ToolPanel';
 import PropertiesPanel from '../components/PropertiesPanel';
+import KABPanel from '../components/kab/KABPanel';
 import { TemplatePanel } from '../components/TemplatePanel';
 import Button from '../components/ui/Button';
 import { useMoleculeStore } from '../store/moleculeStore';
@@ -237,9 +238,9 @@ export default function Lab() {
 					animate={{ opacity: 1, scale: 1 }}
 					transition={{ duration: 0.4, delay: 0.35 }}
 				>
-					<div className="relative rounded-xl shadow-neon border border-lightGrey p-2 h-[70vh] lg:h-[78vh] bg-offwhite">
+					<div className="relative rounded-xl shadow-neon border border-lightGrey h-[70vh] lg:h-[78vh] bg-offwhite overflow-hidden">
 						<MoleculeViewer />
-						<div className="absolute bottom-3 right-3">
+						<div className="absolute bottom-3 right-3 z-10">
 							<Button onClick={handleSave} disabled={!molecule || saving || !userId}>
 								{saving ? 'Saving...' : userId ? 'Save to Library' : 'Sign in to Save'}
 							</Button>
@@ -252,8 +253,13 @@ export default function Lab() {
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ duration: 0.4, delay: 0.4 }}
 				>
-					<div className="bg-white rounded-xl shadow-neon border border-lightGrey p-4">
-						<PropertiesPanel />
+					<div className="bg-white rounded-xl shadow-neon border border-lightGrey p-4 h-[70vh] lg:h-[78vh] flex flex-col">
+						<div className="mb-4">
+							<PropertiesPanel />
+						</div>
+						<div className="flex-1 border-t border-lightGrey pt-4 overflow-hidden">
+							<KABPanel />
+						</div>
 					</div>
 				</motion.div>
 			</motion.div>

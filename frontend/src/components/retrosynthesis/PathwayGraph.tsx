@@ -1,5 +1,4 @@
 import React from 'react'
-import { useLabStore } from '../../../store/labStore'
 
 interface PathwayStep {
   molecule: any

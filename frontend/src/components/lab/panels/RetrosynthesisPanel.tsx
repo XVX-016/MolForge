@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLabStore } from '../../../store/labStore'
 import PathwayGraph from '../../retrosynthesis/PathwayGraph'
 import PathwayExport from '../../retrosynthesis/PathwayExport'
+import RetrosynthesisStepper from '../../retrosynthesis/RetrosynthesisStepper'
 
 export default function RetrosynthesisPanel() {
   const molecule = useLabStore(s => s.molecule)
@@ -101,14 +102,26 @@ export default function RetrosynthesisPanel() {
 
               {/* Selected Pathway Details */}
               {selectedPathway !== null && pathways[selectedPathway] && (
-                <div className="mt-3 border-t border-gray-200 pt-3">
-                  <div className="mb-2">
-                    <PathwayExport pathway={pathways[selectedPathway]} />
-                  </div>
+                <div className="mt-3 border-t border-gray-200 pt-3 space-y-3">
+                  <RetrosynthesisStepper
+                    pathway={pathways[selectedPathway]}
+                    onStepSelect={(step) => {
+                      const stepData = pathways[selectedPathway].steps[step]
+                      if (stepData) {
+                        loadStepMolecule(stepData)
+                      }
+                    }}
+                    onMoleculeLoad={(molecule) => {
+                      if (molecule && molecule.atoms) {
+                        useLabStore.getState().loadMolecule(molecule)
+                      }
+                    }}
+                  />
                   <PathwayGraph
                     pathway={pathways[selectedPathway]}
                     onStepClick={loadStepMolecule}
                   />
+                  <PathwayExport pathway={pathways[selectedPathway]} />
                 </div>
               )}
             </div>

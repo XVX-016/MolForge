@@ -39,11 +39,13 @@ export default function MoleculeCard({
   const molfile = item.molfile && item.molfile.trim().length > 0 ? item.molfile : null
   const has3DData = !!molfile
   
-  // Always show 3D when available and in view
+  // Always show 3D when available and in view and GPU is safe
   const show3D = inView && has3DData && isGPUSafe
   
-  // Show thumbnail as background only if no 3D data available
-  const showThumbnail = !!(item.thumbnail_b64 && !has3DData)
+  // Show thumbnail as fallback when:
+  // 1. No 3D data available, OR
+  // 2. 3D data exists but GPU is not safe (fallback to thumbnail)
+  const showThumbnail = !!(item.thumbnail_b64 && (!has3DData || (has3DData && !isGPUSafe)))
 
   return (
     <motion.div

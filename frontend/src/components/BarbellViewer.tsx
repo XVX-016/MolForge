@@ -21,6 +21,8 @@ interface BarbellViewerProps {
   interactive?: boolean; // Enable OrbitControls when true
   autorotate?: boolean; // Auto-rotate when true
   hovered?: boolean; // Hover state for card mode (enables interaction)
+  highlightAtoms?: number[]; // Atom indices to highlight (for KAB, spectroscopy, etc.)
+  highlightColor?: number; // Color for highlighted atoms (default: yellow)
 }
 
 // CPK element colors
@@ -100,6 +102,8 @@ function MoleculeScene({
   atomScale = 0.25,
   bondRadius = 0.06,
   quality = 'high',
+  highlightAtoms = [],
+  highlightColor = 0xffff00,
 }: {
   molfile: string;
   autorotate?: boolean;
@@ -107,6 +111,8 @@ function MoleculeScene({
   atomScale?: number;
   bondRadius?: number;
   quality?: 'high' | 'low';
+  highlightAtoms?: number[];
+  highlightColor?: number;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -193,13 +199,19 @@ function MoleculeScene({
         const pos = new THREE.Vector3(atom.x, atom.y, atom.z).sub(centroid);
         // Reduced segments for low quality (card mode) to improve performance
         const segments = quality === 'low' ? 12 : 32;
+        const isHighlighted = highlightAtoms.includes(i);
+        const baseColor = ELEMENT_COLORS[atom.element] || DEFAULT_COLOR;
+        const color = isHighlighted ? highlightColor : baseColor;
+        const finalScale = isHighlighted ? atomScale * 1.3 : atomScale;
         return (
           <mesh key={`atom-${i}`} position={pos.toArray()}>
-            <sphereGeometry args={[atomScale, segments, segments]} />
+            <sphereGeometry args={[finalScale, segments, segments]} />
             <meshStandardMaterial
-              color={ELEMENT_COLORS[atom.element] || DEFAULT_COLOR}
-              metalness={0.2}
-              roughness={0.4}
+              color={color}
+              metalness={isHighlighted ? 0.5 : 0.2}
+              roughness={isHighlighted ? 0.3 : 0.4}
+              emissive={isHighlighted ? highlightColor : 0x000000}
+              emissiveIntensity={isHighlighted ? 0.3 : 0}
             />
           </mesh>
         );
@@ -313,6 +325,8 @@ export default function BarbellViewer({
           atomScale={atomScale}
           bondRadius={bondRadius}
           quality={quality}
+          highlightAtoms={highlightAtoms}
+          highlightColor={highlightColor}
         />
         {interactive && (
           <OrbitControls

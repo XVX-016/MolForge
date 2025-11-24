@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { useLabStore } from '../../../store/labStore'
 import { Line } from 'react-chartjs-2'
+import MechanismGraph from '../../reactions/MechanismGraph'
+import ReactionExport from '../../reactions/ReactionExport'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,6 +26,8 @@ ChartJS.register(
 
 export default function ReactionPanel() {
   const molecule = useLabStore(s => s.molecule)
+  // Convert labStore molecule to MoleculeGraph format for MechanismGraph
+  const moleculeGraph = molecule as any
   const [reactionData, setReactionData] = useState<any>(null)
   const [mechanismData, setMechanismData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -182,6 +186,12 @@ export default function ReactionPanel() {
                       ))}
                     </div>
                   )}
+                  
+                  {reactionData && (
+                    <div className="mt-3">
+                      <ReactionExport reactionData={reactionData} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -199,61 +209,21 @@ export default function ReactionPanel() {
               </button>
               
               {mechanismData && (
-                <div className="text-xs space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Steps:</span>
-                    <span>{mechanismData.steps?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Activation Energy:</span>
-                    <span>{mechanismData.activation_energy?.toFixed(2)} kcal/mol</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Reaction Energy:</span>
-                    <span>{mechanismData.reaction_energy?.toFixed(2)} kcal/mol</span>
-                  </div>
-                  
-                  {mechanismData.steps && mechanismData.steps.length > 0 && (
-                    <>
-                      <div className="mt-3 h-32">
-                        <Line
-                          data={{
-                            labels: mechanismData.steps.map((s: any) => `Step ${s.step}`),
-                            datasets: [{
-                              label: 'Energy',
-                              data: mechanismData.steps.map((s: any) => s.energy),
-                              borderColor: '#4676ff',
-                              tension: 0.4
-                            }]
-                          }}
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                              y: {
-                                title: { display: true, text: 'Energy (kcal/mol)' }
-                              },
-                              x: {
-                                title: { display: true, text: 'Step' }
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                      
-                      <div className="mt-2 max-h-32 overflow-y-auto">
-                        {mechanismData.steps.map((step: any, i: number) => (
-                          <button
-                            key={i}
-                            onClick={() => loadProduct(step.intermediate)}
-                            className="w-full px-2 py-1 mb-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-left"
-                          >
-                            {step.description} - {step.energy.toFixed(2)} kcal/mol
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                <div className="space-y-3">
+                  <MechanismGraph
+                    molecule={moleculeGraph}
+                    mechanismData={mechanismData}
+                    onStepSelect={(step) => {
+                      const stepData = mechanismData.steps.find((s: any) => s.step === step)
+                      if (stepData && stepData.intermediate) {
+                        loadProduct(stepData.intermediate)
+                      }
+                    }}
+                  />
+                  <ReactionExport
+                    reactionData={reactionData}
+                    mechanismData={mechanismData}
+                  />
                 </div>
               )}
             </div>

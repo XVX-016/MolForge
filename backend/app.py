@@ -20,6 +20,11 @@ from backend.routes import spectroscopy as spectroscopy_router
 from backend.routes import energy as energy_router
 from backend.routes import reaction as reaction_router
 from backend.routes import retrosynthesis as retrosynthesis_router
+from backend.routes import kab as kab_router
+from backend.routes import quantum as quantum_router
+from backend.routes import ml as ml_router
+from backend.routes import collaboration as collaboration_router
+from backend.routes import dashboard as dashboard_router
 from backend.db import init_db
 from backend.services.prediction_service import PredictionService
 from backend.models.schemas.prediction_schema import PredictOut, PredictIn
@@ -77,6 +82,11 @@ app.include_router(spectroscopy_router.router, prefix="/api/spectroscopy", tags=
 app.include_router(energy_router.router, prefix="/api/energy", tags=["energy"])
 app.include_router(reaction_router.router, prefix="/api/reaction", tags=["reaction"])
 app.include_router(retrosynthesis_router.router, prefix="/api/retrosynthesis", tags=["retrosynthesis"])
+app.include_router(kab_router.router, prefix="/api/kab", tags=["kab"])
+app.include_router(quantum_router.router, prefix="/api/quantum", tags=["quantum"])
+app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
+app.include_router(collaboration_router.router, prefix="/api/collaboration", tags=["collaboration"])
+app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
 
 
 class PredictFastIn(BaseModel):

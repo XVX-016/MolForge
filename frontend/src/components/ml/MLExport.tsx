@@ -1,14 +1,14 @@
 import React from 'react'
 
-interface PathwayExportProps {
-  pathway: any
+interface MLExportProps {
+  data: any
   filename?: string
 }
 
-export default function PathwayExport({ pathway, filename = 'pathway' }: PathwayExportProps) {
+export default function MLExport({ data, filename = 'ml_predictions' }: MLExportProps) {
   const handleExport = (format: 'json' | 'csv') => {
     if (format === 'json') {
-      const dataStr = JSON.stringify(pathway, null, 2)
+      const dataStr = JSON.stringify(data, null, 2)
       const blob = new Blob([dataStr], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -17,7 +17,7 @@ export default function PathwayExport({ pathway, filename = 'pathway' }: Pathway
       a.click()
       URL.revokeObjectURL(url)
     } else if (format === 'csv') {
-      const csv = convertToCSV(pathway)
+      const csv = convertToCSV(data)
       const blob = new Blob([csv], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -28,24 +28,13 @@ export default function PathwayExport({ pathway, filename = 'pathway' }: Pathway
     }
   }
 
-  const convertToCSV = (pathway: any): string => {
-    const lines: string[] = []
-    
-    lines.push('Retrosynthesis Pathway')
-    lines.push(`Score,${pathway.score || 'N/A'}`)
-    lines.push(`Total Steps,${pathway.total_steps || 0}`)
-    lines.push('')
-    lines.push('Step,Description,Atoms,Is Starting Material')
-    
-    if (pathway.steps) {
-      pathway.steps.forEach((step: any, idx: number) => {
-        const desc = step.reaction?.name || step.reaction?.type || `Step ${step.step}`
-        const atoms = step.molecule?.atoms?.length || 0
-        const isStarting = step.is_starting ? 'Yes' : 'No'
-        lines.push(`${step.step || idx},${desc},${atoms},${isStarting}`)
+  const convertToCSV = (data: any): string => {
+    const lines: string[] = ['Property,Value,Unit']
+    if (data.properties) {
+      data.properties.forEach((prop: any) => {
+        lines.push(`${prop.property},${prop.value},${prop.unit}`)
       })
     }
-    
     return lines.join('\n')
   }
 
@@ -66,3 +55,4 @@ export default function PathwayExport({ pathway, filename = 'pathway' }: Pathway
     </div>
   )
 }
+
