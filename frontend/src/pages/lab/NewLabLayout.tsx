@@ -1,59 +1,80 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import Navbar from '../../components/Navbar'
-import LabToolPanel from '../../components/lab/LabToolPanel'
+import LabPanel from '../../components/lab/LabPanel'
 import LabViewer from '../../components/lab/LabViewer'
+import ToolButtons from '../../components/lab/ToolButtons'
+import { useLabStore } from '../../store/labStore'
 
 /**
- * Clean white minimal Lab layout with standard navigation
+ * Modern centered Lab layout matching target design:
+ * - Floating tool buttons (left)
+ * - Centered soft beige panel
+ * - White 3D workspace
+ * - Minimal controls
  */
 export default function NewLabLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const currentTool = useLabStore(s => s.currentTool)
+  const currentElement = useLabStore(s => s.currentElement)
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white overflow-hidden">
+    <div className="min-h-screen bg-white overflow-hidden">
       {/* Standard Navbar */}
       <Navbar onToggleMenu={() => setMobileOpen((v) => !v)} />
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Tools */}
-        <motion.aside
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="w-20 border-r border-[#dcdcdc] bg-[#f8f9fa] flex flex-col shrink-0 overflow-y-auto"
-        >
-          <LabToolPanel />
-        </motion.aside>
+      {/* Floating Tool Buttons (left side) */}
+      <ToolButtons />
 
-        {/* Main 3D Workspace */}
-        <motion.main
+      {/* Centered Workspace Panel */}
+      <LabPanel>
+        {/* Top Controls */}
+        <motion.div
+          initial={{ y: -10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex justify-between items-center mb-4"
+        >
+          <button
+            className="px-4 py-2 rounded-xl bg-[#eae5dd] border border-[#d4cec4]
+              text-sm font-medium text-gray-700 hover:bg-[#dfd9d0] transition-colors
+              shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
+            style={{ textTransform: 'uppercase' }}
+          >
+            {currentTool === 'add_atom' ? `Add ${currentElement}` : 'Add Atom'}
+          </button>
+
+          <div className="w-10 h-10 rounded-full border border-[#d4cec4] 
+            bg-white flex items-center justify-center text-gray-500
+            shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+            →
+          </div>
+        </motion.div>
+
+        {/* Main 3D Viewer */}
+        <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex-1 bg-white relative overflow-hidden"
+          className="rounded-2xl overflow-hidden border border-[#d4cec4] bg-white"
+          style={{ height: '500px' }}
         >
-          {/* Soft vignette effect */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/5 z-10" />
           <LabViewer />
-        </motion.main>
-      </div>
+        </motion.div>
 
-      {/* Bottom Status Bar */}
-      <motion.footer
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        className="h-8 border-t border-[#dcdcdc] text-xs text-gray-500 flex items-center justify-between px-4 bg-white shrink-0"
-      >
-        <div className="flex items-center gap-4">
-          <span>Ready</span>
-        </div>
-        <div className="text-[10px] text-gray-400">
-          Press spacebar for help
-        </div>
-      </motion.footer>
+        {/* Bottom Warning/Status */}
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="mt-4 p-3 rounded-xl bg-[#eae5dd] border border-[#d4cec4] 
+            flex items-center gap-2 text-sm text-gray-700
+            shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
+        >
+          <span>⚠</span>
+          <span>UNSTABLE STRUCTURE</span>
+        </motion.div>
+      </LabPanel>
     </div>
   )
 }

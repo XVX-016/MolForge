@@ -49,6 +49,7 @@ export default function SceneRoot(){
           stencil: false,
           depth: true
         }}
+        dpr={[1, 2]}
         onCreated={({ gl }) => {
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 2))
           // Handle WebGL context loss
