@@ -5,7 +5,7 @@
  * - "card": Lazy mount, no autorotate, minimal controls (for library cards)
  * - "hero": Always mounted, autorotate, interactive (for homepage)
  */
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -96,12 +96,14 @@ function BondCylinder({
 function MoleculeScene({
   molfile,
   autorotate = false,
+  isUserInteracting = false,
   atomScale = 0.25,
   bondRadius = 0.06,
   quality = 'high',
 }: {
   molfile: string;
   autorotate?: boolean;
+  isUserInteracting?: boolean;
   atomScale?: number;
   bondRadius?: number;
   quality?: 'high' | 'low';
@@ -150,11 +152,11 @@ function MoleculeScene({
     }
   }, [molfile]);
 
-  // Autorotate for hero mode
+  // Autorotate for hero mode - only Y-axis (sideways) and pause when user is interacting
   useFrame((_, delta) => {
-    if (autorotate && groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.35;
-      groupRef.current.rotation.x += delta * 0.06;
+    if (autorotate && !isUserInteracting && groupRef.current) {
+      // Only rotate on Y-axis (sideways rotation)
+      groupRef.current.rotation.y += delta * 0.5;
     }
   });
 
@@ -229,6 +231,7 @@ export default function BarbellViewer({
   autorotate: autorotateProp,
   hovered = false,
 }: BarbellViewerProps) {
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
   const autorotate = autorotateProp !== undefined ? autorotateProp : (mode === 'hero');
   // For card mode, only enable interaction when hovered
   const interactive = interactiveProp !== undefined 
@@ -306,6 +309,7 @@ export default function BarbellViewer({
         <MoleculeScene
           molfile={molfile}
           autorotate={autorotate}
+          isUserInteracting={isUserInteracting}
           atomScale={atomScale}
           bondRadius={bondRadius}
           quality={quality}
@@ -317,10 +321,11 @@ export default function BarbellViewer({
             enableRotate={true}
             enableDamping={true}
             dampingFactor={0.05}
-            autoRotate={mode === 'card' ? (autorotate && hovered) : autorotate}
-            autoRotateSpeed={mode === 'card' ? 0.5 : 0.5}
+            autoRotate={false}
             minDistance={mode === 'card' ? 2 : 1}
             maxDistance={mode === 'card' ? 8 : 20}
+            onStart={() => setIsUserInteracting(true)}
+            onEnd={() => setIsUserInteracting(false)}
           />
         )}
       </Canvas>
