@@ -3,6 +3,9 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import gsap from 'gsap'
 import MoleculeScene from './MoleculeScene'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import GridHelper from './viewer/GridHelper'
+import AtomGhostMesh from './viewer/AtomGhostMesh'
 
 /**
  * Animates camera on mount
@@ -34,9 +37,15 @@ function CameraAnimator() {
   }
 }
 
+function KeyboardShortcuts() {
+  useKeyboardShortcuts()
+  return null
+}
+
 export default function SceneRoot(){
   return (
     <div style={{width:'100%', height:'100%', background: '#ffffff'}}>
+      <KeyboardShortcuts />
       <Canvas 
         camera={{ position: [10, 10, 10], fov: 45 }}
         shadows
@@ -65,15 +74,26 @@ export default function SceneRoot(){
         <color attach="background" args={[0xffffff]} />
         <ambientLight intensity={0.7} />
         <directionalLight position={[10, 10, 5]} intensity={0.8} castShadow />
+        <GridHelper />
         <React.Suspense fallback={null}>
           <MoleculeScene />
         </React.Suspense>
+        <AtomGhostMesh />
         <CameraAnimator />
         <OrbitControls 
+          ref={(ref) => {
+            if (ref) {
+              // Store ref for camera focus hook
+              ;(window as any).__orbitControls = ref
+            }
+          }}
           makeDefault 
           enablePan={true}
           enableDamping
           dampingFactor={0.05}
+          minDistance={2}
+          maxDistance={50}
+          rotateSpeed={0.5}
         />
       </Canvas>
     </div>

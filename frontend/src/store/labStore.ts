@@ -14,6 +14,8 @@ type LabState = {
   currentTool: ToolName
   currentElement: string
   autoBond: boolean
+  showGrid: boolean
+  showValidation: boolean
   // undo/redo
   undoStack: Molecule[]
   redoStack: Molecule[]
@@ -48,6 +50,8 @@ export const useLabStore = create<LabState>()(
     currentTool: 'select',
     currentElement: 'C',
     autoBond: true,
+    showGrid: true,
+    showValidation: true,
     undoStack: [],
     redoStack: [],
 
@@ -145,6 +149,8 @@ export const useLabStore = create<LabState>()(
     setCurrentElement: (element) => set({ currentElement: element }),
     setSelectedAtomId: (id) => set({ selectedAtomId: id }),
     setSelectedBondId: (id) => set({ selectedBondId: id }),
+    setShowGrid: (v?: boolean) => set((s) => ({ showGrid: v ?? !s.showGrid })),
+    setShowValidation: (v?: boolean) => set((s) => ({ showValidation: v ?? !s.showValidation })),
   }), { name: 'LabStore' })
 )
 

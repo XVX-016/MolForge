@@ -1,4 +1,5 @@
 import type { Atom, Bond, Molecule } from '../types/molecule'
+import { getBondRule, VALENCE_LIMITS } from './bondRules'
 
 // Simple covalent radii (Å) and valences (typical)
 const covalentRadius: Record<string, number> = {
@@ -33,9 +34,9 @@ export function distance(a: Atom, b: Atom): number {
 }
 
 export function shouldAutoBond(a: Atom, b: Atom, mol?: Molecule, tolerance = 0.45): boolean {
-  const rA = covalentRadius[a.element] || 0.8
-  const rB = covalentRadius[b.element] || 0.8
-  const threshold = rA + rB + tolerance
+  // Use bond rules for more accurate thresholds
+  const rule = getBondRule(a.element, b.element)
+  const threshold = rule.threshold
   const d = distance(a, b)
   if (d > threshold) return false
 
@@ -43,7 +44,12 @@ export function shouldAutoBond(a: Atom, b: Atom, mol?: Molecule, tolerance = 0.4
   const molBonds = mol?.bonds || []
   const countA = molBonds.filter(x => x.atom1 === a.id || x.atom2 === a.id).length
   const countB = molBonds.filter(x => x.atom1 === b.id || x.atom2 === b.id).length
-  if (countA >= maxAllowedBonds(a) || countB >= maxAllowedBonds(b)) return false
+  
+  // Use valence limits from bondRules
+  const maxA = VALENCE_LIMITS[a.element] || maxAllowedBonds(a)
+  const maxB = VALENCE_LIMITS[b.element] || maxAllowedBonds(b)
+  
+  if (countA >= maxA || countB >= maxB) return false
 
   return true
 }

@@ -5,10 +5,10 @@ import gsap from 'gsap'
 import type { Atom } from '../../types/molecule'
 import { useLabStore } from '../../store/labStore'
 import AtomTooltip from './AtomTooltip'
-
 interface AnimatedAtomProps {
   atom: Atom
   index: number
+  onDragStart?: (atomId: string) => void
 }
 
 // CPK colors
@@ -25,10 +25,12 @@ const cpkColors: Record<string, number> = {
   I: 0x940094,
 }
 
-export default function AnimatedAtom({ atom, index }: AnimatedAtomProps) {
+export default function AnimatedAtom({ atom, index, onDragStart }: AnimatedAtomProps) {
   const meshRef = useRef<THREE.Mesh>(null)
   const [hovered, setHovered] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
   const selectedAtomId = useLabStore(s => s.selectedAtomId)
+  const currentTool = useLabStore(s => s.currentTool)
   const isSelected = atom?.id === selectedAtomId
 
   // Validate atom data
@@ -71,7 +73,7 @@ export default function AnimatedAtom({ atom, index }: AnimatedAtomProps) {
         duration: 0.2,
         ease: 'power2.out',
       })
-    } else if (meshRef.current) {
+    } else if (meshRef.current && !isDragging) {
       gsap.to(meshRef.current.scale, {
         x: 1,
         y: 1,
@@ -80,7 +82,22 @@ export default function AnimatedAtom({ atom, index }: AnimatedAtomProps) {
         ease: 'power2.out',
       })
     }
-  }, [isSelected])
+  }, [isSelected, isDragging])
+
+  // Dragging highlight
+  useEffect(() => {
+    if (meshRef.current && isDragging) {
+      gsap.to(meshRef.current.material, {
+        opacity: 0.7,
+        duration: 0.1,
+      })
+    } else if (meshRef.current) {
+      gsap.to(meshRef.current.material, {
+        opacity: 1,
+        duration: 0.1,
+      })
+    }
+  }, [isDragging])
 
   const color = isSelected ? 0x4676ff : (cpkColors[atom.element] || 0xcccccc)
 
@@ -95,12 +112,23 @@ export default function AnimatedAtom({ atom, index }: AnimatedAtomProps) {
           setHovered(true)
         }}
         onPointerOut={() => setHovered(false)}
+        onPointerDown={(e) => {
+          e.stopPropagation()
+          if (currentTool === 'select' || currentTool === 'move') {
+            if (onDragStart) {
+              onDragStart(atom.id)
+              setIsDragging(true)
+            }
+          }
+        }}
       >
         <sphereGeometry args={[1.0, 32, 20]} />
         <meshStandardMaterial
           color={color}
           metalness={0.0}
           roughness={0.6}
+          transparent={isDragging}
+          opacity={isDragging ? 0.7 : 1}
         />
       </mesh>
       {hovered && (

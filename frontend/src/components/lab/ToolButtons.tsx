@@ -12,8 +12,7 @@ const tools: Array<{ id: ToolName; icon: React.ReactNode; label: string }> = [
 ]
 
 /**
- * Floating vertical tool buttons panel (left side)
- * Soft embossed style matching target design
+ * Left sidebar tool buttons panel
  */
 export default function ToolButtons() {
   const currentTool = useLabStore(s => s.currentTool)
@@ -21,12 +20,10 @@ export default function ToolButtons() {
 
   return (
     <motion.div
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="fixed top-1/2 left-10 -translate-y-1/2 z-20
-        rounded-2xl p-4 bg-[#f5f1e8] border border-[#e3dfd6]
-        shadow-[0_4px_20px_rgba(0,0,0,0.08)] flex flex-col gap-3"
+      className="flex flex-col items-center py-4 gap-3 w-full"
     >
       {tools.map((tool, index) => {
         const active = currentTool === tool.id
@@ -39,13 +36,25 @@ export default function ToolButtons() {
             transition={{ duration: 0.3, delay: index * 0.05 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setTool(tool.id)}
+            onClick={(e) => {
+              // Ripple effect
+              const circle = document.createElement('span')
+              circle.className = 'ripple'
+              const rect = e.currentTarget.getBoundingClientRect()
+              const size = Math.max(rect.width, rect.height)
+              circle.style.width = circle.style.height = `${size}px`
+              e.currentTarget.appendChild(circle)
+              setTimeout(() => circle.remove(), 400)
+              
+              setTool(tool.id)
+            }}
             className={`
-              w-12 h-12 flex items-center justify-center rounded-full
-              border transition-all duration-200
+              relative w-10 h-10 rounded-lg flex items-center justify-center border
+              transition-colors overflow-hidden
               ${active
-                ? 'bg-white border-[#d4cec4] shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] text-[#4676ff]'
-                : 'bg-[#faf8f3] border-[#e3dfd6] text-gray-600 hover:bg-white'}
+                ? 'border-[#4676ff] text-[#4676ff] bg-white shadow-sm'
+                : 'border-[#ccc] text-gray-600'}
+              hover:bg-white
             `}
             title={tool.label}
           >

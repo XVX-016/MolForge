@@ -4,6 +4,7 @@ import { useLabStore } from '../../store/labStore'
 import { getTool } from '../../tools'
 import { computeAutoBonds } from '../../utils/bondingEngine'
 import * as THREE from 'three'
+import { useCameraFocus } from './viewer/useCameraFocus'
 
 /**
  * ToolHandler routes pointer events to the currently active tool
@@ -13,6 +14,7 @@ export default function ToolHandler() {
   const currentTool = useLabStore(s => s.currentTool)
   const store = useLabStore.getState()
   const autoBond = useLabStore(s => s.autoBond)
+  const { focusOnAtom, resetCamera } = useCameraFocus()
 
   React.useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -37,8 +39,22 @@ export default function ToolHandler() {
       }
 
       const tool = getTool(currentTool)
-      if (tool.onPointerDown) {
+      if (tool && tool.onPointerDown) {
         tool.onPointerDown(r3fEvent, store)
+        
+        // Handle double-click to reset camera
+        const now = Date.now()
+        const lastClick = (window as any).__lastClick || 0
+        if (now - lastClick < 300) {
+          resetCamera()
+        }
+        ;(window as any).__lastClick = now
+
+        // Focus on atom when selected (single click)
+        if (currentTool === 'select' && r3fEvent.object?.userData?.atomId) {
+          const atomId = r3fEvent.object.userData.atomId
+          setTimeout(() => focusOnAtom(atomId), 100)
+        }
         
         // Auto-bond after adding atom if enabled
         if (currentTool === 'add_atom' && autoBond) {
