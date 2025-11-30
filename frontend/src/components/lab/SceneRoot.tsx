@@ -59,33 +59,16 @@ export default function SceneRoot(){
           depth: true
         }}
         dpr={[1, 2]}
-        onCreated={({ gl, scene, camera }) => {
+        onCreated={({ gl }) => {
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-          
-          // Handle WebGL context loss - prevent default to allow recovery
-          const handleContextLost = (e: Event) => {
+          // Handle WebGL context loss
+          gl.domElement.addEventListener('webglcontextlost', (e) => {
             e.preventDefault()
-            console.warn('⚠️ WebGL context lost - attempting recovery')
-          }
-          
-          const handleContextRestored = () => {
-            console.log('✅ WebGL context restored - reinitializing')
-            // Force re-render by updating pixel ratio
-            gl.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-            // Clear any stale state
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-          }
-          
-          gl.domElement.addEventListener('webglcontextlost', handleContextLost)
-          gl.domElement.addEventListener('webglcontextrestored', handleContextRestored)
-          
-          // Cleanup on unmount
-          return () => {
-            gl.domElement.removeEventListener('webglcontextlost', handleContextLost)
-            gl.domElement.removeEventListener('webglcontextrestored', handleContextRestored)
-            // Dispose of renderer resources
-            gl.dispose()
-          }
+            console.warn('WebGL context lost')
+          })
+          gl.domElement.addEventListener('webglcontextrestored', () => {
+            console.log('WebGL context restored')
+          })
         }}
       >
         <color attach="background" args={[0xffffff]} />

@@ -1,6 +1,0 @@
-{
-  "install": "npm ci",
-  "build": "npm run build:engine || true",
-  "start": "echo 'Backend uses Dockerfile - Railway will use Docker build'"
-}
-
