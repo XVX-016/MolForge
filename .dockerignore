@@ -4,8 +4,9 @@
 # Frontend (not needed for backend build)
 frontend/
 node_modules/
-package-lock.json
-package.json
+# Note: package-lock.json and package.json are needed for Railpack/workspace builds
+# package-lock.json
+# package.json
 
 # Engine package (not needed for backend build)
 packages/
