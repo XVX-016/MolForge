@@ -114,14 +114,14 @@ export function ToolbarPanel() {
           <button
             key={t.id}
             onClick={() => setTool(t.id)}
-            className={`px-3 py-2 text-xs rounded border transition-colors ${
+            className={`px-3 py-2 text-xs rounded border transition-all duration-200 transform ${
               tool === t.id
-                ? 'bg-blue-50 border-blue-500 text-blue-700'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                ? 'bg-blue-50 border-blue-500 text-blue-700 scale-105 shadow-md'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:scale-102 hover:shadow-sm active:scale-95'
             }`}
             title={`${t.label} (${t.shortcut})`}
           >
-            <div className="text-lg mb-1">{t.icon}</div>
+            <div className="text-lg mb-1 transition-transform duration-200">{t.icon}</div>
             <div>{t.label}</div>
             <div className="text-[10px] text-gray-400 mt-0.5">{t.shortcut}</div>
           </button>
@@ -182,7 +182,7 @@ export function ToolbarPanel() {
         <button
           onClick={undo}
           disabled={!canUndo}
-          className="flex-1 px-3 py-1.5 text-xs rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          className="flex-1 px-3 py-1.5 text-xs rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all duration-200 hover:scale-105 active:scale-95"
           title="Undo (Ctrl+Z)"
         >
           ↶ Undo
@@ -190,7 +190,7 @@ export function ToolbarPanel() {
         <button
           onClick={redo}
           disabled={!canRedo}
-          className="flex-1 px-3 py-1.5 text-xs rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          className="flex-1 px-3 py-1.5 text-xs rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all duration-200 hover:scale-105 active:scale-95"
           title="Redo (Ctrl+Shift+Z)"
         >
           ↷ Redo
