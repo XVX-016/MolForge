@@ -11,10 +11,11 @@
  * - Tool mode
  */
 
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { Molecule } from '@/lib/molecule'
 import type { EditorTool, Atom, Bond } from '@/lib/molecule'
 import { CanvasLayer } from './CanvasLayer'
+import { PointerManager, KeyboardManager } from '@/lib/molecule/input'
 import { nanoid } from 'nanoid'
 
 interface MoleculeEditorProps {
@@ -46,6 +47,13 @@ export function MoleculeEditor({
   const [scale, setScale] = useState(1)
   const [offsetX, setOffsetX] = useState(0)
   const [offsetY, setOffsetY] = useState(0)
+  
+  // Input managers
+  const pointerManagerRef = useRef<PointerManager>(new PointerManager())
+  const keyboardManagerRef = useRef<KeyboardManager>(new KeyboardManager())
+  
+  // Bond creation state (drag from atom to atom)
+  const [bondStartAtomId, setBondStartAtomId] = useState<string | null>(null)
 
   // Update molecule and notify parent
   const updateMolecule = useCallback((newMolecule: Molecule) => {
@@ -145,17 +153,23 @@ export function MoleculeEditor({
       setSelectedBondId(null)
       onAtomSelect?.(atomId)
       onBondSelect?.(null)
-    } else if (tool === 'bond' && selectedAtomId && selectedAtomId !== atomId) {
-      // Create bond between selected atom and clicked atom
-      addBond(selectedAtomId, atomId)
-      setSelectedAtomId(null)
-      onAtomSelect?.(null)
+    } else if (tool === 'bond') {
+      if (bondStartAtomId && bondStartAtomId !== atomId) {
+        // Complete bond creation
+        addBond(bondStartAtomId, atomId)
+        setBondStartAtomId(null)
+      } else {
+        // Start bond creation
+        setBondStartAtomId(atomId)
+        setSelectedAtomId(atomId)
+        onAtomSelect?.(atomId)
+      }
     } else if (tool === 'delete') {
       deleteAtom(atomId)
     } else if (tool === 'add-atom') {
       // Place atom at click position (handled by canvas click)
     }
-  }, [tool, selectedAtomId, addBond, deleteAtom, onAtomSelect, onBondSelect])
+  }, [tool, bondStartAtomId, addBond, deleteAtom, onAtomSelect, onBondSelect])
 
   // Handle bond click
   const handleBondClick = useCallback((bondId: string, event: MouseEvent) => {
@@ -182,9 +196,50 @@ export function MoleculeEditor({
     updateMolecule(newMolecule)
     setSelectedAtomId(null)
     setSelectedBondId(null)
+    setBondStartAtomId(null)
     onAtomSelect?.(null)
     onBondSelect?.(null)
   }, [updateMolecule, onAtomSelect, onBondSelect])
+
+  // Setup keyboard shortcuts
+  useEffect(() => {
+    const keyboard = keyboardManagerRef.current
+
+    // Escape - cancel current operation
+    const unsubCancel = keyboard.on((event) => {
+      if (event.key === 'Escape') {
+        setBondStartAtomId(null)
+        setSelectedAtomId(null)
+        setSelectedBondId(null)
+        onAtomSelect?.(null)
+        onBondSelect?.(null)
+        pointerManagerRef.current.cancel()
+      }
+    })
+
+    // Delete/Backspace - delete selected
+    const unsubDelete = keyboard.on((event) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        if (selectedAtomId) {
+          deleteAtom(selectedAtomId)
+        } else if (selectedBondId) {
+          deleteBond(selectedBondId)
+        }
+      }
+    })
+
+    // Setup keyboard event listener
+    const handleKeyDown = (e: KeyboardEvent) => {
+      keyboard.processEvent(e as any)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      unsubCancel()
+      unsubDelete()
+    }
+  }, [selectedAtomId, selectedBondId, deleteAtom, deleteBond, onAtomSelect, onBondSelect])
 
   return (
     <div className="molecule-editor" style={{ width, height, position: 'relative' }}>
@@ -203,6 +258,8 @@ export function MoleculeEditor({
         onBondClick={handleBondClick}
         onAtomHover={setHoveredAtomId}
         onBondHover={setHoveredBondId}
+        pointerManager={pointerManagerRef.current}
+        bondStartAtomId={bondStartAtomId}
       />
     </div>
   )

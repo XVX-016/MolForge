@@ -17,6 +17,8 @@ import type { Molecule } from '@/lib/molecule'
 import type { AtomImpl, BondImpl } from '@/lib/molecule'
 import { ELEMENT_COLORS } from './constants'
 
+import type { PointerManager } from '@/lib/molecule/input'
+
 interface CanvasLayerProps {
   molecule: Molecule | null
   selectedAtomId: string | null
@@ -32,6 +34,8 @@ interface CanvasLayerProps {
   scale?: number
   offsetX?: number
   offsetY?: number
+  pointerManager?: PointerManager
+  bondStartAtomId?: string | null
 }
 
 // Element colors for rendering
@@ -66,6 +70,8 @@ export function CanvasLayer({
   scale = 1,
   offsetX = 0,
   offsetY = 0,
+  pointerManager,
+  bondStartAtomId,
 }: CanvasLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>()
@@ -295,7 +301,43 @@ export function CanvasLayer({
     return null
   }, [molecule, projectTo2D])
 
-  // Mouse event handlers
+  // Setup pointer manager integration
+  useEffect(() => {
+    if (!pointerManager) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      pointerManager.processEvent(e, 'down')
+    }
+
+    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
+      pointerManager.processEvent(e, 'move')
+    }
+
+    const handlePointerUp = (e: MouseEvent | TouchEvent) => {
+      pointerManager.processEvent(e, 'up')
+    }
+
+    canvas.addEventListener('mousedown', handlePointerDown)
+    canvas.addEventListener('mousemove', handlePointerMove)
+    canvas.addEventListener('mouseup', handlePointerUp)
+    canvas.addEventListener('touchstart', handlePointerDown)
+    canvas.addEventListener('touchmove', handlePointerMove)
+    canvas.addEventListener('touchend', handlePointerUp)
+
+    return () => {
+      canvas.removeEventListener('mousedown', handlePointerDown)
+      canvas.removeEventListener('mousemove', handlePointerMove)
+      canvas.removeEventListener('mouseup', handlePointerUp)
+      canvas.removeEventListener('touchstart', handlePointerDown)
+      canvas.removeEventListener('touchmove', handlePointerMove)
+      canvas.removeEventListener('touchend', handlePointerUp)
+    }
+  }, [pointerManager])
+
+  // Mouse event handlers (for compatibility)
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -351,7 +393,8 @@ export function CanvasLayer({
   const handleMouseLeave = useCallback(() => {
     onAtomHover?.(null)
     onBondHover?.(null)
-  }, [onAtomHover, onBondHover])
+    pointerManager?.cancel()
+  }, [onAtomHover, onBondHover, pointerManager])
 
   return (
     <canvas
