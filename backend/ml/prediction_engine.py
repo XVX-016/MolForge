@@ -169,10 +169,10 @@ class PredictionEngine:
         
         # Run inference
         if not _ensure_torch() or Batch is None or self.device is None:
-            # Fallback to mock predictions
+            # Fallback to mock predictions based on molecule properties
             logger.warning("PyTorch not available, using mock predictions")
-            predictions = {prop: 0.0 for prop in (properties or ["logP", "solubility", "toxicity"])}
-            return PredictionResult(predictions=predictions, model_id=model_id)
+            predictions = self._generate_mock_predictions(input_data, properties)
+            return PredictionResult(predictions=predictions, model_id=model_id, warnings=["PyTorch not available - using mock predictions"])
         
         batch = Batch.from_data_list([data]).to(self.device)
         
@@ -340,10 +340,52 @@ class PredictionEngine:
         
         return node_scores.tolist()
     
+    def _generate_mock_predictions(
+        self,
+        input_data: Dict[str, Any],
+        properties: Optional[List[str]] = None,
+    ) -> Dict[str, float]:
+        """Generate mock predictions when PyTorch is not available."""
+        from rdkit import Chem
+        from rdkit.Chem import Descriptors
+        
+        predictions = {}
+        props = properties or ["logP", "solubility", "toxicity"]
+        
+        # Try to get SMILES
+        smiles = input_data.get("smiles")
+        if smiles:
+            try:
+                mol = Chem.MolFromSmiles(smiles)
+                if mol:
+                    for prop in props:
+                        if prop == "logP":
+                            predictions[prop] = float(Descriptors.MolLogP(mol))
+                        elif prop == "solubility":
+                            # Mock solubility based on molecular weight
+                            mw = Descriptors.MolWt(mol)
+                            predictions[prop] = max(0.0, min(10.0, -np.log10(mw / 100.0)))
+                        elif prop == "toxicity":
+                            # Mock toxicity (would use real model)
+                            predictions[prop] = 0.5
+                        elif prop == "molecular_weight":
+                            predictions[prop] = float(Descriptors.MolWt(mol))
+                        else:
+                            predictions[prop] = 0.0
+                    return predictions
+            except:
+                pass
+        
+        # Fallback: return zeros
+        for prop in props:
+            predictions[prop] = 0.0
+        
+        return predictions
+    
     def _sanity_check(
         self,
         predictions: Dict[str, float],
-        data: Data,
+        data: Any,  # Changed from Data to Any for compatibility
     ) -> List[str]:
         """Perform sanity checks on predictions."""
         warnings = []

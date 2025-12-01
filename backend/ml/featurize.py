@@ -183,7 +183,40 @@ def featurize_smiles(
     
     # Lazy import PyTorch
     if not _ensure_torch():
-        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
+        # Fallback: return mock data structure using numpy
+        import numpy as np
+        logger.warning("PyTorch not available, using numpy fallback for featurization")
+        x = np.array(node_features, dtype=np.float32)
+        
+        # Create mock Data object structure
+        class MockData:
+            def __init__(self, x, edge_index, edge_attr):
+                self.x = x
+                self.edge_index = edge_index
+                self.edge_attr = edge_attr
+                self.num_nodes = len(node_features)
+        
+        # Create edge indices and features
+        edge_indices = []
+        edge_features = []
+        for bond in mol.GetBonds():
+            u = bond.GetBeginAtomIdx()
+            v = bond.GetEndAtomIdx()
+            edge_indices.append([u, v])
+            edge_indices.append([v, u])
+            edge_feat = compute_edge_features(bond)
+            edge_features.append(edge_feat)
+            edge_features.append(edge_feat)
+        
+        if len(edge_indices) > 0:
+            edge_index = np.array(edge_indices, dtype=np.int64).T
+            edge_attr = np.array(edge_features, dtype=np.float32)
+        else:
+            edge_index = np.empty((2, 0), dtype=np.int64)
+            edge_attr = np.empty((0, 7), dtype=np.float32)
+        
+        data = MockData(x, edge_index, edge_attr)
+        return data, node_mapping
     
     x = torch.tensor(node_features, dtype=torch.float)
     
@@ -273,7 +306,40 @@ def featurize_json(payload: Dict) -> Tuple[Data, Dict[int, str]]:
     
     # Lazy import PyTorch
     if not _ensure_torch():
-        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
+        # Fallback: return mock data structure using numpy
+        import numpy as np
+        logger.warning("PyTorch not available, using numpy fallback for featurization")
+        x = np.array(node_features, dtype=np.float32)
+        
+        # Create mock Data object structure
+        class MockData:
+            def __init__(self, x, edge_index, edge_attr):
+                self.x = x
+                self.edge_index = edge_index
+                self.edge_attr = edge_attr
+                self.num_nodes = len(node_features)
+        
+        # Create edge indices and features
+        edge_indices = []
+        edge_features = []
+        for bond in mol.GetBonds():
+            u = bond.GetBeginAtomIdx()
+            v = bond.GetEndAtomIdx()
+            edge_indices.append([u, v])
+            edge_indices.append([v, u])
+            edge_feat = compute_edge_features(bond)
+            edge_features.append(edge_feat)
+            edge_features.append(edge_feat)
+        
+        if len(edge_indices) > 0:
+            edge_index = np.array(edge_indices, dtype=np.int64).T
+            edge_attr = np.array(edge_features, dtype=np.float32)
+        else:
+            edge_index = np.empty((2, 0), dtype=np.int64)
+            edge_attr = np.empty((0, 7), dtype=np.float32)
+        
+        data = MockData(x, edge_index, edge_attr)
+        return data, node_mapping
     
     x = torch.tensor(node_features, dtype=torch.float)
     
