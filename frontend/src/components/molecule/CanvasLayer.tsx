@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useEffect, useCallback, useMemo } from 'react'
-import type { Molecule } from '@/lib/molecule'
+import type { Molecule, EditorTool } from '@/lib/molecule'
 import type { AtomImpl, BondImpl } from '@/lib/molecule'
 import { ELEMENT_COLORS } from './constants'
 
@@ -27,6 +27,7 @@ interface CanvasLayerProps {
   hoveredBondId: string | null
   width: number
   height: number
+  tool?: EditorTool
   onAtomClick?: (atomId: string, event: MouseEvent) => void
   onBondClick?: (bondId: string, event: MouseEvent) => void
   onAtomHover?: (atomId: string | null) => void
@@ -63,6 +64,7 @@ export function CanvasLayer({
   hoveredBondId,
   width,
   height,
+  tool = 'select',
   onAtomClick,
   onBondClick,
   onAtomHover,
@@ -75,6 +77,23 @@ export function CanvasLayer({
 }: CanvasLayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>()
+
+  // Update cursor based on tool
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const cursorMap: Record<EditorTool, string> = {
+      'select': 'default',
+      'add-atom': 'crosshair',
+      'bond': 'crosshair',
+      'delete': 'not-allowed',
+      'move': 'move',
+      'inspect': 'help',
+    }
+
+    canvas.style.cursor = cursorMap[tool] || 'default'
+  }, [tool])
 
   // Convert 3D to 2D projection (orthographic, looking down Z-axis)
   const projectTo2D = useCallback((position: [number, number, number]): [number, number] => {

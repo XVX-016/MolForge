@@ -324,6 +324,7 @@ export function MoleculeEditor({
         hoveredBondId={hoveredBondId}
         width={width}
         height={height}
+        tool={tool}
         scale={scale}
         offsetX={offsetX}
         offsetY={offsetY}
