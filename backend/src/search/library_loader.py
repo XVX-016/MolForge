@@ -4,7 +4,7 @@ Library Loader - Lazy streaming loader for .smi files
 Loads molecules from .smi files with validation.
 """
 
-from typing import Iterator, Dict
+from typing import Iterator, Dict, Optional
 from pathlib import Path
 import logging
 
