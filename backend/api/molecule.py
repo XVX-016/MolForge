@@ -19,6 +19,7 @@ import logging
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdDepictor
+from rdkit.Chem import rdDistGeom
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,14 @@ class LayoutRequest(BaseModel):
     smiles: Optional[str] = None  # Alternative: provide SMILES directly
     method: Optional[str] = "coordgen"  # "coordgen" or "rdkit"
     spacing: Optional[float] = 1.5  # Bond length in Angstroms
+
+
+class ThreeDRequest(BaseModel):
+    """Request for 3D coordinate generation."""
+    molecule: Dict[str, Any]
+    smiles: Optional[str] = None  # Alternative: provide SMILES directly
+    optimize: Optional[bool] = True  # Whether to optimize geometry
+    method: Optional[str] = "etkdg"  # "etkdg" or "embed"
 
 
 @router.post("/to-smiles")
@@ -163,6 +172,84 @@ async def generate_2d_layout(request: LayoutRequest):
         }
     except Exception as e:
         logger.error(f"Error generating 2D layout: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/generate-3d")
+async def generate_3d_coordinates(request: ThreeDRequest):
+    """
+    Generate 3D coordinates for molecule.
+    
+    Uses RDKit ETKDG (Experimental-Torsion-angle preference with Distance Geometry)
+    or standard embedding, with optional geometry optimization.
+    Returns molecule with updated 3D atom positions.
+    """
+    try:
+        # Get molecule from dict or SMILES
+        mol = None
+        if request.smiles:
+            mol = Chem.MolFromSmiles(request.smiles)
+            if not mol:
+                raise HTTPException(status_code=400, detail="Invalid SMILES string")
+        else:
+            mol = molecule_dict_to_rdkit(request.molecule)
+            if not mol:
+                raise HTTPException(status_code=400, detail="Invalid molecule structure")
+        
+        # Add hydrogens for 3D
+        mol = Chem.AddHs(mol)
+        
+        # Generate 3D coordinates
+        if request.method == "etkdg":
+            # Use ETKDG (better for complex molecules)
+            try:
+                params = rdDistGeom.ETKDGv3()
+                params.randomSeed = 42
+                embed_result = rdDistGeom.EmbedMolecule(mol, params)
+                if embed_result == -1:
+                    # Fallback to standard embedding
+                    embed_result = AllChem.EmbedMolecule(mol, randomSeed=42)
+            except:
+                # Fallback to standard embedding
+                embed_result = AllChem.EmbedMolecule(mol, randomSeed=42)
+        else:
+            # Use standard embedding
+            embed_result = AllChem.EmbedMolecule(mol, randomSeed=42)
+        
+        if embed_result == -1:
+            # Try with random coords
+            embed_result = AllChem.EmbedMolecule(mol, useRandomCoords=True)
+            if embed_result == -1:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to generate 3D coordinates for molecule"
+                )
+        
+        # Optimize geometry if requested
+        if request.optimize:
+            try:
+                # Try MMFF first (more accurate)
+                AllChem.MMFFOptimizeMolecule(mol)
+            except:
+                try:
+                    # Fallback to UFF (universal)
+                    AllChem.UFFOptimizeMolecule(mol)
+                except:
+                    # If both fail, continue with unoptimized coordinates
+                    pass
+        
+        # Convert back to molecule dict with 3D coordinates
+        molecule_dict = rdkit_to_molecule_dict(mol)
+        
+        return {
+            "molecule": molecule_dict,
+            "method": request.method,
+            "optimized": request.optimize,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating 3D coordinates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

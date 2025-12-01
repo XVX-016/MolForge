@@ -101,10 +101,10 @@ export function MoleculeEditor({
     const worldZ = 0
 
     const atomId = nanoid()
-    const command = new AddAtomCommand(atomId, element, [worldX, worldY, worldZ])
+    const command = new AddAtomCommand({ id: atomId, element, position: [worldX, worldY, worldZ] })
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     
@@ -126,8 +126,8 @@ export function MoleculeEditor({
     const bondId = nanoid()
     const command = new AddBondCommand(bondId, atom1Id, atom2Id, order)
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     
@@ -138,8 +138,8 @@ export function MoleculeEditor({
   const deleteAtom = useCallback((atomId: string) => {
     const command = new RemoveAtomCommand(atomId)
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     
@@ -153,8 +153,8 @@ export function MoleculeEditor({
   const deleteBond = useCallback((bondId: string) => {
     const command = new RemoveBondCommand(bondId)
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     
@@ -243,8 +243,9 @@ export function MoleculeEditor({
 
   // Undo
   const undo = useCallback(() => {
-    if (historyManagerRef.current.undo(molecule)) {
-      updateMolecule(molecule)
+    const result = historyManagerRef.current.undo(molecule)
+    if (result) {
+      updateMolecule(result)
       setCanUndo(historyManagerRef.current.canUndo())
       setCanRedo(historyManagerRef.current.canRedo())
     }
@@ -252,8 +253,9 @@ export function MoleculeEditor({
 
   // Redo
   const redo = useCallback(() => {
-    if (historyManagerRef.current.redo(molecule)) {
-      updateMolecule(molecule)
+    const result = historyManagerRef.current.redo(molecule)
+    if (result) {
+      updateMolecule(result)
       setCanUndo(historyManagerRef.current.canUndo())
       setCanRedo(historyManagerRef.current.canRedo())
     }
@@ -324,6 +326,7 @@ export function MoleculeEditor({
         hoveredBondId={hoveredBondId}
         width={width}
         height={height}
+        tool={tool}
         scale={scale}
         offsetX={offsetX}
         offsetY={offsetY}
