@@ -20,8 +20,12 @@ try:
     from backend.ai.featurizer import get_ecfp
     FEATURIZER_AVAILABLE = True
 except ImportError:
-    FEATURIZER_AVAILABLE = False
-    logging.warning("Featurizer not available. Fingerprints will be mock.")
+    try:
+        from src.ai.featurizer import get_ecfp
+        FEATURIZER_AVAILABLE = True
+    except ImportError:
+        FEATURIZER_AVAILABLE = False
+        logging.warning("Featurizer not available. Fingerprints will be mock.")
 
 logger = logging.getLogger(__name__)
 

@@ -23,7 +23,12 @@ except ImportError:
     RDKIT_AVAILABLE = False
     logging.warning("RDKit not available. Standardization will be limited.")
 
-from backend.chem.utils.validators import validate_smiles
+try:
+    from backend.chem.utils.validators import validate_smiles
+except ImportError:
+    # Fallback: simple validation
+    def validate_smiles(smiles: str) -> bool:
+        return bool(smiles and len(smiles) > 0)
 
 logger = logging.getLogger(__name__)
 
