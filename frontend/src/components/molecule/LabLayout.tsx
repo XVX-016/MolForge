@@ -69,8 +69,8 @@ function LabLayoutContent() {
           </div>
 
           {/* Right sidebar */}
-          <div className={`w-80 bg-white border-l border-gray-200 transition-all duration-300 ${
-            rightPanelCollapsed ? 'w-0 overflow-hidden' : 'p-4 overflow-y-auto'
+          <div className={`w-80 bg-white border-l border-gray-200 transition-all duration-500 ease-in-out ${
+            rightPanelCollapsed ? 'w-0 overflow-hidden opacity-0' : 'p-4 overflow-y-auto opacity-100'
           }`}>
             {!rightPanelCollapsed && (
               <div className="space-y-4">

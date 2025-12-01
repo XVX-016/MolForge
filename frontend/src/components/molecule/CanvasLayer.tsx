@@ -16,6 +16,8 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react'
 import type { Molecule, EditorTool } from '@/lib/molecule'
 import type { AtomImpl, BondImpl } from '@/lib/molecule'
 import { ELEMENT_COLORS } from './constants'
+import type { AttentionMap } from '@/lib/molecule/attention'
+import { getAttentionColor, getAttentionOpacity } from '@/lib/molecule/attention'
 
 import type { PointerManager } from '@/lib/molecule/input'
 
@@ -37,6 +39,8 @@ interface CanvasLayerProps {
   offsetY?: number
   pointerManager?: PointerManager
   bondStartAtomId?: string | null
+  attentionMap?: AttentionMap | null
+  showAttentionOverlay?: boolean
 }
 
 // Element colors for rendering
@@ -104,7 +108,7 @@ export function CanvasLayer({
     ]
   }, [width, height, scale, offsetX, offsetY])
 
-  // Draw atom
+  // Draw atom with smooth animations
   const drawAtom = useCallback((
     ctx: CanvasRenderingContext2D,
     atom: AtomImpl,
@@ -115,37 +119,65 @@ export function CanvasLayer({
     const element = atom.element
     const color = ELEMENT_COLORS[element] || '#909090'
 
-    // Atom circle
+    // Animated radius based on hover/selection
+    const baseRadius = 12
+    const radius = isSelected ? baseRadius + 2 : isHovered ? baseRadius + 1 : baseRadius
+
+    // Atom circle with smooth fill
     ctx.beginPath()
-    ctx.arc(x, y, 12, 0, Math.PI * 2)
+    ctx.arc(x, y, radius, 0, Math.PI * 2)
     ctx.fillStyle = color
     ctx.fill()
 
-    // Border
-    ctx.strokeStyle = isSelected ? '#3b82f6' : isHovered ? '#60a5fa' : '#000000'
-    ctx.lineWidth = isSelected ? 3 : isHovered ? 2 : 1
-    ctx.stroke()
+    // Animated border with glow effect on hover/select
+    const borderColor = isSelected ? '#3b82f6' : isHovered ? '#60a5fa' : '#000000'
+    const borderWidth = isSelected ? 3 : isHovered ? 2 : 1
+    
+    // Glow effect for hover/selection
+    if (isSelected || isHovered) {
+      ctx.shadowBlur = isSelected ? 8 : 4
+      ctx.shadowColor = borderColor
+    } else {
+      ctx.shadowBlur = 0
+    }
 
-    // Element label
+    ctx.strokeStyle = borderColor
+    ctx.lineWidth = borderWidth
+    ctx.stroke()
+    ctx.shadowBlur = 0
+
+    // Element label with better contrast
     ctx.fillStyle = '#000000'
-    ctx.font = '12px Arial'
+    ctx.font = 'bold 12px Arial'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(element, x, y)
 
-    // Selection outline
+    // Animated selection outline
     if (isSelected) {
+      const outlineRadius = 18
       ctx.beginPath()
-      ctx.arc(x, y, 18, 0, Math.PI * 2)
+      ctx.arc(x, y, outlineRadius, 0, Math.PI * 2)
       ctx.strokeStyle = '#3b82f6'
       ctx.lineWidth = 2
       ctx.setLineDash([5, 5])
       ctx.stroke()
       ctx.setLineDash([])
     }
+
+    // Hover indicator (subtle pulse)
+    if (isHovered && !isSelected) {
+      ctx.beginPath()
+      ctx.arc(x, y, radius + 4, 0, Math.PI * 2)
+      ctx.strokeStyle = '#60a5fa'
+      ctx.lineWidth = 1
+      ctx.globalAlpha = 0.3
+      ctx.stroke()
+      ctx.globalAlpha = 1
+    }
   }, [projectTo2D])
 
-  // Draw bond
+  // Draw bond with smooth animations
   const drawBond = useCallback((
     ctx: CanvasRenderingContext2D,
     bond: BondImpl,
@@ -157,15 +189,30 @@ export function CanvasLayer({
     const [x1, y1] = projectTo2D(atom1.position)
     const [x2, y2] = projectTo2D(atom2.position)
 
-    // Bond line
+    // Animated bond color and width
+    const baseWidth = bond.order === 1 ? 2 : bond.order === 2 ? 3 : 4
+    const bondColor = isSelected ? '#3b82f6' : isHovered ? '#60a5fa' : '#666666'
+    const bondWidth = isSelected ? baseWidth + 1 : isHovered ? baseWidth + 0.5 : baseWidth
+
+    // Glow effect for hover/selection
+    if (isSelected || isHovered) {
+      ctx.shadowBlur = isSelected ? 6 : 3
+      ctx.shadowColor = bondColor
+    } else {
+      ctx.shadowBlur = 0
+    }
+
+    // Main bond line
     ctx.beginPath()
     ctx.moveTo(x1, y1)
     ctx.lineTo(x2, y2)
-    ctx.strokeStyle = isSelected ? '#3b82f6' : isHovered ? '#60a5fa' : '#666666'
-    ctx.lineWidth = isSelected ? 3 : isHovered ? 2.5 : bond.order === 1 ? 2 : bond.order === 2 ? 3 : 4
+    ctx.strokeStyle = bondColor
+    ctx.lineWidth = bondWidth
+    ctx.lineCap = 'round'
     ctx.stroke()
+    ctx.shadowBlur = 0
 
-    // Double/triple bond lines
+    // Double/triple bond lines with spacing
     if (bond.order === 2) {
       const dx = x2 - x1
       const dy = y2 - y1
@@ -176,6 +223,9 @@ export function CanvasLayer({
       ctx.beginPath()
       ctx.moveTo(x1 + perpX, y1 + perpY)
       ctx.lineTo(x2 + perpX, y2 + perpY)
+      ctx.strokeStyle = bondColor
+      ctx.lineWidth = bondWidth
+      ctx.lineCap = 'round'
       ctx.stroke()
     } else if (bond.order === 3) {
       const dx = x2 - x1
@@ -184,6 +234,16 @@ export function CanvasLayer({
       const perpX = -dy / len * 4
       const perpY = dx / len * 4
 
+      // Center line
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.strokeStyle = bondColor
+      ctx.lineWidth = bondWidth
+      ctx.lineCap = 'round'
+      ctx.stroke()
+
+      // Parallel lines
       ctx.beginPath()
       ctx.moveTo(x1 + perpX, y1 + perpY)
       ctx.lineTo(x2 + perpX, y2 + perpY)
@@ -193,6 +253,18 @@ export function CanvasLayer({
       ctx.moveTo(x1 - perpX, y1 - perpY)
       ctx.lineTo(x2 - perpX, y2 - perpY)
       ctx.stroke()
+    }
+
+    // Hover preview (ghost line)
+    if (isHovered && !isSelected) {
+      ctx.beginPath()
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.strokeStyle = '#60a5fa'
+      ctx.lineWidth = bondWidth + 2
+      ctx.globalAlpha = 0.2
+      ctx.stroke()
+      ctx.globalAlpha = 1
     }
   }, [projectTo2D])
 
