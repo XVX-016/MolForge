@@ -193,11 +193,17 @@ async def predict_batch(request: BatchPredictRequest):
             raise HTTPException(status_code=400, detail="No molecules provided. Use 'molecules' or 'inputs' field.")
         
         results = engine.predict_batch(
-            inputs=inputs,
+            inputs,
             model_id=request.model_id,
-            properties=request.properties,
             batch_size=request.batch_size,
         )
+        
+        # Filter to requested properties if specified
+        if request.properties:
+            for result in results:
+                # Only keep requested properties
+                filtered_predictions = {k: v for k, v in result.predictions.items() if k in request.properties}
+                result.predictions = filtered_predictions
         
         return {
             "predictions": [r.to_dict() for r in results],
