@@ -154,6 +154,13 @@ class PredictionEngine:
         if not model_id:
             raise ValueError("No model available")
         
+        # Check if PyTorch is available before trying to load model
+        if not _ensure_torch() or Batch is None or self.device is None:
+            # Fallback to mock predictions based on molecule properties
+            logger.warning("PyTorch not available, using mock predictions")
+            predictions = self._generate_mock_predictions(input_data, properties)
+            return PredictionResult(predictions=predictions, model_id=model_id, warnings=["PyTorch not available - using mock predictions"])
+        
         # Load model if not already loaded
         if model_id not in self.loaded_models:
             model = self.registry.load_model(model_id)
@@ -162,17 +169,13 @@ class PredictionEngine:
                 model.to(self.device)
                 self.loaded_models[model_id] = model
             else:
-                raise ValueError(f"Failed to load model: {model_id}")
+                # If model loading fails, use mock predictions
+                logger.warning(f"Failed to load model {model_id}, using mock predictions")
+                predictions = self._generate_mock_predictions(input_data, properties)
+                return PredictionResult(predictions=predictions, model_id=model_id, warnings=[f"Model {model_id} not available - using mock predictions"])
         
         model = self.loaded_models[model_id]
         model_info = self.registry.get_model(model_id)
-        
-        # Run inference
-        if not _ensure_torch() or Batch is None or self.device is None:
-            # Fallback to mock predictions based on molecule properties
-            logger.warning("PyTorch not available, using mock predictions")
-            predictions = self._generate_mock_predictions(input_data, properties)
-            return PredictionResult(predictions=predictions, model_id=model_id, warnings=["PyTorch not available - using mock predictions"])
         
         batch = Batch.from_data_list([data]).to(self.device)
         
@@ -231,7 +234,14 @@ class PredictionEngine:
         
         if attention_dict:
             result.attention_weights = attention_dict
-            result.edge_index = data.edge_index.cpu().numpy().tolist()
+            # Handle both torch tensors and numpy arrays
+            if hasattr(data.edge_index, 'cpu'):
+                result.edge_index = data.edge_index.cpu().numpy().tolist()
+            elif hasattr(data.edge_index, 'tolist'):
+                result.edge_index = data.edge_index.tolist()
+            else:
+                import numpy as np
+                result.edge_index = np.array(data.edge_index).tolist() if hasattr(data.edge_index, '__iter__') else []
             result.node_mapping = node_mapping
             if node_importance:
                 result.attention_weights["node_importance"] = node_importance

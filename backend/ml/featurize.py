@@ -177,15 +177,17 @@ def featurize_smiles(
         features = compute_node_features(atom, mol, bonds)
         node_features.append(features)
     
-    # Lazy import PyTorch
-    if not _ensure_torch():
-        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
+    # Create node mapping if atom_order provided
+    node_mapping = {}
+    if atom_order and len(atom_order) == mol.GetNumAtoms():
+        for i, atom_id in enumerate(atom_order):
+            node_mapping[i] = atom_id
     
-    # Lazy import PyTorch
+    # Lazy import PyTorch - with fallback
     if not _ensure_torch():
         # Fallback: return mock data structure using numpy
         import numpy as np
-        logger.warning("PyTorch not available, using numpy fallback for featurization")
+        logging.warning("PyTorch not available, using numpy fallback for featurization")
         x = np.array(node_features, dtype=np.float32)
         
         # Create mock Data object structure
@@ -308,7 +310,7 @@ def featurize_json(payload: Dict) -> Tuple[Data, Dict[int, str]]:
     if not _ensure_torch():
         # Fallback: return mock data structure using numpy
         import numpy as np
-        logger.warning("PyTorch not available, using numpy fallback for featurization")
+        logging.warning("PyTorch not available, using numpy fallback for featurization")
         x = np.array(node_features, dtype=np.float32)
         
         # Create mock Data object structure
