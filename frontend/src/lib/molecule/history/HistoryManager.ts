@@ -17,8 +17,8 @@ export class HistoryManager {
   /**
    * Execute a command and add it to history
    */
-  execute(molecule: Molecule, command: Command): void {
-    command.execute(molecule)
+  execute(molecule: Molecule, command: Command): Molecule {
+    const result = command.execute(molecule)
     this.history.push(command)
     
     // Clear future when new command is executed
@@ -28,34 +28,36 @@ export class HistoryManager {
     if (this.history.length > this.maxHistorySize) {
       this.history.shift()
     }
+    
+    return result
   }
 
   /**
    * Undo last command
    */
-  undo(molecule: Molecule): boolean {
+  undo(molecule: Molecule): Molecule | null {
     if (this.history.length === 0) {
-      return false
+      return null
     }
 
     const command = this.history.pop()!
-    command.undo(molecule)
+    const result = command.undo(molecule)
     this.future.push(command)
-    return true
+    return result
   }
 
   /**
    * Redo last undone command
    */
-  redo(molecule: Molecule): boolean {
+  redo(molecule: Molecule): Molecule | null {
     if (this.future.length === 0) {
-      return false
+      return null
     }
 
     const command = this.future.pop()!
-    command.execute(molecule)
+    const result = command.execute(molecule)
     this.history.push(command)
-    return true
+    return result
   }
 
   /**
@@ -77,7 +79,7 @@ export class HistoryManager {
    */
   getUndoDescription(): string | null {
     if (this.history.length === 0) return null
-    return this.history[this.history.length - 1].getDescription()
+    return this.history[this.history.length - 1].description
   }
 
   /**
@@ -85,7 +87,7 @@ export class HistoryManager {
    */
   getRedoDescription(): string | null {
     if (this.future.length === 0) return null
-    return this.future[this.future.length - 1].getDescription()
+    return this.future[this.future.length - 1].description
   }
 
   /**

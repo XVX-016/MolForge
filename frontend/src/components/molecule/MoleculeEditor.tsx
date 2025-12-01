@@ -126,8 +126,8 @@ export function MoleculeEditor({
     const bondId = nanoid()
     const command = new AddBondCommand(bondId, atom1Id, atom2Id, order)
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     
@@ -243,8 +243,9 @@ export function MoleculeEditor({
 
   // Undo
   const undo = useCallback(() => {
-    if (historyManagerRef.current.undo(molecule)) {
-      updateMolecule(molecule)
+    const result = historyManagerRef.current.undo(molecule)
+    if (result) {
+      updateMolecule(result)
       setCanUndo(historyManagerRef.current.canUndo())
       setCanRedo(historyManagerRef.current.canRedo())
     }
@@ -252,8 +253,9 @@ export function MoleculeEditor({
 
   // Redo
   const redo = useCallback(() => {
-    if (historyManagerRef.current.redo(molecule)) {
-      updateMolecule(molecule)
+    const result = historyManagerRef.current.redo(molecule)
+    if (result) {
+      updateMolecule(result)
       setCanUndo(historyManagerRef.current.canUndo())
       setCanRedo(historyManagerRef.current.canRedo())
     }
