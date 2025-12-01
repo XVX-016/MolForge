@@ -16,17 +16,21 @@ import { EditorPanel } from './panels/EditorPanel'
 import { ToolbarPanel } from './panels/ToolbarPanel'
 import { InspectorPanel } from './panels/InspectorPanel'
 import { ConsolePanel } from './panels/ConsolePanel'
+import { ExportPanel } from './panels/ExportPanel'
+import { LoadPanel } from './panels/LoadPanel'
 import { PredictionPanel } from './PredictionPanel'
 import { Molecule } from '@/lib/molecule'
 import { useEditorContext } from './EditorContext'
+import { loadFromLocalStorage } from '@/lib/molecule/storage/autosave'
 
 interface LabLayoutProps {
   initialMolecule?: Molecule
 }
 
 function LabLayoutContent() {
-  const { molecule } = useEditorContext()
+  const { molecule, setMolecule } = useEditorContext()
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
+  const [showLoadPanel, setShowLoadPanel] = useState(false)
 
   return (
       <div className="h-screen flex flex-col bg-gray-50">
@@ -65,27 +69,40 @@ function LabLayoutContent() {
           </div>
 
           {/* Right sidebar */}
-          <div className={`w-80 bg-white border-l border-gray-200 transition-all duration-300 ${
-            rightPanelCollapsed ? 'w-0 overflow-hidden' : 'p-4 overflow-y-auto'
+          <div className={`w-80 bg-white border-l border-gray-200 transition-all duration-500 ease-in-out ${
+            rightPanelCollapsed ? 'w-0 overflow-hidden opacity-0' : 'p-4 overflow-y-auto opacity-100'
           }`}>
             {!rightPanelCollapsed && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-gray-700">Properties</h2>
-                  <button
-                    onClick={() => setRightPanelCollapsed(true)}
-                    className="text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    ←
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowLoadPanel(!showLoadPanel)}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                      title="Toggle Load Panel"
+                    >
+                      {showLoadPanel ? '📂' : '📁'}
+                    </button>
+                    <button
+                      onClick={() => setRightPanelCollapsed(true)}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      ←
+                    </button>
+                  </div>
                 </div>
                 
                 <PredictionPanel 
-                  molecule={useEditorContext().molecule}
+                  molecule={molecule}
                   className=""
                 />
                 
                 <InspectorPanel />
+                
+                <ExportPanel />
+                
+                {showLoadPanel && <LoadPanel />}
               </div>
             )}
           </div>

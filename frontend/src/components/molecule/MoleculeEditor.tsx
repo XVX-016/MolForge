@@ -173,10 +173,12 @@ export function MoleculeEditor({
 
     // For drag operations, we batch moves into a single command
     // For now, create a command for each move (can be optimized later)
-    const command = new MoveAtomCommand(atomId, [worldX, worldY, atom.position[2]])
+    const oldPosition = [...atom.position] as [number, number, number]
+    const newPosition: [number, number, number] = [worldX, worldY, atom.position[2]]
+    const command = new MoveAtomCommand(atomId, oldPosition, newPosition)
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
   }, [molecule, width, height, scale, offsetX, offsetY, updateMolecule])
@@ -229,8 +231,8 @@ export function MoleculeEditor({
   const clear = useCallback(() => {
     const command = new ClearMoleculeCommand()
     
-    historyManagerRef.current.execute(molecule, command)
-    updateMolecule(molecule)
+    const updated = historyManagerRef.current.execute(molecule, command)
+    updateMolecule(updated)
     setCanUndo(historyManagerRef.current.canUndo())
     setCanRedo(historyManagerRef.current.canRedo())
     

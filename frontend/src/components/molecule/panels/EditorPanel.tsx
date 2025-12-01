@@ -39,20 +39,20 @@ export function EditorPanel() {
       <div className="flex border-b border-gray-200">
         <button
           onClick={() => handleViewModeChange('2d')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-all duration-200 ${
             viewMode === '2d'
               ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
-              : 'text-gray-600 hover:bg-gray-50'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           2D Editor
         </button>
         <button
           onClick={() => handleViewModeChange('3d')}
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
+          className={`flex-1 px-4 py-2 text-sm font-medium transition-all duration-200 ${
             viewMode === '3d'
               ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
-              : 'text-gray-600 hover:bg-gray-50'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           3D Viewer
