@@ -52,11 +52,18 @@ class BatchPredictRequest(BaseModel):
     class Config:
         protected_namespaces = ()  # Fix Pydantic warning
     
-    molecules: List[Dict[str, Any]]  # List of molecule dicts with smiles or graph
-    inputs: Optional[List[Dict[str, Any]]] = None  # Alternative format
+    molecules: Optional[List[Dict[str, Any]]] = None  # List of molecule dicts with smiles or graph
+    inputs: Optional[List[Dict[str, Any]]] = None  # Alternative format (for compatibility)
     model_id: Optional[str] = None
     properties: Optional[List[str]] = None
     batch_size: int = 32
+    
+    def __init__(self, **data):
+        """Custom init to handle both molecules and inputs formats."""
+        # If inputs is provided but molecules is not, copy inputs to molecules
+        if 'inputs' in data and data.get('inputs') and 'molecules' not in data:
+            data['molecules'] = data['inputs']
+        super().__init__(**data)
 
 
 class SimilarMoleculeRequest(BaseModel):
@@ -179,11 +186,11 @@ async def predict_batch(request: BatchPredictRequest):
     try:
         engine = get_prediction_engine()
         
-        # Support both formats
-        inputs = request.molecules if request.molecules else (request.inputs or [])
+        # Support both formats - __init__ already handles copying inputs to molecules
+        inputs = request.molecules if request.molecules else []
         
         if not inputs:
-            raise HTTPException(status_code=400, detail="No molecules provided")
+            raise HTTPException(status_code=400, detail="No molecules provided. Use 'molecules' or 'inputs' field.")
         
         results = engine.predict_batch(
             inputs=inputs,
