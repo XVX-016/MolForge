@@ -240,5 +240,17 @@ export class Molecule {
   clone(): Molecule {
     return new Molecule(this.toState())
   }
+
+  /**
+   * Generate 2D layout (async, uses backend)
+   * 
+   * This is a convenience method that calls the layout service.
+   * For better control, use generate2DLayout from layout service directly.
+   */
+  async autoLayout(options?: { method?: 'coordgen' | 'rdkit'; spacing?: number }): Promise<Molecule> {
+    // Dynamic import to avoid circular dependency
+    const { generate2DLayout } = await import('./layout')
+    return generate2DLayout(this, options)
+  }
 }
 

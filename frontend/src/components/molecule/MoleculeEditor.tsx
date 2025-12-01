@@ -351,6 +351,7 @@ export type MoleculeEditorRef = {
   canUndo: () => boolean
   canRedo: () => boolean
   getMolecule: () => Molecule
+  autoLayout: () => Promise<void>
 }
 
 // Export undo/redo state for UI
