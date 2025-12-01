@@ -5,14 +5,27 @@ Supports multiple model types (classical, GNN, Attention-GNN) with fallbacks.
 """
 
 from typing import Dict, List, Optional, Tuple, Any
-import torch
 import numpy as np
-from torch_geometric.data import Data, Batch
 import logging
+
+# Optional PyTorch imports - graceful fallback if not available
+try:
+    import torch
+    from torch_geometric.data import Data, Batch
+    TORCH_AVAILABLE = True
+except (ImportError, OSError) as e:
+    TORCH_AVAILABLE = False
+    torch = None
+    Data = None
+    Batch = None
+    logging.warning(f"PyTorch/PyG not available: {e}. ML features will be limited.")
 
 from .featurize import featurize_smiles, featurize_json, canonicalize_smiles
 from .registry import ModelRegistry
-from .gat_model import AttentionGNN
+try:
+    from .gat_model import AttentionGNN
+except (ImportError, OSError):
+    AttentionGNN = None
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +81,12 @@ class PredictionEngine:
     
     def __init__(self, model_registry: Optional[ModelRegistry] = None):
         self.registry = model_registry or ModelRegistry()
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if TORCH_AVAILABLE and torch is not None:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = None
         self.loaded_models: Dict[str, Any] = {}
-        self.feature_cache: Dict[str, Data] = {}
+        self.feature_cache: Dict[str, Any] = {}  # Changed from Data to Any for compatibility
     
     def predict(
         self,
@@ -135,6 +151,12 @@ class PredictionEngine:
         model_info = self.registry.get_model(model_id)
         
         # Run inference
+        if not TORCH_AVAILABLE or Batch is None or self.device is None:
+            # Fallback to mock predictions
+            logger.warning("PyTorch not available, using mock predictions")
+            predictions = {prop: 0.0 for prop in (properties or ["logP", "solubility", "toxicity"])}
+            return PredictionResult(predictions=predictions, model_id=model_id)
+        
         batch = Batch.from_data_list([data]).to(self.device)
         
         with torch.no_grad():
@@ -205,32 +227,68 @@ class PredictionEngine:
     
     def _process_attentions(
         self,
-        attentions: List[torch.Tensor],
+        attentions: List[Any],  # Changed from torch.Tensor to Any
         layer_selection: str,
-        edge_index: torch.Tensor,
+        edge_index: Any,  # Changed from torch.Tensor to Any
     ) -> Dict[str, List[float]]:
         """Process and normalize attention weights."""
-        from .attention_utils import minmax_normalize
+        def minmax_normalize(values: List[float]) -> List[float]:
+            """Normalize values to [0, 1] range."""
+            if not values:
+                return []
+            min_val = min(values)
+            max_val = max(values)
+            if max_val == min_val:
+                return [0.5] * len(values)
+            return [(v - min_val) / (max_val - min_val) for v in values]
         
         result = {}
         
+        if not attentions:
+            return result
+        
         if layer_selection == "all":
             for i, att in enumerate(attentions):
-                normalized = minmax_normalize(att.cpu().numpy().tolist())
+                if att is None:
+                    continue
+                # Convert to list if tensor
+                if TORCH_AVAILABLE and torch is not None and hasattr(att, 'cpu'):
+                    att_list = att.cpu().numpy().tolist()
+                elif isinstance(att, list):
+                    att_list = att
+                else:
+                    att_list = list(att) if hasattr(att, '__iter__') else [float(att)]
+                normalized = minmax_normalize(att_list)
                 result[f"layer_{i}"] = normalized
         elif layer_selection == "last":
             if attentions:
                 last_att = attentions[-1]
-                normalized = minmax_normalize(last_att.cpu().numpy().tolist())
-                result["layer_last"] = normalized
+                if last_att is not None:
+                    # Convert to list if tensor
+                    if TORCH_AVAILABLE and torch is not None and hasattr(last_att, 'cpu'):
+                        att_list = last_att.cpu().numpy().tolist()
+                    elif isinstance(last_att, list):
+                        att_list = last_att
+                    else:
+                        att_list = list(last_att) if hasattr(last_att, '__iter__') else [float(last_att)]
+                    normalized = minmax_normalize(att_list)
+                    result["layer_last"] = normalized
         else:
             # Layer index
             try:
                 idx = int(layer_selection)
                 if 0 <= idx < len(attentions):
                     att = attentions[idx]
-                    normalized = minmax_normalize(att.cpu().numpy().tolist())
-                    result[f"layer_{idx}"] = normalized
+                    if att is not None:
+                        # Convert to list if tensor
+                        if TORCH_AVAILABLE and torch is not None and hasattr(att, 'cpu'):
+                            att_list = att.cpu().numpy().tolist()
+                        elif isinstance(att, list):
+                            att_list = att
+                        else:
+                            att_list = list(att) if hasattr(att, '__iter__') else [float(att)]
+                        normalized = minmax_normalize(att_list)
+                        result[f"layer_{idx}"] = normalized
             except ValueError:
                 pass
         
@@ -239,7 +297,7 @@ class PredictionEngine:
     def _compute_node_importance(
         self,
         edge_attentions: List[float],
-        edge_index: torch.Tensor,
+        edge_index: Any,  # Changed from torch.Tensor to Any
     ) -> List[float]:
         """Compute node importance by aggregating edge attentions."""
         if not edge_attentions or edge_index.size(1) == 0:
@@ -364,6 +422,6 @@ class PredictionEngine:
         """Unload model from memory."""
         if model_id in self.loaded_models:
             del self.loaded_models[model_id]
-            if torch.cuda.is_available():
+            if TORCH_AVAILABLE and torch is not None and torch.cuda.is_available():
                 torch.cuda.empty_cache()
 

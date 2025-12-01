@@ -23,7 +23,7 @@ _prediction_engine = None
 def get_model_registry():
     global _model_registry
     if _model_registry is None:
-        _model_registry = ModelRegistry()
+        _model_registry = ModelRegistry(registry_path="data/models/registry.json")
     return _model_registry
 
 def get_prediction_engine():
