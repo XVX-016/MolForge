@@ -158,7 +158,8 @@ export function PredictionPanel({
       {!predictions && !loading && !error && (
         <div className="text-xs text-gray-500">Waiting for molecule...</div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }
 

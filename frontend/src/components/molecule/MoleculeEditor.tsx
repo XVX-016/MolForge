@@ -15,6 +15,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { Molecule, validateMolecule, canCreateBond, generate2DLayout } from '@/lib/molecule'
 import type { EditorTool, Atom, Bond, ValidationResult } from '@/lib/molecule'
 import { CanvasLayer } from './CanvasLayer'
+import { ErrorBoundary } from './ErrorBoundary'
 import { PointerManager, KeyboardManager } from '@/lib/molecule/input'
 import { HistoryManager } from '@/lib/molecule/history'
 import {
