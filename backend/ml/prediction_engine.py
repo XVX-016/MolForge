@@ -8,17 +8,33 @@ from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import logging
 
-# Optional PyTorch imports - graceful fallback if not available
-try:
-    import torch
-    from torch_geometric.data import Data, Batch
-    TORCH_AVAILABLE = True
-except (ImportError, OSError) as e:
-    TORCH_AVAILABLE = False
-    torch = None
-    Data = None
-    Batch = None
-    logging.warning(f"PyTorch/PyG not available: {e}. ML features will be limited.")
+# Optional PyTorch imports - lazy import to avoid DLL issues
+TORCH_AVAILABLE = None
+torch = None
+Data = None
+Batch = None
+
+def _ensure_torch():
+    """Lazy import of PyTorch to avoid DLL issues at module load."""
+    global TORCH_AVAILABLE, torch, Data, Batch
+    if TORCH_AVAILABLE is not None:
+        return TORCH_AVAILABLE
+    
+    try:
+        import torch as _torch
+        from torch_geometric.data import Data as _Data, Batch as _Batch
+        torch = _torch
+        Data = _Data
+        Batch = _Batch
+        TORCH_AVAILABLE = True
+        return True
+    except (ImportError, OSError) as e:
+        TORCH_AVAILABLE = False
+        torch = None
+        Data = None
+        Batch = None
+        logging.warning(f"PyTorch/PyG not available: {e}. ML features will be limited.")
+        return False
 
 from .featurize import featurize_smiles, featurize_json, canonicalize_smiles
 from .registry import ModelRegistry
@@ -81,6 +97,7 @@ class PredictionEngine:
     
     def __init__(self, model_registry: Optional[ModelRegistry] = None):
         self.registry = model_registry or ModelRegistry()
+        _ensure_torch()  # Try to load PyTorch
         if TORCH_AVAILABLE and torch is not None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
@@ -151,7 +168,7 @@ class PredictionEngine:
         model_info = self.registry.get_model(model_id)
         
         # Run inference
-        if not TORCH_AVAILABLE or Batch is None or self.device is None:
+        if not _ensure_torch() or Batch is None or self.device is None:
             # Fallback to mock predictions
             logger.warning("PyTorch not available, using mock predictions")
             predictions = {prop: 0.0 for prop in (properties or ["logP", "solubility", "toxicity"])}

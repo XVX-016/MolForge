@@ -8,16 +8,30 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import logging
 
-# Optional PyTorch imports
-try:
-    import torch
-    from torch_geometric.data import Data
-    TORCH_AVAILABLE = True
-except (ImportError, OSError) as e:
-    TORCH_AVAILABLE = False
-    torch = None
-    Data = None
-    logging.warning(f"PyTorch/PyG not available: {e}. Featurization will use numpy only.")
+# Optional PyTorch imports - delay import to avoid DLL issues at module load time
+TORCH_AVAILABLE = None
+torch = None
+Data = None
+
+def _ensure_torch():
+    """Lazy import of PyTorch to avoid DLL issues at module load."""
+    global TORCH_AVAILABLE, torch, Data
+    if TORCH_AVAILABLE is not None:
+        return TORCH_AVAILABLE
+    
+    try:
+        import torch as _torch
+        from torch_geometric.data import Data as _Data
+        torch = _torch
+        Data = _Data
+        TORCH_AVAILABLE = True
+        return True
+    except (ImportError, OSError) as e:
+        TORCH_AVAILABLE = False
+        torch = None
+        Data = None
+        logging.warning(f"PyTorch/PyG not available: {e}. Featurization will use numpy only.")
+        return False
 
 from rdkit import Chem
 from rdkit.Chem import Descriptors
@@ -163,31 +177,13 @@ def featurize_smiles(
         features = compute_node_features(atom, mol, bonds)
         node_features.append(features)
     
-    if not TORCH_AVAILABLE or torch is None:
-        # Try to import again in case it was a transient issue
-        try:
-            import torch as _torch
-            from torch_geometric.data import Data as _Data
-            # If successful, update globals
-            import sys
-            globals()['torch'] = _torch
-            globals()['Data'] = _Data
-            globals()['TORCH_AVAILABLE'] = True
-        except (ImportError, OSError) as e:
-            raise ImportError(f"PyTorch is required for featurization. Error: {e}. Please install: pip install torch torch-geometric")
+    # Lazy import PyTorch
+    if not _ensure_torch():
+        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
     
-    if not TORCH_AVAILABLE or torch is None:
-        # Try to import again in case it was a transient issue
-        try:
-            import torch as _torch
-            from torch_geometric.data import Data as _Data
-            # If successful, update globals
-            import sys
-            globals()['torch'] = _torch
-            globals()['Data'] = _Data
-            globals()['TORCH_AVAILABLE'] = True
-        except (ImportError, OSError) as e:
-            raise ImportError(f"PyTorch is required for featurization. Error: {e}. Please install: pip install torch torch-geometric")
+    # Lazy import PyTorch
+    if not _ensure_torch():
+        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
     
     x = torch.tensor(node_features, dtype=torch.float)
     
@@ -275,18 +271,9 @@ def featurize_json(payload: Dict) -> Tuple[Data, Dict[int, str]]:
         ]
         node_features.append(features)
     
-    if not TORCH_AVAILABLE or torch is None:
-        # Try to import again in case it was a transient issue
-        try:
-            import torch as _torch
-            from torch_geometric.data import Data as _Data
-            # If successful, update globals
-            import sys
-            globals()['torch'] = _torch
-            globals()['Data'] = _Data
-            globals()['TORCH_AVAILABLE'] = True
-        except (ImportError, OSError) as e:
-            raise ImportError(f"PyTorch is required for featurization. Error: {e}. Please install: pip install torch torch-geometric")
+    # Lazy import PyTorch
+    if not _ensure_torch():
+        raise ImportError("PyTorch is required for featurization. Please install: pip install torch torch-geometric")
     
     x = torch.tensor(node_features, dtype=torch.float)
     

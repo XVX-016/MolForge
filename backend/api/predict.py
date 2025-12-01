@@ -35,6 +35,9 @@ def get_prediction_engine():
 
 # Request/Response models
 class PredictRequest(BaseModel):
+    class Config:
+        protected_namespaces = ()  # Fix Pydantic warning
+    
     smiles: Optional[str] = None
     graph: Optional[Dict[str, Any]] = None
     molecule: Optional[Dict[str, Any]] = None
@@ -46,6 +49,9 @@ class PredictRequest(BaseModel):
 
 
 class BatchPredictRequest(BaseModel):
+    class Config:
+        protected_namespaces = ()  # Fix Pydantic warning
+    
     molecules: List[Dict[str, Any]]  # List of molecule dicts with smiles or graph
     inputs: Optional[List[Dict[str, Any]]] = None  # Alternative format
     model_id: Optional[str] = None

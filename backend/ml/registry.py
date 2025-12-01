@@ -10,14 +10,26 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 import logging
 
-# Optional PyTorch imports
-try:
-    import torch
-    TORCH_AVAILABLE = True
-except (ImportError, OSError) as e:
-    TORCH_AVAILABLE = False
-    torch = None
-    logging.warning(f"PyTorch not available: {e}. Model registry will use mock mode.")
+# Optional PyTorch imports - lazy import
+TORCH_AVAILABLE = None
+torch = None
+
+def _ensure_torch():
+    """Lazy import of PyTorch."""
+    global TORCH_AVAILABLE, torch
+    if TORCH_AVAILABLE is not None:
+        return TORCH_AVAILABLE
+    
+    try:
+        import torch as _torch
+        torch = _torch
+        TORCH_AVAILABLE = True
+        return True
+    except (ImportError, OSError) as e:
+        TORCH_AVAILABLE = False
+        torch = None
+        logging.warning(f"PyTorch not available: {e}. Model registry will use mock mode.")
+        return False
 
 try:
     from .gat_model import AttentionGNN, create_model
@@ -35,6 +47,7 @@ class ModelRegistry:
         self.registry_path = registry_path
         self.models: Dict[str, Dict[str, Any]] = {}
         self.loaded_models: Dict[str, Any] = {}
+        _ensure_torch()  # Try to load PyTorch
         if TORCH_AVAILABLE and torch is not None:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
