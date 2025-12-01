@@ -32,6 +32,10 @@ interface EditorContextValue {
   tool: EditorTool
   setTool: (tool: EditorTool) => void
   
+  // Bond order (for bond tool)
+  bondOrder: number
+  setBondOrder: (order: number) => void
+  
   // Validation
   validationResult: ValidationResult | null
   
@@ -70,6 +74,7 @@ export function EditorProvider({ initialMolecule, children }: EditorProviderProp
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null)
   const [selectedBondId, setSelectedBondId] = useState<string | null>(null)
   const [tool, setTool] = useState<EditorTool>('select')
+  const [bondOrder, setBondOrder] = useState<number>(1)
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [predictions, setPredictions] = useState<PredictionResult | null>(null)
   const [predictionsLoading, setPredictionsLoading] = useState(false)
@@ -165,6 +170,8 @@ export function EditorProvider({ initialMolecule, children }: EditorProviderProp
     setSelectedBondId,
     tool,
     setTool,
+    bondOrder,
+    setBondOrder,
     validationResult,
     predictions,
     predictionsLoading,
