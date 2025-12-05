@@ -22,6 +22,7 @@
     "framer-motion": "11.0.3",
     "gsap": "^3.13.0",
     "konva": "^9.3.6",
+    "lucide-react": "^0.555.0",
     "nanoid": "^3.3.11",
     "react": "18.2.0",
     "react-chartjs-2": "^5.3.1",

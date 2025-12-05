@@ -3,13 +3,13 @@ import { LabToolbar } from "../../components/lab/LabToolbar";
 
 export default function Lab() {
     return (
-        <div className="w-full h-[calc(100vh-80px)] flex flex-col bg-white">
-            {/* Toolbar */}
-            <div className="w-full border-b bg-white shadow-sm">
+        <div className="w-full h-[calc(100vh-80px)] flex bg-white">
+            {/* Left Sidebar Toolbar */}
+            <div className="w-20 border-r border-gray-200 bg-white">
                 <LabToolbar />
             </div>
 
-            {/* 3D Editor */}
+            {/* 3D Canvas - Full Area */}
             <div className="flex-1">
                 <LabCanvas />
             </div>
