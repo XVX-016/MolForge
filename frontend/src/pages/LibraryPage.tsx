@@ -27,6 +27,7 @@ import {
 } from '../lib/publicMoleculeStore';
 import { convertSMILESToMolfile, saveMolfile } from '../lib/api';
 import MoleculeCard from '../components/MoleculeCard';
+import MoleculeImporter from '../components/MoleculeImporter';
 
 type SortOption = 'a-z' | 'z-a' | 'newest' | 'oldest';
 type ViewMode = 'all' | 'mine' | 'favorites';
@@ -415,51 +416,58 @@ export default function LibraryPage() {
           </button>
         </div>
 
-        {/* View Tabs - Now the primary navigation */}
-        <div className="flex gap-2 mb-3">
-          <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'all'
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-3 items-center justify-between">
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'all'
                 ? 'bg-black text-white'
                 : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            onClick={() => {
-              setActiveView('all');
-              setPage(1);
-              setQ('');
-            }}
-          >
-            All Molecules
-          </button>
-          <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'mine'
+                }`}
+              onClick={() => {
+                setActiveView('all');
+                setPage(1);
+                setQ('');
+              }}
+            >
+              All Molecules
+            </button>
+            <button
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'mine'
                 ? 'bg-black text-white'
                 : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            onClick={() => {
-              if (!userId) {
-                alert('Please sign in to view your library');
-                return;
-              }
-              setActiveView('mine');
-              setPage(1);
-              setQ('');
-            }}
-          >
-            My Library
-          </button>
-          <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'favorites'
+                }`}
+              onClick={() => {
+                if (!userId) {
+                  alert('Please sign in to view your library');
+                  return;
+                }
+                setActiveView('mine');
+                setPage(1);
+                setQ('');
+              }}
+            >
+              My Library
+            </button>
+            <button
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'favorites'
                 ? 'bg-black text-white'
                 : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-              }`}
-            onClick={() => {
-              setActiveView('favorites');
-              setPage(1);
-              setQ('');
-            }}
-          >
-            Favorites ({favorites.size})
-          </button>
+                }`}
+              onClick={() => {
+                setActiveView('favorites');
+                setPage(1);
+                setQ('');
+              }}
+            >
+              Favorites ({favorites.size})
+            </button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <MoleculeImporter userId={userId} onImportSuccess={loadMolecules} />
+          </div>
         </div>
 
         {/* Sorting */}

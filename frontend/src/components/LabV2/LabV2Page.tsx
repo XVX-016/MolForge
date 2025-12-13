@@ -1,4 +1,3 @@
-import Navbar from "../Navbar";
 import TopActionBar from "./layout/TopActionBar";
 import LeftToolDock from "./layout/LeftToolDock";
 import RightInspector from "./layout/RightInspector";
@@ -7,38 +6,36 @@ import LabCanvas from "./LabCanvas";
 
 export default function LabV2Page() {
     return (
-        <div className="w-full h-screen flex flex-col overflow-hidden bg-gray-50 relative">
-            {/* 0. Global Navbar (Likely staying, as Zone A starts at top-20 ~ 80px) */}
-            <div className="z-[60] relative bg-white border-b border-gray-100">
-                <Navbar />
+        <div className="h-screen w-full grid grid-rows-[64px_1fr_72px] overflow-hidden bg-white">
+            {/* Row 1: Top Toolbar */}
+            <div className="z-20 border-b border-gray-100 bg-white">
+                <TopActionBar />
             </div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 relative w-full h-full">
-
-                {/* Zone C: Canvas (Sacred) - z-0 */}
-                <div id="lab-canvas" className="absolute inset-0 w-full h-full z-0 bg-[#F9FAFB]">
-                    <LabCanvas />
+            {/* Row 2: Body (Palette + Canvas) */}
+            <div className="grid grid-cols-[72px_1fr] min-h-0 relative z-0">
+                {/* Col 1: Palette */}
+                <div className="h-full z-10">
+                    <LeftToolDock />
                 </div>
 
-                {/* Zone A: Top Floating Action Bar - z-50 */}
-                <TopActionBar />
+                {/* Col 2: Canvas */}
+                <div className="relative w-full h-full bg-[#f8f9fa] overflow-hidden">
+                    {/* The Sacred Canvas */}
+                    <div className="absolute inset-0 z-0">
+                        <LabCanvas />
+                    </div>
 
-                {/* Zone B: Left Tool Dock - z-50 */}
-                <LeftToolDock />
+                    {/* Floating Inspector (Overlay) */}
+                    {/* We keep this here to slide over canvas without resizing it, 
+                        preserving the 'Maximum uninterrupted canvas' goal until interaction */}
+                    <RightInspector />
+                </div>
+            </div>
 
-                {/* Zone D: Right Inspector - z-50 */}
-                <RightInspector />
-
-                {/* Zone E: Bottom Template Bar - z-50 */}
+            {/* Row 3: Bottom Templates */}
+            <div className="z-20 border-t border-gray-100 bg-white">
                 <BottomTemplateBar />
-
-                {/* Event Blocker for background to let events pass to canvas where no UI exists */}
-                {/* Actually, with fixed positioning of UI elements, we don't need a blocker if they don't cover everything. 
-                    The canvas is at z-0, interactive. The UI is z-50, interactive. 
-                    Clicks on 'empty' areas of UI layer (if it was a full div) would block. 
-                    But here we use individual components with 'fixed' position. 
-                    So clicks pass through to canvas naturally. */}
             </div>
         </div>
     );

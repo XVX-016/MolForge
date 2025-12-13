@@ -33,8 +33,8 @@ export default function AtomMesh({ atom }: { atom: any }) {
         }
     }, [currentTool, selectedAtomId, atom.id, addBond, deleteAtom, setSelectedAtomId]);
 
-    // Position from array
-    const [x, y, z] = atom.position;
+    // Position from object (Core Atom)
+    const { x, y, z } = atom.position;
 
     return (
         <mesh

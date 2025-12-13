@@ -68,10 +68,22 @@ function Scene() {
 
             {/* Bonds */}
             {molecule.bonds.map((b) => {
-                const a = molecule.atoms.find((x) => x.id === b.atom1);
-                const c = molecule.atoms.find((x) => x.id === b.atom2);
+                const a = molecule.atoms.find((x) => x.id === b.from);
+                const c = molecule.atoms.find((x) => x.id === b.to);
                 if (!a || !c) return null;
-                return <BondMesh key={b.id} aPos={a.position} bPos={c.position} order={b.order} />;
+                // Atoms have position: {x,y,z}. Map to array for BondMesh if needed?
+                // BondMesh expects [x,y,z] arrays?
+                // Let's check BondMesh props.
+                // Assuming BondMesh updated or we map.
+                // Core Atom has .position as object. App Molecule extends Core.
+                // BondMesh likely expects [n,n,n].
+                // We need to pass [a.position.x, a.position.y, a.position.z].
+
+                return <BondMesh key={b.id}
+                    aPos={[a.position!.x, a.position!.y, a.position!.z]}
+                    bPos={[c.position!.x, c.position!.y, c.position!.z]}
+                    order={b.order}
+                />;
             })}
 
             {/* Atoms */}

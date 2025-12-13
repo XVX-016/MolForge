@@ -2,7 +2,9 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import { nanoid } from 'nanoid'
 import type { Atom, Bond, Molecule, ToolName, Vec3 } from '../types/molecule'
-import { computeAutoBonds } from '../utils/bondingEngine'
+import { canAddBond, validateValency } from '../chemcore/validation/valency'
+import type { ReactionRule } from '../chemcore/reactions/simulator'
+import { simulateReaction } from '../chemcore/reactions/simulator'
 
 // Minimal helpers
 const clone = <T,>(v: T) => JSON.parse(JSON.stringify(v)) as T
@@ -13,9 +15,12 @@ type LabState = {
   selectedBondId: string | null
   currentTool: ToolName
   currentElement: string
+  bondOrder: 1 | 2 | 3
   autoBond: boolean
   showGrid: boolean
   showValidation: boolean
+  lastError: string | null
+
   // undo/redo
   undoStack: Molecule[]
   redoStack: Molecule[]
@@ -26,13 +31,18 @@ type LabState = {
   addAtom: (element: string, pos: Vec3) => Atom
   moveAtom: (atomId: string, pos: Vec3) => void
   deleteAtom: (atomId: string) => void
-  addBond: (a: string, b: string, order?: 1|2|3) => Bond | null
+  addBond: (from: string, to: string, order?: 1 | 2 | 3) => Bond | null
   deleteBond: (bondId: string) => void
+  applyReaction: (rule: ReactionRule) => void
   setTool: (t: ToolName) => void
+  setBondOrder: (o: 1 | 2 | 3) => void
   setAutoBond: (v: boolean) => void
   setCurrentElement: (element: string) => void
   setSelectedAtomId: (id: string | null) => void
   setSelectedBondId: (id: string | null) => void
+  setShowGrid: (v?: boolean) => void
+  setShowValidation: (v?: boolean) => void
+  clearError: () => void
 
   // undo/redo
   snapshot: () => void
@@ -40,7 +50,7 @@ type LabState = {
   redo: () => void
 }
 
-const emptyMolecule = (): Molecule => ({ atoms: [], bonds: [], metadata: {} })
+const emptyMolecule = (): Molecule => ({ id: nanoid(), atoms: [], bonds: [], metadata: {} })
 
 export const useLabStore = create<LabState>()(
   devtools((set, get) => ({
@@ -49,9 +59,11 @@ export const useLabStore = create<LabState>()(
     selectedBondId: null,
     currentTool: 'select',
     currentElement: 'C',
+    bondOrder: 1,
     autoBond: true,
     showGrid: true,
     showValidation: true,
+    lastError: null,
     undoStack: [],
     redoStack: [],
 
@@ -77,33 +89,16 @@ export const useLabStore = create<LabState>()(
       set({ molecule: clone(next), redoStack: redoStack.slice(0, -1), undoStack: [...undoStack, clone(molecule)] })
     },
 
+    clearError: () => set({ lastError: null }),
+
     addAtom: (element, pos) => {
       get().snapshot()
       const id = nanoid()
-      const atom: Atom = { id, element, position: pos, charge: 0 }
+      const atom: Atom = { id, element, position: { x: pos[0], y: pos[1], z: pos[2] } }
+
       set((s) => ({ molecule: { ...s.molecule, atoms: [...s.molecule.atoms, atom] } }))
-      
-      // Auto-bond if enabled
-      const state = get()
-      if (state.autoBond) {
-        const mol = state.molecule
-        const candidates = computeAutoBonds(mol)
-        candidates.forEach(c => {
-          const exists = mol.bonds.find(b => 
-            (b.atom1 === c.a && b.atom2 === c.b) || (b.atom1 === c.b && b.atom2 === c.a)
-          )
-          if (!exists) {
-            const bid = nanoid()
-            set((s) => ({ 
-              molecule: { 
-                ...s.molecule, 
-                bonds: [...s.molecule.bonds, { id: bid, atom1: c.a, atom2: c.b, order: 1 }] 
-              } 
-            }))
-          }
-        })
-      }
-      
+
+      // Legacy auto-bond logic removed
       return atom
     },
 
@@ -112,7 +107,7 @@ export const useLabStore = create<LabState>()(
       set((s) => ({
         molecule: {
           ...s.molecule,
-          atoms: s.molecule.atoms.map(a => a.id === atomId ? { ...a, position: pos } : a)
+          atoms: s.molecule.atoms.map(a => a.id === atomId ? { ...a, position: { x: pos[0], y: pos[1], z: pos[2] } } : a)
         }
       }))
     },
@@ -123,18 +118,35 @@ export const useLabStore = create<LabState>()(
         molecule: {
           ...s.molecule,
           atoms: s.molecule.atoms.filter(a => a.id !== atomId),
-          bonds: s.molecule.bonds.filter(b => b.atom1 !== atomId && b.atom2 !== atomId)
+          bonds: s.molecule.bonds.filter(b => b.from !== atomId && b.to !== atomId)
         }
       }))
     },
 
-    addBond: (a, b, order = 1) => {
-      // simple sanity: no dup bonds
-      const mol = get().molecule
-      const exists = mol.bonds.find(x => (x.atom1 === a && x.atom2 === b) || (x.atom1 === b && x.atom2 === a))
+    addBond: (from, to, order) => {
+      const state = get()
+      const mol = state.molecule
+
+      // 1. Sanity
+      const exists = mol.bonds.find(x => (x.from === from && x.to === to) || (x.from === to && x.to === from))
       if (exists) return null
+
+      // 2. Valency Validation
+      const bondOrder = order || state.bondOrder || 1
+
+      if (state.showValidation) {
+        const validFrom = canAddBond(mol, from, bondOrder);
+        const validTo = canAddBond(mol, to, bondOrder);
+
+        if (!validFrom || !validTo) {
+          set({ lastError: `Valency Limit Exceeded` });
+          setTimeout(() => get().clearError(), 2000);
+          return null;
+        }
+      }
+
       get().snapshot()
-      const bond: Bond = { id: nanoid(), atom1: a, atom2: b, order }
+      const bond: Bond = { id: nanoid(), from, to, order: bondOrder }
       set((s) => ({ molecule: { ...s.molecule, bonds: [...s.molecule.bonds, bond] } }))
       return bond
     },
@@ -144,13 +156,34 @@ export const useLabStore = create<LabState>()(
       set((s) => ({ molecule: { ...s.molecule, bonds: s.molecule.bonds.filter(b => b.id !== bondId) } }))
     },
 
+    applyReaction: (rule) => {
+      const state = get()
+      const mol = state.molecule
+      const result = simulateReaction(mol, rule)
+
+      if (result) {
+        const validation = validateValency(result)
+        if (!validation.valid) {
+          set({ lastError: `Reaction blocked: ${validation.reason || 'Valency limit'}` })
+          setTimeout(() => get().clearError(), 3000)
+          return
+        }
+
+        get().snapshot()
+        set({ molecule: { ...mol, ...result } })
+      } else {
+        set({ lastError: "No applicable reaction sites found" })
+        setTimeout(() => get().clearError(), 2000)
+      }
+    },
+
     setTool: (t) => set({ currentTool: t }),
+    setBondOrder: (o) => set({ bondOrder: o }),
     setAutoBond: (v) => set({ autoBond: v }),
     setCurrentElement: (element) => set({ currentElement: element }),
     setSelectedAtomId: (id) => set({ selectedAtomId: id }),
     setSelectedBondId: (id) => set({ selectedBondId: id }),
-    setShowGrid: (v?: boolean) => set((s) => ({ showGrid: v ?? !s.showGrid })),
-    setShowValidation: (v?: boolean) => set((s) => ({ showValidation: v ?? !s.showValidation })),
+    setShowGrid: (v) => set((s) => ({ showGrid: v ?? !s.showGrid })),
+    setShowValidation: (v) => set((s) => ({ showValidation: v ?? !s.showValidation })),
   }), { name: 'LabStore' })
 )
-

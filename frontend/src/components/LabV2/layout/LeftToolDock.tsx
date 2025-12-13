@@ -1,122 +1,96 @@
 import React, { useState } from 'react';
 import { useLabStore } from "../../../store/labStore";
+import { FolderOpen } from "lucide-react";
 
 const ATOMS = [
-    { symbol: 'C', color: '#2B2B2B', name: 'Carbon' },
-    { symbol: 'H', color: '#EDEDED', name: 'Hydrogen' },
-    { symbol: 'O', color: '#E53935', name: 'Oxygen' },
-    { symbol: 'N', color: '#1E88E5', name: 'Nitrogen' },
-    { symbol: 'S', color: '#FBC02D', name: 'Sulfur' },
-    { symbol: 'F', color: '#43A047', name: 'Fluorine' },
-    { symbol: 'Cl', color: '#2E7D32', name: 'Chlorine' },
-    { symbol: 'Br', color: '#8D6E63', name: 'Bromine' },
+    { symbol: 'C', color: '#2B2B2B' },
+    { symbol: 'H', color: '#EDEDED', textColor: 'black' },
+    { symbol: 'O', color: '#E53935' },
+    { symbol: 'N', color: '#1E88E5' },
+    { symbol: 'S', color: '#FBC02D', textColor: 'black' },
+    { symbol: 'F', color: '#43A047' },
+    { symbol: 'Cl', color: '#2E7D32' },
+    { symbol: 'Br', color: '#8D6E63' },
 ];
 
 const BONDS = [
-    { type: 1, label: 'Single', icon: '—' },
-    { type: 2, label: 'Double', icon: '==' },
-    { type: 3, label: 'Triple', icon: '≡' },
-    { type: 4, label: 'Aromatic', icon: '⏣' },
+    { type: 1, label: 'Single', icon: <div className="h-0.5 w-4 bg-current" /> },
+    { type: 2, label: 'Double', icon: <div className="flex flex-col gap-0.5"><div className="h-0.5 w-4 bg-current" /><div className="h-0.5 w-4 bg-current" /></div> },
+    { type: 3, label: 'Triple', icon: <div className="flex flex-col gap-0.5"><div className="h-0.5 w-4 bg-current" /><div className="h-0.5 w-4 bg-current" /><div className="h-0.5 w-4 bg-current" /></div> },
 ];
 
 export default function LeftToolDock() {
-    const { currentTool, setTool } = useLabStore();
-    // In a real implementation, we would store selectedElement/Bond separately in the store
-    // For now, we'll just log or use local state for visual feedback
+    const { currentTool, setTool, setBondOrder } = useLabStore();
     const [selectedElement, setSelectedElement] = useState('C');
+    // We will wire this to store later, for now visual state
     const [selectedBondData, setSelectedBondData] = useState(1);
 
     return (
-        <div
-            className="
-                fixed left-4 top-28 bottom-24
-                w-16 hover:w-52
-                transition-all duration-200 ease-out
-                bg-white/90 backdrop-blur
-                rounded-2xl shadow-md
-                overflow-hidden
-                flex flex-col
-                group
-                z-50
-            "
-        >
-            <div className="flex-1 overflow-y-auto p-2 scrollbar-hide">
-                <div className="flex flex-col items-center gap-4 pt-2">
-                    {/* Atoms Section */}
-                    <div className="w-full">
-                        <div className="text-xs font-bold text-gray-400 uppercase mb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                            Atoms
-                        </div>
-                        <div className="flex flex-col gap-2 items-center group-hover:items-stretch">
-                            {ATOMS.map(atom => (
-                                <button
-                                    key={atom.symbol}
-                                    onClick={() => {
-                                        setTool('add-atom');
-                                        setSelectedElement(atom.symbol);
-                                        // Update store appropriately if needed
-                                    }}
-                                    className={`
-                                        flex items-center gap-3 p-1.5 rounded-lg transition-colors
-                                        ${selectedElement === atom.symbol && currentTool === 'add-atom' ? 'bg-blue-50 ring-1 ring-blue-500' : 'hover:bg-gray-100'}
-                                    `}
-                                >
-                                    <div
-                                        className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center text-xs font-bold shrink-0 border border-black/10"
-                                        style={{ backgroundColor: atom.color, color: atom.symbol === 'C' ? 'white' : 'black' }}
-                                    >
-                                        {atom.symbol}
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap">
-                                        {atom.name}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+        <div className="w-full h-full bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-6 overflow-y-auto">
 
-                    <div className="w-full h-px bg-gray-200 my-1" />
-
-                    {/* Bonds Section */}
-                    <div className="w-full mb-4">
-                        <div className="text-xs font-bold text-gray-400 uppercase mb-2 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                            Bonds
-                        </div>
-                        <div className="flex flex-col gap-2 items-center group-hover:items-stretch">
-                            {BONDS.map(bond => (
-                                <button
-                                    key={bond.type}
-                                    onClick={() => {
-                                        setTool('add-bond');
-                                        setSelectedBondData(bond.type);
-                                    }}
-                                    className={`
-                                        flex items-center gap-3 p-1.5 rounded-lg transition-colors
-                                        ${selectedBondData === bond.type && currentTool === 'add-bond' ? 'bg-blue-50 ring-1 ring-blue-500' : 'hover:bg-gray-100'}
-                                    `}
-                                >
-                                    <div className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center shrink-0 font-mono text-xs">
-                                        {bond.icon}
-                                    </div>
-                                    <span className="text-sm font-medium text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap">
-                                        {bond.label}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+            {/* Atoms */}
+            <div className="flex flex-col gap-3 w-full px-2 items-center">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Atoms</span>
+                {ATOMS.map(atom => (
+                    <button
+                        key={atom.symbol}
+                        onClick={() => {
+                            setTool('add-atom');
+                            setSelectedElement(atom.symbol);
+                        }}
+                        className={`
+                            w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border
+                            ${selectedElement === atom.symbol && currentTool === 'add-atom'
+                                ? 'scale-110 ring-2 ring-blue-500 ring-offset-2 border-transparent'
+                                : 'hover:scale-105 border-gray-200'
+                            }
+                        `}
+                        style={{ backgroundColor: atom.color }}
+                        title={`Add ${atom.symbol}`}
+                    >
+                        <span
+                            className="text-xs font-bold"
+                            style={{ color: atom.textColor || 'white' }}
+                        >
+                            {atom.symbol}
+                        </span>
+                    </button>
+                ))}
             </div>
 
-            {/* Template Launcher / Footer */}
-            <div className="p-2 border-t border-gray-100 bg-gray-50/50">
-                <button className="w-full flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-100 text-gray-600">
-                    <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                        📁
-                    </div>
-                    <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap">
-                        Templates
-                    </span>
+            <div className="w-8 h-px bg-gray-200" />
+
+            {/* Bonds */}
+            <div className="flex flex-col gap-3 w-full px-2 items-center">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Bonds</span>
+                {BONDS.map(bond => (
+                    <button
+                        key={bond.type}
+                        onClick={() => {
+                            setTool('add-bond');
+                            setSelectedBondData(bond.type);
+                            setBondOrder(bond.type as 1 | 2 | 3);
+                        }}
+                        className={`
+                            w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border
+                            ${selectedBondData === bond.type && currentTool === 'add-bond'
+                                ? 'bg-black text-white border-black'
+                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            }
+                        `}
+                        title={`${bond.label} Bond`}
+                    >
+                        {bond.icon}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex-1" />
+
+            {/* Footer Actions */}
+            <div className="w-full px-2 flex flex-col gap-2">
+                <button className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors" title="Templates">
+                    <FolderOpen size={20} />
                 </button>
             </div>
         </div>

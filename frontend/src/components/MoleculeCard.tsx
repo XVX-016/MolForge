@@ -6,23 +6,23 @@ import BarbellViewer from './BarbellViewer'
 import { useGPUSafe } from '../hooks/useGPUSafe'
 
 interface MoleculeCardProps {
-  item: MoleculeItem & { molfile?: string | null; formula?: string | null; user_id?: string }
+  item: Omit<MoleculeItem, 'id'> & { id: string | number; molfile?: string | null; formula?: string | null; user_id?: string }
   onOpen: () => void
   onDelete?: () => void
   onFork?: () => void // For public library molecules
   showFork?: boolean // Whether to show fork button
 }
 
-export default function MoleculeCard({ 
-  item, 
-  onOpen, 
+export default function MoleculeCard({
+  item,
+  onOpen,
   onDelete,
   onFork,
   showFork = false
 }: MoleculeCardProps) {
   const [hovered, setHovered] = useState(false)
   const isGPUSafe = useGPUSafe()
-  
+
   // Lazy load 3D viewer when card enters viewport
   // Use triggerOnce: false to unmount Canvas when card leaves viewport
   // This prevents too many WebGL contexts from being active simultaneously
@@ -40,10 +40,10 @@ export default function MoleculeCard({
   // Only use molfile from item - NO conversion in card
   const molfile = item.molfile && item.molfile.trim().length > 0 ? item.molfile : null
   const has3DData = !!molfile
-  
+
   // Always show 3D when available and in view and GPU is safe
   const show3D = inView && has3DData && isGPUSafe
-  
+
   // Show thumbnail as fallback when:
   // 1. No 3D data available, OR
   // 2. 3D data exists but GPU is not safe (fallback to thumbnail)
@@ -66,8 +66,8 @@ export default function MoleculeCard({
         {/* Background thumbnail (shown only as fallback when no 3D data) */}
         {showThumbnail && item.thumbnail_b64 && (
           <img
-            src={item.thumbnail_b64.startsWith('data:') 
-              ? item.thumbnail_b64 
+            src={item.thumbnail_b64.startsWith('data:')
+              ? item.thumbnail_b64
               : `data:image/png;base64,${item.thumbnail_b64}`}
             alt={item.name}
             className="w-full h-full object-contain"
@@ -77,7 +77,7 @@ export default function MoleculeCard({
             }}
           />
         )}
-        
+
         {/* 3D Viewer - always visible when molfile is available, interactive on hover */}
         {show3D && molfile && (
           <div className="absolute inset-0 z-10" key={`mol-${item.id}`}>
@@ -99,7 +99,7 @@ export default function MoleculeCard({
             </Suspense>
           </div>
         )}
-        
+
         {/* Fallback when no data available */}
         {!has3DData && !showThumbnail && (
           <div className="w-full h-full flex flex-col items-center justify-center text-midGrey text-sm bg-zinc-100 relative group">
