@@ -50,28 +50,28 @@ const ELEMENT_COLORS: Record<string, number> = {
 const DEFAULT_COLOR = 0xcccccc;
 
 // Bond cylinder component
-function BondCylinder({ 
-  start, 
-  end, 
+function BondCylinder({
+  start,
+  end,
   radius,
   quality = 'high'
-}: { 
-  start: THREE.Vector3; 
-  end: THREE.Vector3; 
+}: {
+  start: THREE.Vector3;
+  end: THREE.Vector3;
   radius: number;
   quality?: 'high' | 'low';
 }) {
   const length = start.distanceTo(end);
   const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-  
+
   // Calculate rotation to align cylinder
   const direction = new THREE.Vector3().subVectors(end, start).normalize();
   const yAxis = new THREE.Vector3(0, 1, 0);
   const quaternion = new THREE.Quaternion().setFromUnitVectors(yAxis, direction);
-  
+
   // Reduced segments for low quality (card mode) to improve performance
   const segments = quality === 'low' ? 8 : 16;
-  
+
   return (
     <mesh position={mid} quaternion={quaternion}>
       <cylinderGeometry args={[radius, radius, length, segments]} />
@@ -170,7 +170,7 @@ function MoleculeScene({
         const a1 = atoms[bond.a1];
         const a2 = atoms[bond.a2];
         if (!a1 || !a2) return null;
-        
+
         const start = new THREE.Vector3(a1.x, a1.y, a1.z).sub(centroid);
         const end = new THREE.Vector3(a2.x, a2.y, a2.z).sub(centroid);
         return { start, end };
@@ -263,18 +263,37 @@ export default function BarbellViewer({
 }: BarbellViewerProps) {
   const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [contextLost, setContextLost] = useState(false);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+
   const autorotate = autorotateProp !== undefined ? autorotateProp : (mode === 'hero');
   // For card mode, only enable interaction when hovered
-  const interactive = interactiveProp !== undefined 
-    ? interactiveProp 
+  const interactive = interactiveProp !== undefined
+    ? interactiveProp
     : (mode === 'hero' || (mode === 'card' && hovered));
   // Use high quality for all modes - better visual quality
   const quality = 'high';
 
+  // CRITICAL: Cleanup WebGL resources on unmount
+  React.useEffect(() => {
+    return () => {
+      if (rendererRef.current) {
+        try {
+          // Dispose of all resources
+          rendererRef.current.dispose();
+          // Force WebGL context loss to free GPU memory
+          rendererRef.current.forceContextLoss();
+          rendererRef.current = null;
+        } catch (e) {
+          console.warn('[BarbellViewer] Cleanup error:', e);
+        }
+      }
+    };
+  }, []);
+
   // Calculate camera distance based on molecule size
   const cameraRadius = useMemo(() => {
     if (!molfile) return 4;
-    
+
     try {
       const { atoms } = parseMolfile(molfile);
       if (!atoms.length) return 4;
@@ -366,9 +385,12 @@ export default function BarbellViewer({
             depth: true,
           }}
           onCreated={({ gl, scene }) => {
+            // Store renderer reference for cleanup
+            rendererRef.current = gl;
+
             // Set white background
             scene.background = new THREE.Color(0xffffff);
-            
+
             // Handle WebGL context loss
             gl.domElement.addEventListener('webglcontextlost', (e) => {
               e.preventDefault();

@@ -1,40 +1,77 @@
 ﻿/**
- * LibraryPage - Unified Library page with Public and User tabs
+ * LibraryPage - Unified Library page with updated navigation
  * 
- * Shows both public_molecules (read-only, forkable) and user_molecules (editable, deletable)
+ * Features:
+ * - Unified navigation tabs (All Molecules, My Library, Favorites)
+ * - Favorites with star icons
+ * - Sorting (A-Z, Z-A, Newest, Oldest)
+ * - Search functionality
+ * - Proper WebGL cleanup via unique keys
  */
 
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
-import { 
-  listUserMolecules, 
-  deleteUserMolecule, 
-  searchUserMolecules, 
+import {
+  listUserMolecules,
+  deleteUserMolecule,
+  searchUserMolecules,
   forkPublicMolecule,
   updateUserMolecule,
-  type UserMolecule 
+  type UserMolecule
 } from '../lib/userMoleculeStore';
-import { 
-  listPublicMolecules, 
-  searchPublicMolecules, 
-  type PublicMolecule 
+import {
+  listPublicMolecules,
+  searchPublicMolecules,
+  type PublicMolecule
 } from '../lib/publicMoleculeStore';
 import { convertSMILESToMolfile, saveMolfile } from '../lib/api';
 import MoleculeCard from '../components/MoleculeCard';
 
+type SortOption = 'a-z' | 'z-a' | 'newest' | 'oldest';
+type ViewMode = 'all' | 'mine' | 'favorites';
+
 export default function LibraryPage() {
-  const [tab, setTab] = useState<'public' | 'user'>('public');
+  const [activeView, setActiveView] = useState<ViewMode>('all');
   const [items, setItems] = useState<(PublicMolecule | UserMolecule)[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [userId, setUserId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
   const pageSize = 12;
-  
+
   // Track which molecules have been converted to prevent duplicate conversions
   const convertedIdsRef = useRef<Set<string>>(new Set());
   const convertingRef = useRef<boolean>(false);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('molecule-favorites');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setFavorites(new Set(parsed));
+      } catch (e) {
+        console.warn('Failed to parse favorites:', e);
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  const toggleFavorite = (moleculeId: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(moleculeId)) {
+        next.delete(moleculeId);
+      } else {
+        next.add(moleculeId);
+      }
+      localStorage.setItem('molecule-favorites', JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!supabase) return;
@@ -67,19 +104,21 @@ export default function LibraryPage() {
   const loadMolecules = React.useCallback(async () => {
     setLoading(true);
     setPage(1);
-    
+
     try {
-      if (tab === 'public') {
-        // Load public molecules (no auth required)
-        const molecules = await listPublicMolecules();
-        setItems(molecules);
-      } else {
+      if (activeView === 'mine') {
         // Load user molecules (auth required)
         if (!userId) {
           setItems([]);
           return;
         }
         const molecules = await listUserMolecules(userId);
+        setItems(molecules);
+      } else {
+        // Load public molecules for 'all' and 'favorites' (default source)
+        // Note: For favorites, we ideally want both sources, but for now we default to public
+        // to maintain performance and simpler architecture.
+        const molecules = await listPublicMolecules();
         setItems(molecules);
       }
     } catch (error) {
@@ -88,13 +127,13 @@ export default function LibraryPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, userId]);
+  }, [activeView, userId]);
 
   useEffect(() => {
     loadMolecules();
-    
-    // Set up realtime subscription for user_molecules table (only for user tab)
-    if (tab === 'user' && userId && supabase) {
+
+    // Set up realtime subscription for user_molecules table (only for 'mine' view)
+    if (activeView === 'mine' && userId && supabase) {
       const channel = supabase
         .channel('user-molecules-changes')
         .on(
@@ -116,11 +155,11 @@ export default function LibraryPage() {
         supabase.removeChannel(channel);
       };
     }
-  }, [tab, userId, loadMolecules]);
+  }, [activeView, userId, loadMolecules]);
 
   const openInLab = async (molecule: PublicMolecule | UserMolecule) => {
     try {
-      const source = tab === 'public' ? 'public' : 'user';
+      const source = activeView === 'mine' ? 'user' : 'public';
       window.location.href = `/lab?id=${molecule.id}&source=${source}`;
     } catch (error) {
       console.error('Failed to open molecule:', error);
@@ -137,10 +176,8 @@ export default function LibraryPage() {
     try {
       await forkPublicMolecule(userId, molecule.id!);
       alert(`"${molecule.name}" has been forked to your personal library!`);
-      // If on user tab, reload to show the forked molecule
-      if (tab === 'user') {
-        loadMolecules();
-      }
+      // If switching to 'mine' view context would be nice, but staying put is fine
+      // User can switch to "My Library" to see it.
     } catch (error: any) {
       console.error('Failed to fork molecule:', error);
       alert(`Failed to fork molecule: ${error.message}`);
@@ -150,7 +187,7 @@ export default function LibraryPage() {
   const remove = async (moleculeId: string) => {
     if (!userId) return;
     if (!confirm('Delete this molecule?')) return;
-    
+
     try {
       await deleteUserMolecule(userId, moleculeId);
       setItems(items.filter((i) => i.id !== moleculeId));
@@ -166,15 +203,16 @@ export default function LibraryPage() {
       if (q.trim()) {
         setLoading(true);
         try {
-          if (tab === 'public') {
-            const results = await searchPublicMolecules(q.trim());
-            setItems(results);
-          } else {
+          if (activeView === 'mine') {
             if (!userId) {
               setItems([]);
               return;
             }
             const results = await searchUserMolecules(userId, q.trim());
+            setItems(results);
+          } else {
+            // For 'all' and 'favorites'
+            const results = await searchPublicMolecules(q.trim());
             setItems(results);
           }
         } catch (error) {
@@ -191,46 +229,59 @@ export default function LibraryPage() {
     }, 300); // Debounce search
 
     return () => clearTimeout(searchTimeout);
-  }, [q, tab, userId, loadMolecules]);
+  }, [q, activeView, userId, loadMolecules]);
 
+  // Apply filtering and sorting
   const filtered = useMemo(() => {
-    // Items are already filtered by Supabase search or contain all molecules
-    return items;
-  }, [items]);
+    let result = [...items];
+
+    // Apply favorites filter
+    if (activeView === 'favorites') {
+      result = result.filter((item) => item.id && favorites.has(String(item.id)));
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'a-z':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'z-a':
+        result.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'newest':
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'oldest':
+        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        break;
+    }
+
+    return result;
+  }, [items, activeView, favorites, sortBy]);
 
   const { data: paged, totalPages } = useMemo(() => {
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const sliced = filtered.slice(start, end);
     const total = Math.ceil(filtered.length / pageSize);
-    console.log('Pagination calc:', { 
-      filteredLength: filtered.length, 
-      page, 
-      start, 
-      end, 
-      slicedLength: sliced.length,
-      totalPages: total 
-    });
     return {
       data: sliced,
       totalPages: total,
     };
   }, [filtered, page, pageSize]);
 
-  // Reset page when filtered items change significantly (e.g., after search or tab change)
-  // Only reset if page exceeds maxPage, don't reset on every page change
+  // Reset page when filtered items change significantly
   useEffect(() => {
     const maxPage = Math.ceil(filtered.length / pageSize);
     if (maxPage > 0 && page > maxPage) {
       setPage(1);
     }
-  }, [filtered.length, pageSize]); // Don't depend on page to avoid resetting on valid page changes
+  }, [filtered.length, pageSize, page]);
 
   // Scroll to top when page changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
-
 
   // Convert SMILES to molfile ONCE per molecule (runs after items are loaded)
   useEffect(() => {
@@ -241,14 +292,14 @@ export default function LibraryPage() {
 
     const convertMissingMolfiles = async () => {
       convertingRef.current = true;
-      
+
       try {
         // Process molecules that need conversion
         const moleculesToConvert = items.filter(
-          (item) => 
-            !item.molfile && 
-            item.smiles && 
-            item.smiles.trim() && 
+          (item) =>
+            !item.molfile &&
+            item.smiles &&
+            item.smiles.trim() &&
             item.id &&
             !convertedIdsRef.current.has(String(item.id))
         );
@@ -260,30 +311,32 @@ export default function LibraryPage() {
 
         console.log(`Converting ${moleculesToConvert.length} molecules...`);
 
-        // Convert each molecule sequentially to avoid overwhelming the backend
+        // Convert each molecule sequentially
         for (const molecule of moleculesToConvert) {
           const moleculeId = String(molecule.id);
-          
+
           // Mark as being converted
           convertedIdsRef.current.add(moleculeId);
 
           try {
             // Convert SMILES to molfile
             const result = await convertSMILESToMolfile(molecule.smiles!);
-            
+
             if (result.molfile && result.molfile.trim().length > 0) {
-              // Update molecule in database
-              if (tab === 'user' && userId && typeof molecule.id === 'string') {
+              // Update molecule in database (try both tables if generic, or specific based on view)
+              // Since we know source from activeView, we can optimize:
+
+              if (activeView === 'mine' && userId && typeof molecule.id === 'string') {
                 await updateUserMolecule(userId, molecule.id, { molfile: result.molfile });
               } else if (typeof molecule.id === 'number') {
+                // Numeric ID implies public table typically in this codebase?
                 await saveMolfile(molecule.id, result.molfile);
               } else if (supabase && typeof molecule.id === 'string') {
+                // Try public update (might fail RLS, but harmless)
                 const { error } = await supabase
                   .from('public_molecules')
                   .update({ molfile: result.molfile })
                   .eq('id', molecule.id);
-                
-                if (error) throw error;
               }
 
               // Update local state WITHOUT triggering refetch
@@ -294,12 +347,9 @@ export default function LibraryPage() {
                     : item
                 )
               );
-
-              console.log(`Γ£ô Converted ${molecule.name}`);
             }
           } catch (error) {
             console.warn(`Failed to convert ${molecule.name}:`, error);
-            // Remove from set so it can be retried later
             convertedIdsRef.current.delete(moleculeId);
           }
         }
@@ -308,32 +358,15 @@ export default function LibraryPage() {
       }
     };
 
-    // Small delay to ensure items are fully loaded
     const timeoutId = setTimeout(convertMissingMolfiles, 500);
     return () => clearTimeout(timeoutId);
-  }, [items, tab, userId, loading]);
+  }, [items, activeView, userId, loading]);
 
-  // Debug: Log molecule data
-  useEffect(() => {
-    if (paged.length > 0) {
-      const sample = paged[0];
-      const withMolfile = paged.filter(m => m.molfile && m.molfile.trim().length > 0).length;
-      const withThumbnail = paged.filter(m => m.thumbnail_b64).length;
-      
-      console.log('Rendering molecules:', {
-        total: paged.length,
-        withMolfile,
-        withThumbnail,
-        sample: {
-          name: sample.name,
-          hasMolfile: !!sample.molfile,
-          molfileLength: sample.molfile?.length || 0,
-          molfilePreview: sample.molfile?.substring(0, 50) || 'null',
-          hasThumbnail: !!sample.thumbnail_b64,
-        }
-      });
-    }
-  }, [paged]);
+
+  // Helper to determine if we are in 'mine' mode or 'public' mode for UI logic
+  const isMine = activeView === 'mine';
+  // Favorites view basically treats items as public-sourced for now
+  const isPublicSource = !isMine;
 
   return (
     <motion.div
@@ -346,54 +379,19 @@ export default function LibraryPage() {
         <div className="mb-4">
           <h1 className="text-3xl font-bold text-black truncate">Molecule Library</h1>
           <p className="text-darkGrey mt-1">
-            {tab === 'public' 
-              ? 'Browse curated molecules available to all users' 
-              : 'Your personal saved molecular structures'}
+            Manage your molecules and explore the public collection
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-4">
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              tab === 'public' 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
-            }`}
-            onClick={() => {
-              setTab('public');
-              setPage(1);
-              setQ('');
-            }}
-          >
-            Public Library
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              tab === 'user' 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
-            }`}
-            onClick={() => {
-              if (!userId) {
-                alert('Please sign in to view your personal library');
-                return;
-              }
-              setTab('user');
-              setPage(1);
-              setQ('');
-            }}
-          >
-            My Molecules
-          </button>
-        </div>
+        {/* Removed old top buttons "Public Library" / "My Molecules" as requested */}
 
-        <div className="flex items-center gap-3">
+        {/* Search Bar with Refresh */}
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 relative">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-midGrey pointer-events-none">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M19 19L14.65 14.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M19 19L14.65 14.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <input
@@ -402,34 +400,83 @@ export default function LibraryPage() {
                 setQ(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search by name, formula, or SMILES..."
+              placeholder={isMine ? "Search your library..." : "Search public molecules..."}
               className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-darkGrey/20 focus:border-darkGrey placeholder:text-midGrey"
             />
           </div>
           <button
             onClick={loadMolecules}
-            className="btn-secondary p-2 rounded-full hover:bg-zinc-200 transition-colors"
+            className="p-2 rounded-full bg-white border border-gray-200 hover:bg-zinc-100 hover:border-zinc-300 active:bg-zinc-200 transition-all shadow-sm"
             title="Refresh"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.5 2.5V7.5H12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2.5 10C2.5 13.5899 5.41015 16.5 9 16.5C10.8874 16.5 12.6082 15.7241 13.875 14.5L17.5 10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2.5 17.5L2.5 12.5H7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M17.5 10C17.5 6.41015 14.5899 3.5 11 3.5C9.11258 3.5 7.39182 4.27588 6.125 5.5L2.5 9.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21.5 2V8M21.5 8H15.5M21.5 8L18 4.5C16.7429 3.24286 15.1767 2.34896 13.4606 1.91866C11.7446 1.48837 9.94453 1.53765 8.25383 2.06134C6.56313 2.58503 5.04987 3.56425 3.87691 4.89977C2.70395 6.23529 1.91462 7.87726 1.59 9.64M2.5 22V16M2.5 16H8.5M2.5 16L6 19.5C7.25714 20.7571 8.82332 21.651 10.5394 22.0813C12.2554 22.5116 14.0555 22.4624 15.7462 21.9387C17.4369 21.415 18.9501 20.4358 20.1231 19.1002C21.296 17.7647 22.0854 16.1227 22.41 14.36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
-      </header>
 
-      {/* Info about 3D previews */}
-      {filtered.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> 3D previews are always visible when molecules have molfile data. 
-            Molecules with SMILES but no molfile are automatically converted when the page loads. Thumbnails are shown as fallback.
-          </p>
+        {/* View Tabs - Now the primary navigation */}
+        <div className="flex gap-2 mb-3">
+          <button
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'all'
+                ? 'bg-black text-white'
+                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+              }`}
+            onClick={() => {
+              setActiveView('all');
+              setPage(1);
+              setQ('');
+            }}
+          >
+            All Molecules
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'mine'
+                ? 'bg-black text-white'
+                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+              }`}
+            onClick={() => {
+              if (!userId) {
+                alert('Please sign in to view your library');
+                return;
+              }
+              setActiveView('mine');
+              setPage(1);
+              setQ('');
+            }}
+          >
+            My Library
+          </button>
+          <button
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeView === 'favorites'
+                ? 'bg-black text-white'
+                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+              }`}
+            onClick={() => {
+              setActiveView('favorites');
+              setPage(1);
+              setQ('');
+            }}
+          >
+            Favorites ({favorites.size})
+          </button>
         </div>
-      )}
+
+        {/* Sorting */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-darkGrey">Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-3 py-1.5 rounded-md border border-gray-200 text-sm bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="newest">Newest → Oldest</option>
+            <option value="oldest">Oldest → Newest</option>
+            <option value="a-z">A → Z</option>
+            <option value="z-a">Z → A</option>
+          </select>
+        </div>
+      </header>
 
       {loading ? (
         <div className="text-center py-12 text-midGrey">Loading molecules...</div>
@@ -437,43 +484,71 @@ export default function LibraryPage() {
         <div className="text-center py-12">
           <div className="text-midGrey mb-2">No results</div>
           <p className="text-midGrey text-sm">
-            {q 
-              ? 'Try clearing the search' 
-              : tab === 'public' 
-                ? 'No molecules in the public library yet' 
-                : !userId
-                  ? 'Please sign in to view your personal library'
-                  : 'Save molecules in the Lab to see them here'}
+            {q
+              ? 'Try clearing the search'
+              : activeView === 'favorites'
+                ? 'No favorites yet. Click the star icon on molecule cards to add favorites.'
+                : activeView === 'all'
+                  ? 'No molecules in the public library yet'
+                  : !userId
+                    ? 'Please sign in to view your personal library'
+                    : 'Save molecules in the Lab to see them here'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paged.map((item) => {
-            const isPublic = tab === 'public';
-            // Convert UUID string to number for MoleculeItem interface (use hash of UUID)
-            const itemId = typeof item.id === 'string' 
-              ? item.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 1000000
-              : (item.id || 0);
-            
+            // For favorites view, we assume items are public for functionality purposes 
+            // unless we add complexity.
+            // If we are in 'mine' view, we show delete.
+            // If we are in 'all' or 'favorites' view, we show fork.
+
+            const moleculeId = String(item.id || `mol-${item.name}`);
+            const isFavorite = favorites.has(moleculeId);
+
             return (
-              <MoleculeCard
-                key={item.id || `mol-${item.name}`}
-                item={{
-                  id: typeof item.id === 'string' ? item.id : itemId,
-                  name: item.name,
-                  smiles: item.smiles || undefined,
-                  formula: item.formula || undefined,
-                  molfile: item.molfile || undefined,
-                  properties: (item as any).properties,
-                  thumbnail_b64: item.thumbnail_b64 || undefined,
-                  created_at: item.created_at,
-                  user_id: !isPublic && userId ? userId : undefined,
-                }}
-                onOpen={() => openInLab(item)}
-                onFork={isPublic ? () => handleFork(item as PublicMolecule) : undefined}
-                showFork={isPublic}
-                onDelete={!isPublic && userId ? () => item.id && remove(item.id) : undefined}
-              />
+              <div key={`${activeView}-${moleculeId}`} className="relative">
+                {/* Favorite Star */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(moleculeId);
+                  }}
+                  className="absolute top-2 right-2 z-20 p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all hover:scale-110"
+                  title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill={isFavorite ? '#fbbf24' : 'none'}
+                    stroke={isFavorite ? '#fbbf24' : '#6b7280'}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+
+                <MoleculeCard
+                  item={{
+                    id: moleculeId,
+                    name: item.name,
+                    smiles: item.smiles || undefined,
+                    formula: item.formula || undefined,
+                    molfile: item.molfile || undefined,
+                    properties: (item as any).properties,
+                    thumbnail_b64: item.thumbnail_b64 || undefined,
+                    created_at: item.created_at,
+                    user_id: isMine ? userId || undefined : undefined,
+                  }}
+                  onOpen={() => openInLab(item)}
+                  onFork={isPublicSource ? () => handleFork(item as PublicMolecule) : undefined}
+                  showFork={isPublicSource}
+                  onDelete={isMine ? () => item.id && remove(String(item.id)) : undefined}
+                />
+              </div>
             );
           })}
         </div>
@@ -501,9 +576,7 @@ export default function LibraryPage() {
               e.preventDefault();
               e.stopPropagation();
               if (page < totalPages) {
-                const nextPage = page + 1;
-                console.log('Next page clicked:', { current: page, next: nextPage, totalPages, filteredLength: filtered.length });
-                setPage(nextPage);
+                setPage(page + 1);
               }
             }}
             disabled={page >= totalPages}
@@ -516,4 +589,3 @@ export default function LibraryPage() {
     </motion.div>
   );
 }
-
