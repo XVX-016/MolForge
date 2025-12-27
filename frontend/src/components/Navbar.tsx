@@ -13,14 +13,11 @@ export default function Navbar({ onToggleMenu }: NavbarProps) {
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const isActive = (to: string, exact = false) =>
 		exact ? location.pathname === to : location.pathname.startsWith(to);
-	// Workaround for type resolution issues in monorepo
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const RLink = (props: any) => React.createElement(Link as any, props);
 
 	const handleSignOut = async () => {
 		await signOut();
 		setDropdownOpen(false);
-		// Don't redirect - user can stay on current page
 	};
 
 	const handleSignIn = () => {
