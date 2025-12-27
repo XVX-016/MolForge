@@ -1,11 +1,4 @@
-/**
- * MoleculeFilters - Search and filter component for molecule library
- * 
- * Supports:
- * - Text search (name, formula, SMILES)
- * - Element filter
- * - Debounced input
- */
+
 import React, { useState, useEffect } from 'react';
 
 export interface MoleculeFilters {

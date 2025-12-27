@@ -1,13 +1,13 @@
 import React from 'react';
 import { useLabStore } from "../../../store/labStore";
-import { BENZENE } from "../../../utils/defaultMolecules";
+import { BENZENE, CYCLOHEXANE, CYCLOPROPANE, CHAIN_4 } from "../../../utils/defaultMolecules";
 import { Hexagon, Triangle, Circle, Share2 } from "lucide-react";
 
 const TEMPLATES = [
     { id: 'benzene', name: 'Benzene', data: BENZENE, icon: Hexagon },
-    { id: 'cyclohexane', name: 'Cyclohexane', data: null, icon: Circle },
-    { id: 'chain', name: 'Chain', data: null, icon: Share2 },
-    { id: 'triangle', name: 'Cyclopropane', data: null, icon: Triangle },
+    { id: 'cyclohexane', name: 'Cyclohexane', data: CYCLOHEXANE, icon: Circle },
+    { id: 'chain', name: 'Chain', data: CHAIN_4, icon: Share2 },
+    { id: 'triangle', name: 'Cyclopropane', data: CYCLOPROPANE, icon: Triangle },
 ];
 
 export default function BottomTemplateBar() {

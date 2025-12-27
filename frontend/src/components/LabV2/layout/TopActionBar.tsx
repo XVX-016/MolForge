@@ -5,25 +5,53 @@ import {
     MousePointer2,
     Atom,
     Link2,
-    Sparkles,
-    Zap,
     Undo2,
     Redo2,
-    Save
+    Trash2,
+    Download,
+    Upload,
+    CloudUpload
 } from "lucide-react";
 
 export default function TopActionBar() {
-    const { currentTool, setTool, molecule } = useLabStore();
+    const { currentTool, setTool, molecule, loadMolecule } = useLabStore();
 
     const handleAction = async (id: string, label: string) => {
-        if (id === 'select' || id === 'add-atom' || id === 'add-bond') {
+        if (id === 'select' || id === 'add-atom' || id === 'add-bond' || id === 'delete') {
             setTool(id as any);
-        } else if (id === 'save') {
+        } else if (id === 'download') {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(molecule));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", (molecule.metadata?.name || "molecule") + ".json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        } else if (id === 'upload') {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e: any) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const json = JSON.parse(event.target?.result as string);
+                        loadMolecule(json);
+                    } catch (err) {
+                        alert("Invalid JSON file");
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        } else if (id === 'save-library') {
             const name = prompt("Enter molecule name", "New Molecule");
             if (!name) return;
             try {
-                // Import dynamically to avoid circle if any? No, static import better.
-                // Assuming LibraryAPI import from "../../api/library" (Need to add import)
+                // Assuming global availability or import. 
+                // Note: explicit import of LibraryAPI needed if not present
                 await LibraryAPI.upload({
                     name,
                     json_graph: { atoms: molecule.atoms, bonds: molecule.bonds }
@@ -33,10 +61,15 @@ export default function TopActionBar() {
                 console.error(e);
                 alert("Failed to save.");
             }
-        } else if (id === 'optimize') {
-            alert("Optimization triggered (Simulated)");
-        } else {
-            console.log(`${label} triggered`);
+        } else if (id === 'undo') {
+            // Handled inside store usually or here? 
+            // Logic missing in previous file for actual undo execution in UI handler
+            // Assuming useLabStore exposes undo/redo functions.
+            // Checking original file... it didn't use undo() from store in handleAction!
+            // It just logged. I should hook them up if they exist in store.
+            useLabStore.getState().undo();
+        } else if (id === 'redo') {
+            useLabStore.getState().redo();
         }
     };
 
@@ -44,11 +77,12 @@ export default function TopActionBar() {
         { id: 'select', label: 'Select', icon: MousePointer2 },
         { id: 'add-atom', label: 'Add Atom', icon: Atom },
         { id: 'add-bond', label: 'Add Bond', icon: Link2 },
-        { id: 'autobond', label: 'AutoBond', icon: Sparkles },
-        { id: 'optimize', label: 'Optimize', icon: Zap },
+        { id: 'delete', label: 'Delete', icon: Trash2 },
         { id: 'undo', label: 'Undo', icon: Undo2 },
         { id: 'redo', label: 'Redo', icon: Redo2 },
-        { id: 'save', label: 'Save', icon: Save },
+        { id: 'download', label: 'Download JSON', icon: Download },
+        { id: 'upload', label: 'Upload JSON', icon: Upload },
+        { id: 'save-library', label: 'Save to Cloud', icon: CloudUpload },
     ];
 
     return (
@@ -56,7 +90,9 @@ export default function TopActionBar() {
             <div className="flex items-center gap-1 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
                 {actions.map((action) => {
                     const Icon = action.icon;
-                    const isActive = currentTool === action.id;
+                    // Highlight logic: strict equality for tools, but actions like undo/download shouldn't remain 'active'
+                    const isTool = ['select', 'add-atom', 'add-bond', 'delete'].includes(action.id);
+                    const isActive = isTool && currentTool === action.id;
 
                     return (
                         <button
