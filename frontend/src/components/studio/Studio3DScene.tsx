@@ -1,11 +1,13 @@
 
-import { Suspense, useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Float, PerspectiveCamera, OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
-import type { MoleculeGraph } from '@biosynth/engine';
-import { moleculeToRenderable } from '../../lib/engineAdapter';
+import type { MoleculeGraph } from '../../types/molecule';
+import { moleculeToRenderable } from '../../lib/studioAdapter';
 import type { StudioMode } from '../../types/studio';
+import { useStudioStore } from '../../store/studioStore';
+import type { SelectionType } from '../../store/studioStore';
 
 const ELEMENT_RADII: Record<string, number> = {
     H: 0.55,
@@ -20,18 +22,30 @@ const ELEMENT_RADII: Record<string, number> = {
     I: 1.4,
 };
 
-function FloatingMolecule({ molecule, mode }: { molecule: MoleculeGraph, mode: StudioMode }) {
+// Internal component for the render logic
+function FloatingMolecule({
+    molecule,
+    mode,
+    onSelect
+}: {
+    molecule: MoleculeGraph,
+    mode: StudioMode,
+    onSelect?: (type: SelectionType, id: string | null) => void
+}) {
     const groupRef = useRef<THREE.Group>(null);
     const renderable = moleculeToRenderable(molecule);
 
+    // Subscribe to store selection to show highlights
+    const { selection } = useStudioStore();
+
     useFrame((state) => {
         if (!groupRef.current) return;
-        // Float effect - subtler in design mode
         const time = state.clock.elapsedTime;
+
+        // Gentle float
         groupRef.current.position.y = Math.sin(time * 0.5) * 0.1;
 
-        // Auto-rotate only in optimize/simulate modes as "presentation" view
-        // In design mode, we want stability for editing (mocked)
+        // Auto-rotate only in read-only modes
         if (mode !== 'design') {
             groupRef.current.rotation.y += 0.002;
         }
@@ -39,26 +53,69 @@ function FloatingMolecule({ molecule, mode }: { molecule: MoleculeGraph, mode: S
 
     return (
         <group ref={groupRef} scale={[0.5, 0.5, 0.5]}>
+            {/* ATOMS */}
             {renderable.atoms.map((atom) => {
                 const radius = ELEMENT_RADII[atom.element] || 1.0;
-                // Highlight logic for Optimize Mode (Mock: Highlight Carbons)
-                const isHighlight = mode === 'optimize' && atom.element === 'C';
+
+                // Highlight Logic
+                const isSelected = selection.type === 'atom' && selection.id === atom.id;
+                const isHighlight = (mode === 'optimize' && atom.element === 'C');
+
+                // Visual Color Logic
+                let color = "#ffffff";
+                let emissive = "#000000";
+                let emissiveIntensity = 0;
+
+                if (isSelected) {
+                    color = "#3b82f6"; // Blue selection
+                    emissive = "#3b82f6";
+                    emissiveIntensity = 0.5;
+                } else if (isHighlight) {
+                    color = "#a855f7"; // Purple hint
+                    emissive = "#a855f7";
+                    emissiveIntensity = 0.2;
+                } else {
+                    // Element Colors
+                    if (atom.element === 'C') color = "#333333";
+                    if (atom.element === 'O') color = "#ef4444";
+                    if (atom.element === 'N') color = "#3b82f6";
+                    if (atom.element === 'H') color = "#ffffff";
+                }
 
                 return (
-                    <mesh key={atom.id} position={atom.position as any}>
+                    <mesh
+                        key={atom.id}
+                        position={atom.position as any}
+                        onClick={(e) => {
+                            e.stopPropagation(); // Stop click falling through
+                            if (mode === 'design' && onSelect) {
+                                onSelect('atom', atom.id);
+                            }
+                        }}
+                        onPointerOver={() => document.body.style.cursor = mode === 'design' ? 'pointer' : 'default'}
+                        onPointerOut={() => document.body.style.cursor = 'default'}
+                    >
                         <sphereGeometry args={[radius, 32, 32]} />
                         <meshPhysicalMaterial
-                            color={isHighlight ? "#a855f7" : "#ffffff"} // Purple in optimize for Carbon
-                            metalness={0.9}
-                            roughness={0.1}
+                            color={color}
+                            metalness={0.4}
+                            roughness={0.2}
                             envMapIntensity={1.5}
-                            emissive={isHighlight ? "#a855f7" : "#000000"}
-                            emissiveIntensity={isHighlight ? 0.2 : 0}
+                            emissive={emissive}
+                            emissiveIntensity={emissiveIntensity}
                         />
+                        {/* Selection Halo */}
+                        {isSelected && (
+                            <mesh scale={[1.1, 1.1, 1.1]}>
+                                <sphereGeometry args={[radius, 32, 32]} />
+                                <meshBasicMaterial color="#60a5fa" transparent opacity={0.3} side={THREE.BackSide} />
+                            </mesh>
+                        )}
                     </mesh>
                 );
             })}
 
+            {/* BONDS */}
             {renderable.bonds.map((bond) => {
                 const vFrom = new THREE.Vector3(...bond.from as [number, number, number]);
                 const vTo = new THREE.Vector3(...bond.to as [number, number, number]);
@@ -71,18 +128,30 @@ function FloatingMolecule({ molecule, mode }: { molecule: MoleculeGraph, mode: S
                 );
                 const radius = bond.order === 1 ? 0.14 : bond.order === 2 ? 0.18 : 0.22;
 
+                const isSelected = selection.type === 'bond' && selection.id === bond.id;
+
                 return (
                     <mesh
                         key={bond.id}
                         position={[mid.x, mid.y, mid.z]}
                         quaternion={[q.x, q.y, q.z, q.w]}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (mode === 'design' && onSelect) {
+                                onSelect('bond', bond.id);
+                            }
+                        }}
+                        onPointerOver={() => document.body.style.cursor = mode === 'design' ? 'pointer' : 'default'}
+                        onPointerOut={() => document.body.style.cursor = 'default'}
                     >
                         <cylinderGeometry args={[radius, radius, length, 32]} />
                         <meshPhysicalMaterial
-                            color="#cccccc"
+                            color={isSelected ? "#60a5fa" : "#cccccc"}
                             metalness={0.9}
                             roughness={0.1}
                             envMapIntensity={1.5}
+                            emissive={isSelected ? "#60a5fa" : "#000000"}
+                            emissiveIntensity={isSelected ? 0.4 : 0}
                         />
                     </mesh>
                 );
@@ -94,11 +163,20 @@ function FloatingMolecule({ molecule, mode }: { molecule: MoleculeGraph, mode: S
 interface Studio3DSceneProps {
     mode: StudioMode;
     molecule: MoleculeGraph | null;
+    editable?: boolean;
 }
 
-export default function Studio3DScene({ mode, molecule }: Studio3DSceneProps) {
+export default function Studio3DScene({ mode, molecule, editable = false }: Studio3DSceneProps) {
+    const { setSelection } = useStudioStore();
+
     return (
-        <div className="w-full h-full relative cursor-move">
+        <div
+            className={`w-full h-full relative ${editable ? 'cursor-move' : 'cursor-default'}`}
+            // Clicking background deselects
+            onClick={() => {
+                if (editable) setSelection(null, null);
+            }}
+        >
             <Canvas shadows dpr={[1, 2]}>
                 <PerspectiveCamera makeDefault position={[0, 0, 8]} fov={45} />
 
@@ -107,14 +185,17 @@ export default function Studio3DScene({ mode, molecule }: Studio3DSceneProps) {
                     <ambientLight intensity={0.5} />
                     <pointLight position={[10, 10, 10]} intensity={1} castShadow />
 
-                    {/* Mode-specific Background/Grid */}
                     {mode === 'design' && (
                         <Grid infiniteGrid fadeDistance={30} sectionColor="#e5e7eb" cellColor="#f3f4f6" />
                     )}
 
                     <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
                         {molecule && (
-                            <FloatingMolecule molecule={molecule} mode={mode} />
+                            <FloatingMolecule
+                                molecule={molecule}
+                                mode={mode}
+                                onSelect={(type, id) => setSelection(type, id)}
+                            />
                         )}
                     </Float>
 
@@ -122,6 +203,7 @@ export default function Studio3DScene({ mode, molecule }: Studio3DSceneProps) {
                         enableZoom={true}
                         enablePan={true}
                         autoRotate={false}
+                        enabled={true}
                     />
                 </Suspense>
             </Canvas>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLabStore } from "../../../store/labStore";
 import { BENZENE, CYCLOHEXANE, CYCLOPROPANE, CHAIN_4 } from "../../../utils/defaultMolecules";
@@ -34,18 +35,24 @@ export default function BottomTemplateBar() {
                                     const atoms = d.atoms.map((a: any) => {
                                         const newId = `atom-${Math.random().toString(36).substr(2, 9)}`;
                                         atomMap.set(a.id, newId);
+
+                                        // Handle both old schema (x,y,z) and new schema (position array)
+                                        const pos = Array.isArray(a.position)
+                                            ? { x: a.position[0], y: a.position[1], z: a.position[2] }
+                                            : { x: a.x, y: a.y, z: a.z || 0 };
+
                                         return {
                                             id: newId,
                                             element: a.element,
-                                            position: { x: a.x, y: a.y, z: a.z || 0 }, // Map to object
+                                            position: pos, // Map to object
                                             charge: 0
                                         };
                                     });
 
                                     const bonds = d.bonds.map((b: any) => ({
                                         id: `bond-${Math.random().toString(36).substr(2, 9)}`,
-                                        from: atomMap.get(b.a)!,
-                                        to: atomMap.get(b.b)!,
+                                        from: atomMap.get(b.from || b.a)!,
+                                        to: atomMap.get(b.to || b.b)!,
                                         order: b.order || 1
                                     }));
 

@@ -1,100 +1,81 @@
-export const CH4 = {
-    name: "Methane",
-    atoms: [
-        { id: "C1", element: "C", x: 0, y: 0, z: 0 },
-        { id: "H1", element: "H", x: 1.09, y: 0, z: 0 },
-        { id: "H2", element: "H", x: -0.36, y: 1.03, z: 0 },
-        { id: "H3", element: "H", x: -0.36, y: -0.51, z: 0.89 },
-        { id: "H4", element: "H", x: -0.36, y: -0.51, z: -0.89 },
-    ],
-    bonds: [
-        { a: "C1", b: "H1", order: 1 },
-        { a: "C1", b: "H2", order: 1 },
-        { a: "C1", b: "H3", order: 1 },
-        { a: "C1", b: "H4", order: 1 }
-    ]
-};
 
-export const BENZENE = {
-    name: "Benzene",
+import type { MoleculeGraph } from '../types/molecule';
+
+export const BENZENE: MoleculeGraph = {
     atoms: [
-        { id: "C1", element: "C", x: 1.396, y: 0, z: 0 },
-        { id: "C2", element: "C", x: 0.698, y: 1.209, z: 0 },
-        { id: "C3", element: "C", x: -0.698, y: 1.209, z: 0 },
-        { id: "C4", element: "C", x: -1.396, y: 0, z: 0 },
-        { id: "C5", element: "C", x: -0.698, y: -1.209, z: 0 },
-        { id: "C6", element: "C", x: 0.698, y: -1.209, z: 0 },
+        { id: "a1", element: "C", position: [1.396, 0, 0], aromatic: true },
+        { id: "a2", element: "C", position: [0.698, 1.209, 0], aromatic: true },
+        { id: "a3", element: "C", position: [-0.698, 1.209, 0], aromatic: true },
+        { id: "a4", element: "C", position: [-1.396, 0, 0], aromatic: true },
+        { id: "a5", element: "C", position: [-0.698, -1.209, 0], aromatic: true },
+        { id: "a6", element: "C", position: [0.698, -1.209, 0], aromatic: true },
         // Hydrogens
-        { id: "H1", element: "H", x: 2.48, y: 0, z: 0 },
-        { id: "H2", element: "H", x: 1.24, y: 2.15, z: 0 },
-        { id: "H3", element: "H", x: -1.24, y: 2.15, z: 0 },
-        { id: "H4", element: "H", x: -2.48, y: 0, z: 0 },
-        { id: "H5", element: "H", x: -1.24, y: -2.15, z: 0 },
-        { id: "H6", element: "H", x: 1.24, y: -2.15, z: 0 },
+        { id: "h1", element: "H", position: [2.48, 0, 0] },
+        { id: "h2", element: "H", position: [1.24, 2.15, 0] },
+        { id: "h3", element: "H", position: [-1.24, 2.15, 0] },
+        { id: "h4", element: "H", position: [-2.48, 0, 0] },
+        { id: "h5", element: "H", position: [-1.24, -2.15, 0] },
+        { id: "h6", element: "H", position: [1.24, -2.15, 0] },
     ],
     bonds: [
-        { a: "C1", b: "C2", order: 1 },
-        { a: "C2", b: "C3", order: 2 },
-        { a: "C3", b: "C4", order: 1 },
-        { a: "C4", b: "C5", order: 2 },
-        { a: "C5", b: "C6", order: 1 },
-        { a: "C6", b: "C1", order: 2 },
+        { id: "b1", from: "a1", to: "a2", order: 2, aromatic: true },
+        { id: "b2", from: "a2", to: "a3", order: 1, aromatic: true },
+        { id: "b3", from: "a3", to: "a4", order: 2, aromatic: true },
+        { id: "b4", from: "a4", to: "a5", order: 1, aromatic: true },
+        { id: "b5", from: "a5", to: "a6", order: 2, aromatic: true },
+        { id: "b6", from: "a6", to: "a1", order: 1, aromatic: true },
         // C-H bonds
-        { a: "C1", b: "H1", order: 1 },
-        { a: "C2", b: "H2", order: 1 },
-        { a: "C3", b: "H3", order: 1 },
-        { a: "C4", b: "H4", order: 1 },
-        { a: "C5", b: "H5", order: 1 },
-        { a: "C6", b: "H6", order: 1 },
+        { id: "b7", from: "a1", to: "h1", order: 1 },
+        { id: "b8", from: "a2", to: "h2", order: 1 },
+        { id: "b9", from: "a3", to: "h3", order: 1 },
+        { id: "b10", from: "a4", to: "h4", order: 1 },
+        { id: "b11", from: "a5", to: "h5", order: 1 },
+        { id: "b12", from: "a6", to: "h6", order: 1 },
+    ],
+};
+
+export const CYCLOHEXANE: MoleculeGraph = {
+    atoms: [
+        { id: "c1", element: "C", position: [1.54, 0, 0] },
+        { id: "c2", element: "C", position: [0.77, 1.33, 0] },
+        { id: "c3", element: "C", position: [-0.77, 1.33, 0] },
+        { id: "c4", element: "C", position: [-1.54, 0, 0] },
+        { id: "c5", element: "C", position: [-0.77, -1.33, 0] },
+        { id: "c6", element: "C", position: [0.77, -1.33, 0] },
+    ],
+    bonds: [
+        { id: "bc1", from: "c1", to: "c2", order: 1 },
+        { id: "bc2", from: "c2", to: "c3", order: 1 },
+        { id: "bc3", from: "c3", to: "c4", order: 1 },
+        { id: "bc4", from: "c4", to: "c5", order: 1 },
+        { id: "bc5", from: "c5", to: "c6", order: 1 },
+        { id: "bc6", from: "c6", to: "c1", order: 1 },
     ]
 };
 
-export const CYCLOHEXANE = {
-    name: "Cyclohexane",
+export const CYCLOPROPANE: MoleculeGraph = {
     atoms: [
-        // Chair conformation approximation
-        { id: "C1", element: "C", x: 1.54, y: 0, z: 0.5 },
-        { id: "C2", element: "C", x: 0.77, y: 1.33, z: -0.5 },
-        { id: "C3", element: "C", x: -0.77, y: 1.33, z: 0.5 },
-        { id: "C4", element: "C", x: -1.54, y: 0, z: -0.5 },
-        { id: "C5", element: "C", x: -0.77, y: -1.33, z: 0.5 },
-        { id: "C6", element: "C", x: 0.77, y: -1.33, z: -0.5 },
+        { id: "p1", element: "C", position: [1, -0.5, 0] },
+        { id: "p2", element: "C", position: [-1, -0.5, 0] },
+        { id: "p3", element: "C", position: [0, 1, 0] },
     ],
     bonds: [
-        { a: "C1", b: "C2", order: 1 },
-        { a: "C2", b: "C3", order: 1 },
-        { a: "C3", b: "C4", order: 1 },
-        { a: "C4", b: "C5", order: 1 },
-        { a: "C5", b: "C6", order: 1 },
-        { a: "C6", b: "C1", order: 1 },
+        { id: "bp1", from: "p1", to: "p2", order: 1 },
+        { id: "bp2", from: "p2", to: "p3", order: 1 },
+        { id: "bp3", from: "p3", to: "p1", order: 1 },
     ]
 };
 
-export const CYCLOPROPANE = {
-    name: "Cyclopropane",
+export const CHAIN_4: MoleculeGraph = {
     atoms: [
-        { id: "C1", element: "C", x: 0, y: 0.87, z: 0 },
-        { id: "C2", element: "C", x: 0.75, y: -0.43, z: 0 },
-        { id: "C3", element: "C", x: -0.75, y: -0.43, z: 0 },
+        { id: "ch1", element: "C", position: [-2.0, 0, 0] },
+        { id: "ch2", element: "C", position: [-0.6, 0.5, 0] },
+        { id: "ch3", element: "C", position: [0.8, -0.5, 0] },
+        { id: "ch4", element: "C", position: [2.2, 0, 0] },
     ],
     bonds: [
-        { a: "C1", b: "C2", order: 1 },
-        { a: "C2", b: "C3", order: 1 },
-        { a: "C3", b: "C1", order: 1 },
-    ]
-};
-
-export const CHAIN_4 = {
-    name: "Butane",
-    atoms: [
-        { id: "C1", element: "C", x: -2.3, y: 0, z: 0 },
-        { id: "C2", element: "C", x: -0.77, y: 0.5, z: 0 },
-        { id: "C3", element: "C", x: 0.77, y: -0.5, z: 0 },
-        { id: "C4", element: "C", x: 2.3, y: 0, z: 0 },
-    ],
-    bonds: [
-        { a: "C1", b: "C2", order: 1 },
-        { a: "C2", b: "C3", order: 1 },
-        { a: "C3", b: "C4", order: 1 },
+        { id: "bch1", from: "ch1", to: "ch2", order: 1 },
+        { id: "bch2", from: "ch2", to: "ch3", order: 1 },
+        { id: "bch3", from: "ch3", to: "ch4", order: 1 },
     ]
 };

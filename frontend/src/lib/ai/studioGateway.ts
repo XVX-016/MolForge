@@ -1,6 +1,10 @@
 
+import { useState, useCallback } from 'react';
 import { apiClient } from '../../api/api';
 import type { StudioMessage, StudioMode } from '../../types/studio';
+import { useStudioStore } from '../../store/studioStore';
+import { moleculeToJSON } from '../studioAdapter';
+import type { MoleculeGraph } from '../../types/molecule';
 
 // Internal mapping of visible modes to internal AI personas
 const MODE_TO_PERSONA: Record<StudioMode, string> = {
@@ -29,32 +33,24 @@ export interface ChatResponse {
 }
 
 /**
- * Studio AI Gateway
- * 
- * Centralizes all AI interactions for MolForge Studio.
- * Routes "Modes" to internal "Mentors" invisibly to the user.
+ * Studio AI Gateway (Static Helper)
  */
 export const StudioGateway = {
     chat: async (request: ChatRequest): Promise<ChatResponse> => {
         const { prompt, mode, moleculeContext } = request;
 
-        // 1. Resolve Mode -> Persona -> Skill
         const internalPersonaId = MODE_TO_PERSONA[mode] || 'alina';
         const mentorSkill = PERSONA_TO_SKILL[internalPersonaId];
 
         try {
-            // 2. Wrap prompt with context if available
             let finalPrompt = prompt;
             if (moleculeContext) {
                 finalPrompt = `[CONTEXT] Current Molecule JSON: ${moleculeContext} [/CONTEXT] \n\n User Request: ${prompt}`;
             }
 
-            // 3. Call Backend
-            // We use the existing mentor routing endpoint but control the persona ID internally
             const response = await apiClient.post('/api/mentor/chat', {
                 prompt: finalPrompt,
                 mentor_skill: mentorSkill,
-                // In future, we can send 'mode' explicitly if backend supports it
             });
 
             return {
@@ -63,9 +59,7 @@ export const StudioGateway = {
             };
         } catch (error: any) {
             console.error('StudioGateway Chat Error:', error);
-
             const errorMessage = error.response?.data?.detail || error.message || 'Failed to communicate with Studio AI';
-
             return {
                 response: '',
                 blocked: false,
@@ -74,3 +68,49 @@ export const StudioGateway = {
         }
     }
 };
+
+/**
+ * Hook for consuming AI services in the Studio
+ */
+export function useStudioGateway() {
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { addMessage } = useStudioStore();
+
+    const sendCommand = useCallback(async (command: string, mode: StudioMode, molecule: MoleculeGraph | null) => {
+        setIsProcessing(true);
+
+        // 1. Prepare Context
+        const context = molecule ? moleculeToJSON(molecule) : undefined;
+
+        // 2. Call Gateway
+        const result = await StudioGateway.chat({
+            prompt: command,
+            mode,
+            moleculeContext: context
+        });
+
+        // 3. Handle Response
+        if (result.error) {
+            addMessage({
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: `Error: ${result.error}`,
+                timestamp: Date.now()
+            });
+        } else {
+            addMessage({
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: result.response,
+                timestamp: Date.now()
+            });
+        }
+
+        setIsProcessing(false);
+    }, [addMessage]);
+
+    return {
+        isProcessing,
+        sendCommand
+    };
+}
