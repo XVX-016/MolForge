@@ -1,143 +1,257 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStudioStore } from '../../store/studioStore';
-import { StudioGateway } from '../../lib/ai/studioGateway';
-import type { StudioMessage } from '../../types/studio';
-import { moleculeToJSON } from '../../lib/engineAdapter';
-import ChatMessage from './ChatMessage';
+import { useHistoryStore } from '../../store/historyStore';
+import { Send, Terminal, Clock, Activity, FileJson, FileType } from 'lucide-react';
+import { useStudioGateway } from '../../lib/ai/studioGateway';
+import Card from '../ui/Card';
+import { exportToJSON, exportToSMILES, downloadFile } from '../../lib/io';
+import { calculateMolecularWeight, estimateLogP } from '../../lib/chemistry';
 
 export default function CommandPanel() {
-    const { mode, molecule, messages, addMessage, setMolecule } = useStudioStore();
     const [inputValue, setInputValue] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const [activeTab, setActiveTab] = useState<'command' | 'logs' | 'compare'>('command');
 
-    // Auto-scroll to bottom
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const { messages, addMessage, mode } = useStudioStore();
+    const { present: molecule, past, logs } = useHistoryStore();
+    const { sendCommand, isProcessing } = useStudioGateway();
+
+    // --- Auto-scroll ---
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages]);
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, logs]);
 
-    const handleCommand = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if (!inputValue.trim() || isLoading) return;
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!inputValue.trim() || !molecule) return;
 
-        const commandText = inputValue;
-
-        // 1. Add User Command to History
-        const userMessage: StudioMessage = {
+        // Optimistic UI update
+        addMessage({
             id: Date.now().toString(),
             role: 'user',
-            content: commandText,
-            timestamp: new Date(),
-            metadata: { mode }
-        };
-        addMessage(userMessage);
-        setInputValue('');
-        setIsLoading(true);
+            content: inputValue,
+            timestamp: Date.now()
+        });
 
-        try {
-            // 2. Prepare Context
-            const moleculeContext = molecule ? moleculeToJSON(molecule) : undefined;
+        const command = inputValue;
+        setInputValue(''); // Clear input immediately
 
-            // 3. Execute Command via Gateway
-            // Note: In a real implementation this would change to executeCommand signature
-            const response = await StudioGateway.chat({
-                prompt: commandText,
-                mode,
-                moleculeContext,
-                history: messages,
-            });
-
-            // 4. Handle System Response
-            const systemMessage: StudioMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'mentor', // Rename to 'system' in types later
-                content: response.response,
-                timestamp: new Date(),
-                metadata: { mode }
-            };
-            addMessage(systemMessage);
-
-            // TODO: In future, if response includes a patch, apply it:
-            // if (response.moleculePatch) setMolecule(response.moleculePatch);
-
-        } catch (error) {
-            console.error("Command Error:", error);
-            addMessage({
-                id: Date.now().toString(),
-                role: 'mentor',
-                content: "System Error: Command failed execution.",
-                timestamp: new Date(),
-                metadata: { mode }
-            });
-        } finally {
-            setIsLoading(false);
-        }
+        await sendCommand(command, mode, molecule);
     };
 
+    // --- Export Actions ---
+    const handleExportJSON = () => {
+        if (!molecule) return;
+        const json = exportToJSON(molecule);
+        downloadFile(`molecule_${Date.now()}.json`, json, 'application/json');
+    };
+
+    const handleExportSMILES = () => {
+        if (!molecule) return;
+        const smiles = exportToSMILES(molecule);
+        downloadFile(`molecule_${Date.now()}.smi`, smiles, 'text/plain');
+    };
+
+    // --- Comparison Logic ---
+    const comparisonData = useMemo(() => {
+        if (!molecule) return null;
+        const initial = past.length > 0 ? past[0] : molecule;
+
+        const distinct = past.length > 0; // Truly different history exists
+
+        const currentStats = {
+            weight: calculateMolecularWeight(molecule),
+            logP: estimateLogP(molecule)
+        };
+
+        const initialStats = {
+            weight: calculateMolecularWeight(initial),
+            logP: estimateLogP(initial)
+        };
+
+        return { distinct, currentStats, initialStats };
+    }, [molecule, past]);
+
     return (
-        <div className="flex flex-col h-full bg-white">
-            {/* Header / Status Bar */}
-            <div className="p-4 border-b border-lightGrey bg-offwhite/50 backdrop-blur-sm shrink-0">
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-midGrey">Command History</span>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${mode === 'design' ? 'bg-blue-100 text-blue-700' :
-                            mode === 'optimize' ? 'bg-purple-100 text-purple-700' :
-                                'bg-orange-100 text-orange-700'
-                        }`}>
-                        {mode}
-                    </span>
+        <Card className="flex flex-col h-full bg-white border-lightGrey shadow-sm overflow-hidden">
+
+            {/* Header Tabs */}
+            <div className="flex items-center gap-1 p-2 border-b border-lightGrey bg-gray-50/50">
+                <button
+                    onClick={() => setActiveTab('command')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'command'
+                            ? 'bg-white text-black shadow-sm border border-gray-200'
+                            : 'text-midGrey hover:bg-gray-100'
+                        }`}
+                >
+                    <Terminal size={14} /> Command
+                </button>
+                <button
+                    onClick={() => setActiveTab('logs')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'logs'
+                            ? 'bg-white text-black shadow-sm border border-gray-200'
+                            : 'text-midGrey hover:bg-gray-100'
+                        }`}
+                >
+                    <Clock size={14} /> Log
+                </button>
+                <button
+                    onClick={() => setActiveTab('compare')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'compare'
+                            ? 'bg-white text-black shadow-sm border border-gray-200'
+                            : 'text-midGrey hover:bg-gray-100'
+                        }`}
+                >
+                    <Activity size={14} /> Compare
+                </button>
+
+                <div className="flex-1" />
+
+                {/* Mini Export Dropdown/Buttons */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={handleExportSMILES}
+                        className="p-1.5 rounded-md hover:bg-gray-200 text-midGrey hover:text-black transition-colors"
+                        title="Export SMILES"
+                    >
+                        <FileType size={14} />
+                    </button>
+                    <button
+                        onClick={handleExportJSON}
+                        className="p-1.5 rounded-md hover:bg-gray-200 text-midGrey hover:text-black transition-colors"
+                        title="Export JSON"
+                    >
+                        <FileJson size={14} />
+                    </button>
                 </div>
             </div>
 
-            {/* History Output */}
-            <div
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide space-y-4 font-mono text-sm"
-            >
-                {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full opacity-40 text-center px-8 text-darkGrey">
-                        <p className="font-semibold mb-2">
-                            {mode === 'design' ? 'Design Mode Active' :
-                                mode === 'optimize' ? 'Optimization Mode Active' :
-                                    'Simulation Mode Active'}
-                        </p>
-                        <p className="text-xs">
-                            {mode === 'design' && "Describe a structure or modification..."}
-                            {mode === 'optimize' && "Describe a property to improve..."}
-                            {mode === 'simulate' && "Describe conditions or reactions..."}
-                        </p>
+            {/* CONTENT AREA */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white relative">
+
+                {/* TAB: COMMAND */}
+                {activeTab === 'command' && (
+                    <>
+                        {messages.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                                <Terminal size={32} className="mb-2" />
+                                <p className="text-sm font-medium">Ready for commands</p>
+                                <p className="text-xs">Try "Optimize for solubility"</p>
+                            </div>
+                        ) : (
+                            messages.map((msg) => (
+                                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`
+                                max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm
+                                ${msg.role === 'user'
+                                            ? 'bg-black text-white rounded-br-none'
+                                            : 'bg-offwhite border border-lightGrey text-darkGrey rounded-bl-none'}
+                            `}>
+                                        {msg.content}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        <div ref={bottomRef} />
+                    </>
+                )}
+
+                {/* TAB: LOGS */}
+                {activeTab === 'logs' && (
+                    <div className="space-y-3">
+                        {logs.length === 0 && (
+                            <p className="text-xs text-center text-midGrey italic mt-10">No actions recorded yet.</p>
+                        )}
+                        {logs.map((log) => (
+                            <div key={log.id} className="flex gap-3 text-xs border-b border-lightGrey/50 pb-2 last:border-0">
+                                <div className="font-mono text-midGrey min-w-[50px]">
+                                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="font-medium text-black">{log.description}</div>
+                                    <div className="text-[10px] text-gray-400 capitalize mt-0.5 flex items-center gap-1">
+                                        {log.source} • <span className="uppercase tracking-wider">{log.mode}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={bottomRef} />
                     </div>
                 )}
 
-                {messages.map((msg) => (
-                    <ChatMessage key={msg.id} message={msg} />
-                ))}
+                {/* TAB: COMPARE */}
+                {activeTab === 'compare' && comparisonData && (
+                    <div className="flex flex-col gap-6">
+                        <div className="bg-gray-50 p-4 rounded-xl border border-lightGrey text-center">
+                            <p className="text-xs text-midGrey uppercase tracking-wider font-bold mb-1">Status</p>
+                            {comparisonData.distinct ? (
+                                <span className="text-sm font-bold text-blue-600">Modified ({past.length} Steps)</span>
+                            ) : (
+                                <span className="text-sm font-bold text-gray-400">Unchanged</span>
+                            )}
+                        </div>
 
-                {isLoading && (
-                    <div className="flex justify-start mb-4">
-                        <span className="text-xs text-midGrey animate-pulse">Processing command...</span>
+                        {/* Diff Table */}
+                        <div className="grid grid-cols-3 gap-y-4 items-center text-center">
+                            {/* Headings */}
+                            <div className="text-[10px] font-bold text-midGrey uppercase">Metric</div>
+                            <div className="text-[10px] font-bold text-midGrey uppercase">Initial</div>
+                            <div className="text-[10px] font-bold text-midGrey uppercase">Current</div>
+
+                            {/* Weight */}
+                            <div className="text-xs font-bold text-black text-left pl-2">Weight</div>
+                            <div className="text-xs font-mono text-midGrey">{comparisonData.initialStats.weight}</div>
+                            <div className={`text-xs font-mono font-bold ${comparisonData.currentStats.weight !== comparisonData.initialStats.weight ? 'text-blue-600' : 'text-black'}`}>
+                                {comparisonData.currentStats.weight}
+                            </div>
+
+                            {/* LogP */}
+                            <div className="text-xs font-bold text-black text-left pl-2">Est. LogP</div>
+                            <div className="text-xs font-mono text-midGrey">{comparisonData.initialStats.logP}</div>
+                            <div className={`text-xs font-mono font-bold ${comparisonData.currentStats.logP !== comparisonData.initialStats.logP ? 'text-blue-600' : 'text-black'}`}>
+                                {comparisonData.currentStats.logP}
+                            </div>
+                        </div>
+
+                        {comparisonData.distinct && (
+                            <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 leading-relaxed">
+                                <strong className="block mb-1">Change Summary</strong>
+                                Weight shifted by <b>{(comparisonData.currentStats.weight - comparisonData.initialStats.weight).toFixed(2)}</b>.<br />
+                                LogP shifted by <b>{(comparisonData.currentStats.logP - comparisonData.initialStats.logP).toFixed(2)}</b>.
+                            </div>
+                        )}
                     </div>
                 )}
+
             </div>
 
-            {/* Command Input */}
-            <form onSubmit={handleCommand} className="border-t border-lightGrey p-4 bg-white relative shrink-0">
-                <div className="flex items-center gap-2 bg-offwhite border border-lightGrey rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-black/5 focus-within:border-black/20 transition-all">
-                    <span className="text-midGrey font-mono select-none">{'>'}</span>
-                    <input
-                        type="text"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Type a command..."
-                        disabled={isLoading}
-                        className="flex-1 bg-transparent border-none p-0 text-sm text-black placeholder:text-midGrey focus:outline-none font-mono"
-                        autoFocus
-                    />
+            {/* FOOTER: INPUT (Only for Command Tab) */}
+            {activeTab === 'command' && (
+                <div className="p-3 bg-white border-t border-lightGrey shrink-0 z-20">
+                    <form onSubmit={handleSubmit} className="relative group">
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder={mode === 'design' ? "Describe a change..." : "Enter command..."}
+                            className="w-full bg-offwhite border border-lightGrey rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black/20 transition-all placeholder:text-midGrey"
+                            disabled={isProcessing}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!inputValue.trim() || isProcessing}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:hover:bg-black transition-all"
+                        >
+                            {isProcessing ? (
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Send size={16} />
+                            )}
+                        </button>
+                    </form>
                 </div>
-            </form>
-        </div>
+            )}
+        </Card>
     );
 }

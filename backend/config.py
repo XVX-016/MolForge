@@ -32,6 +32,7 @@ class Settings:
     
     if _cors_origins_env:
         CORS_ORIGINS: List[str] = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
+        CORS_ALLOW_ORIGIN_REGEX: Optional[str] = None
     elif _is_dev:
         # In development, allow all localhost origins (more permissive)
         CORS_ORIGINS: List[str] = [
@@ -46,6 +47,8 @@ class Settings:
             "http://127.0.0.1:5175",
             "http://127.0.0.1:8080",
         ]
+        # Regex to allow any port on localhost/127.0.0.1
+        CORS_ALLOW_ORIGIN_REGEX: Optional[str] = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     else:
         # Production: only specific origins
         CORS_ORIGINS: List[str] = [
@@ -54,6 +57,7 @@ class Settings:
             "http://127.0.0.1:5173",
             "http://127.0.0.1:5174",
         ]
+        CORS_ALLOW_ORIGIN_REGEX: Optional[str] = None
     
     # Model paths
     MODEL_WEIGHTS_PATH: str = os.getenv(
