@@ -60,6 +60,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,6 +76,9 @@ async def global_exception_handler(request: Request, exc: Exception):
     if settings.LOG_LEVEL == "DEBUG":
         error_detail += f"\n{traceback.format_exc()}"
     
+    # Get origin from request headers to use in CORS response
+    origin = request.headers.get("origin", "*")
+    
     return JSONResponse(
         status_code=500,
         content={
@@ -82,7 +86,34 @@ async def global_exception_handler(request: Request, exc: Exception):
             "path": str(request.url),
         },
         headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
+from fastapi.exceptions import RequestValidationError
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Ensure CORS headers on validation errors (422)"""
+    origin = request.headers.get("origin", "*")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Ensure CORS headers on HTTP exceptions (400, 404, etc.)"""
+    origin = request.headers.get("origin", "*")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={
+            "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
         }
     )

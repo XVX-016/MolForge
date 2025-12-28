@@ -1,82 +1,121 @@
-import { create } from 'zustand'
-import { MoleculeGraph, MoleculeSerializer } from '@biosynth/engine'
-import { UndoStack } from '@biosynth/engine'
-import { useMoleculeStore } from './moleculeStore'
+
+import { create } from 'zustand';
+import type { MoleculeGraph } from '../types/molecule';
+
+export interface ActionLogEntry {
+  id: string;
+  timestamp: number;
+  mode: "design" | "optimize" | "simulate";
+  description: string;
+  source: "user" | "ai" | "system";
+}
 
 interface HistoryState {
-  undoStack: UndoStack
-  canUndo: boolean
-  canRedo: boolean
+  past: MoleculeGraph[];
+  present: MoleculeGraph | null;
+  future: MoleculeGraph[];
+  logs: ActionLogEntry[];
+
+  // Core Actions
+  init: (mol: MoleculeGraph) => void;
+  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source']) => void;
+  undo: () => void;
+  redo: () => void;
 }
 
-const createUndoStack = () => {
-  const stack = new UndoStack()
-  return stack
-}
+export const useHistoryStore = create<HistoryState>((set, get) => ({
+  past: [],
+  present: null,
+  future: [],
+  logs: [],
 
-export const useHistoryStore = create<HistoryState>(() => ({
-  undoStack: createUndoStack(),
-  canUndo: false,
-  canRedo: false,
-}))
+  init: (mol: MoleculeGraph) => {
+    set({
+      past: [],
+      present: mol,
+      future: [],
+      logs: [{
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        mode: 'design',
+        description: 'Initialized Workspace',
+        source: 'system'
+      }]
+    });
+  },
 
-/**
- * Push current molecule state to history
- */
-export function pushState(): void {
-  const store = useMoleculeStore.getState()
-  const history = useHistoryStore.getState()
-  
-  if (store.currentMolecule) {
-    history.undoStack.push(store.currentMolecule)
-    useHistoryStore.setState({
-      canUndo: history.undoStack.canUndo(),
-      canRedo: history.undoStack.canRedo(),
-    })
+  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source']) => {
+    const { present, past, logs } = get();
+
+    // Create Log Entry
+    const newLog: ActionLogEntry = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      mode: 'design', // TODO: this should technically come from studioStore mode, but for now we default or need to inject
+      description: description,
+      source: source
+    };
+
+    if (present) {
+      set({
+        past: [...past, present],
+        present: nextGraph,
+        future: [],
+        logs: [...logs, newLog]
+      });
+    } else {
+      set({
+        present: nextGraph,
+        past: [],
+        future: [],
+        logs: [...logs, newLog]
+      });
+    }
+  },
+
+  undo: () => {
+    const { past, present, future, logs } = get();
+    if (past.length === 0 || !present) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, -1);
+
+    const newLog: ActionLogEntry = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      mode: 'design',
+      description: 'Undid last action',
+      source: 'user'
+    };
+
+    set({
+      past: newPast,
+      present: previous,
+      future: [present, ...future],
+      logs: [...logs, newLog]
+    });
+  },
+
+  redo: () => {
+    const { past, present, future, logs } = get();
+    if (future.length === 0 || !present) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+
+    const newLog: ActionLogEntry = {
+      id: Date.now().toString(),
+      timestamp: Date.now(),
+      mode: 'design',
+      description: 'Redid action',
+      source: 'user'
+    };
+
+    set({
+      past: [...past, present],
+      present: next,
+      future: newFuture,
+      logs: [...logs, newLog]
+    });
   }
-}
-
-/**
- * Undo last action
- */
-export function undo(): void {
-  const history = useHistoryStore.getState()
-  const restored = history.undoStack.undo()
-  
-  if (restored) {
-    useMoleculeStore.getState().setMolecule(restored)
-    useHistoryStore.setState({
-      canUndo: history.undoStack.canUndo(),
-      canRedo: history.undoStack.canRedo(),
-    })
-  }
-}
-
-/**
- * Redo last undone action
- */
-export function redo(): void {
-  const history = useHistoryStore.getState()
-  const restored = history.undoStack.redo()
-  
-  if (restored) {
-    useMoleculeStore.getState().setMolecule(restored)
-    useHistoryStore.setState({
-      canUndo: history.undoStack.canUndo(),
-      canRedo: history.undoStack.canRedo(),
-    })
-  }
-}
-
-/**
- * Clear history
- */
-export function clearHistory(): void {
-  const history = useHistoryStore.getState()
-  history.undoStack.clear()
-  useHistoryStore.setState({
-    canUndo: false,
-    canRedo: false,
-  })
-}
-
+}));
