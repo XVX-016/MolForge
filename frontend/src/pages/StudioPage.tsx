@@ -8,14 +8,17 @@ import ModeSwitcher from '../components/studio/ModeSwitcher';
 import ActionsPanel from '../components/studio/ActionsPanel';
 import MolecularWorkspace from '../components/studio/MolecularWorkspace';
 import PropertyPanel from '../components/studio/PropertyPanel';
+import { useStudioLayout } from '../lib/studio/layout';
 
 export default function StudioPage() {
   const {
+    mode,
     isCanvasInitialized,
     setCanvasInitialized
   } = useStudioStore();
 
   const { present, init, undo, redo } = useHistoryStore();
+  const layout = useStudioLayout(mode);
 
   // One-time initialization of default molecule (Benzene)
   useEffect(() => {
@@ -54,31 +57,36 @@ export default function StudioPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 max-w-[1700px] mx-auto p-6 h-[calc(100vh-4rem)] flex flex-col"
+      className="max-w-[1800px] mx-auto p-6 h-[calc(100vh-4rem)] flex flex-col gap-6"
     >
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
+      {/* Header Area */}
+      <div className="flex items-center justify-between shrink-0 px-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-black tracking-tight">MolForge Studio</h1>
-          <p className="text-darkGrey text-sm">Design • Optimize • Simulate molecular systems</p>
+          <h1 className="text-3xl font-black text-black tracking-tight uppercase">MolForge <span className="text-gray-400">Studio</span></h1>
         </div>
-
         <ModeSwitcher />
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 px-4">
+      {/* Main Structural Layout */}
+      <div className="flex-1 grid grid-cols-12 gap-8 min-h-0 px-4">
 
-        {/* LEFT SIDEBAR: Actions & Properties */}
-        <div className="lg:col-span-3 flex flex-col gap-6 h-full min-h-0">
-          <div className="flex-1 min-h-0 rounded-2xl overflow-hidden shadow-sm border border-lightGrey">
-            <ActionsPanel />
-          </div>
-          <div className="shrink-0 h-[280px]">
-            <PropertyPanel />
-          </div>
-        </div>
+        {/* SIDEBAR: Conditionally rendered based on layout contract */}
+        {layout.showActionsPanel && (
+          <div className="col-span-3 flex flex-col gap-6 h-full min-h-0">
+            <div className="flex-1 min-h-0 rounded-2xl overflow-hidden shadow-sm border border-lightGrey bg-white">
+              <ActionsPanel />
+            </div>
 
-        {/* MAIN WORKSPACE: More space, less sidebar dominance */}
-        <div className="lg:col-span-9 h-full min-h-0 relative bg-gray-50/30 rounded-3xl border border-lightGrey/30 overflow-hidden">
+            {layout.showPropertyPanel && (
+              <div className="shrink-0 h-[280px]">
+                <PropertyPanel />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* WORKSPACE: Takes remaining space */}
+        <div className={`${layout.showActionsPanel ? 'col-span-9' : 'col-span-12'} h-full min-h-0 relative rounded-3xl overflow-hidden border border-lightGrey/30 shadow-inner bg-gray-50/20`}>
           <MolecularWorkspace />
         </div>
 
