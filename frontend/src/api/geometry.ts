@@ -1,6 +1,4 @@
 import axios from 'axios';
-
-// Define the shape of the molecule data expected by the backend
 interface MoleculeData {
     atoms: any[];
     bonds: any[];
@@ -9,7 +7,7 @@ interface MoleculeData {
 export async function optimizeGeometry(molecule: MoleculeData) {
     try {
         const { data } = await axios.post("/api/ml/optimize", molecule);
-        return data; // returns new atom coordinates
+        return data;
     } catch (error) {
         console.error("Geometry optimization failed:", error);
         throw error;

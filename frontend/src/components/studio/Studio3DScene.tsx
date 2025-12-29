@@ -7,6 +7,7 @@ import type { MoleculeGraph } from '../../types/molecule';
 import { moleculeToRenderable } from '../../lib/studioAdapter';
 import type { StudioMode } from '../../types/studio';
 import { useStudioStore } from '../../store/studioStore';
+import { useStudioMode } from '../../lib/studio/hooks';
 import type { SelectionType } from '../../store/studioStore';
 
 const ELEMENT_RADII: Record<string, number> = {
@@ -25,11 +26,9 @@ const ELEMENT_RADII: Record<string, number> = {
 // Internal component for the render logic
 function FloatingMolecule({
     molecule,
-    mode,
     onSelect
 }: {
     molecule: MoleculeGraph,
-    mode: StudioMode,
     onSelect?: (type: SelectionType, id: string | null) => void
 }) {
     const groupRef = useRef<THREE.Group>(null);
@@ -37,6 +36,7 @@ function FloatingMolecule({
 
     // Subscribe to store selection to show highlights
     const { selection } = useStudioStore();
+    const { canEdit, canSelect, canOptimize, modeColor } = useStudioMode();
 
     useFrame((state) => {
         if (!groupRef.current) return;
@@ -45,8 +45,8 @@ function FloatingMolecule({
         // Gentle float
         groupRef.current.position.y = Math.sin(time * 0.5) * 0.1;
 
-        // Auto-rotate only in read-only modes
-        if (mode !== 'design') {
+        // Auto-rotate only in read-only / playback modes
+        if (!canEdit) {
             groupRef.current.rotation.y += 0.002;
         }
     });
@@ -57,9 +57,12 @@ function FloatingMolecule({
             {renderable.atoms.map((atom) => {
                 const radius = ELEMENT_RADII[atom.element] || 1.0;
 
-                // Highlight Logic
-                const isSelected = selection.type === 'atom' && selection.id === atom.id;
-                const isHighlight = (mode === 'optimize' && atom.element === 'C');
+                // Selection Logic
+                const isSelected = canSelect && selection.type === 'atom' && selection.id === atom.id;
+
+                // Optimization Highlight (Hover surrogate / Candidate atoms)
+                // In a real version, this might come from the optimization engine's current focus
+                const isCandidate = canOptimize && atom.element === 'C';
 
                 // Visual Color Logic
                 let color = "#ffffff";
@@ -70,7 +73,7 @@ function FloatingMolecule({
                     color = "#3b82f6"; // Blue selection
                     emissive = "#3b82f6";
                     emissiveIntensity = 0.5;
-                } else if (isHighlight) {
+                } else if (isCandidate) {
                     color = "#a855f7"; // Purple hint
                     emissive = "#a855f7";
                     emissiveIntensity = 0.2;
@@ -87,12 +90,14 @@ function FloatingMolecule({
                         key={atom.id}
                         position={atom.position as any}
                         onClick={(e) => {
-                            e.stopPropagation(); // Stop click falling through
-                            if (mode === 'design' && onSelect) {
+                            e.stopPropagation();
+                            if ((canEdit || canOptimize) && onSelect) {
                                 onSelect('atom', atom.id);
                             }
                         }}
-                        onPointerOver={() => document.body.style.cursor = mode === 'design' ? 'pointer' : 'default'}
+                        onPointerOver={() => {
+                            if (canEdit || canOptimize) document.body.style.cursor = 'pointer';
+                        }}
                         onPointerOut={() => document.body.style.cursor = 'default'}
                     >
                         <sphereGeometry args={[radius, 32, 32]} />
@@ -128,7 +133,7 @@ function FloatingMolecule({
                 );
                 const radius = bond.order === 1 ? 0.14 : bond.order === 2 ? 0.18 : 0.22;
 
-                const isSelected = selection.type === 'bond' && selection.id === bond.id;
+                const isSelected = canSelect && selection.type === 'bond' && selection.id === bond.id;
 
                 return (
                     <mesh
@@ -137,11 +142,13 @@ function FloatingMolecule({
                         quaternion={[q.x, q.y, q.z, q.w]}
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (mode === 'design' && onSelect) {
+                            if (canEdit && onSelect) {
                                 onSelect('bond', bond.id);
                             }
                         }}
-                        onPointerOver={() => document.body.style.cursor = mode === 'design' ? 'pointer' : 'default'}
+                        onPointerOver={() => {
+                            if (canEdit) document.body.style.cursor = 'pointer';
+                        }}
                         onPointerOut={() => document.body.style.cursor = 'default'}
                     >
                         <cylinderGeometry args={[radius, radius, length, 32]} />
@@ -166,15 +173,15 @@ interface Studio3DSceneProps {
     editable?: boolean;
 }
 
-export default function Studio3DScene({ mode, molecule, editable = false }: Studio3DSceneProps) {
+export default function Studio3DScene({ molecule }: Studio3DSceneProps) {
     const { setSelection } = useStudioStore();
+    const { canEdit, canOptimize } = useStudioMode();
 
     return (
         <div
-            className={`w-full h-full relative ${editable ? 'cursor-move' : 'cursor-default'}`}
-            // Clicking background deselects
+            className={`w-full h-full relative ${(canEdit || canOptimize) ? 'cursor-move' : 'cursor-default'}`}
             onClick={() => {
-                if (editable) setSelection(null, null);
+                if (canEdit || canOptimize) setSelection(null, null);
             }}
         >
             <Canvas shadows dpr={[1, 2]}>
@@ -185,7 +192,7 @@ export default function Studio3DScene({ mode, molecule, editable = false }: Stud
                     <ambientLight intensity={0.5} />
                     <pointLight position={[10, 10, 10]} intensity={1} castShadow />
 
-                    {mode === 'design' && (
+                    {canEdit && (
                         <Grid infiniteGrid fadeDistance={30} sectionColor="#e5e7eb" cellColor="#f3f4f6" />
                     )}
 
@@ -193,7 +200,6 @@ export default function Studio3DScene({ mode, molecule, editable = false }: Stud
                         {molecule && (
                             <FloatingMolecule
                                 molecule={molecule}
-                                mode={mode}
                                 onSelect={(type, id) => setSelection(type, id)}
                             />
                         )}
