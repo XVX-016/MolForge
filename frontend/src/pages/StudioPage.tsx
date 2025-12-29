@@ -5,7 +5,7 @@ import { useStudioStore } from '../store/studioStore';
 import { useHistoryStore } from '../store/historyStore';
 import { BENZENE } from '../utils/defaultMolecules';
 import ModeSwitcher from '../components/studio/ModeSwitcher';
-import CommandPanel from '../components/studio/CommandPanel';
+import ActionsPanel from '../components/studio/ActionsPanel';
 import MolecularWorkspace from '../components/studio/MolecularWorkspace';
 import PropertyPanel from '../components/studio/PropertyPanel';
 
@@ -65,20 +65,20 @@ export default function StudioPage() {
         <ModeSwitcher />
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0 px-4">
 
-        {/* LEFT SIDEBAR: Controls & Info */}
-        <div className="lg:col-span-3 flex flex-col gap-4 h-full min-h-0">
-          <div className="flex-1 min-h-0 rounded-xl overflow-hidden shadow-sm border border-lightGrey">
-            <CommandPanel />
+        {/* LEFT SIDEBAR: Actions & Properties */}
+        <div className="lg:col-span-3 flex flex-col gap-6 h-full min-h-0">
+          <div className="flex-1 min-h-0 rounded-2xl overflow-hidden shadow-sm border border-lightGrey">
+            <ActionsPanel />
           </div>
-          <div className="shrink-0">
+          <div className="shrink-0 h-[280px]">
             <PropertyPanel />
           </div>
         </div>
 
-        {/* MAIN WORKSPACE */}
-        <div className="lg:col-span-9 h-full min-h-0 relative">
+        {/* MAIN WORKSPACE: More space, less sidebar dominance */}
+        <div className="lg:col-span-9 h-full min-h-0 relative bg-gray-50/30 rounded-3xl border border-lightGrey/30 overflow-hidden">
           <MolecularWorkspace />
         </div>
 
