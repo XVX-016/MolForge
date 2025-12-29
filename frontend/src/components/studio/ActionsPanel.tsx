@@ -3,21 +3,20 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useStudioStore } from '../../store/studioStore';
 import { useHistoryStore } from '../../store/historyStore';
 import { useStudioMode } from '../../lib/studio/hooks';
-import { Send, Clock, Activity, FileJson, FileType, RotateCcw, Sparkles, Plus } from 'lucide-react';
+import { Clock, Activity, FileJson, FileType, RotateCcw, Sparkles, Plus } from 'lucide-react';
 import { useStudioGateway } from '../../lib/ai/studioGateway';
 import Card from '../ui/Card';
 import { exportToJSON, exportToSMILES, downloadFile } from '../../lib/io';
 import { calculateMolecularWeight, estimateLogP } from '../../lib/chemistry';
 
 export default function ActionsPanel() {
-    const [inputValue, setInputValue] = useState('');
     const [activeTab, setActiveTab] = useState<'actions' | 'logs' | 'compare'>('actions');
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const { messages, addMessage, mode } = useStudioStore();
     const { present: molecule, past, logs } = useHistoryStore();
-    const { sendCommand, isProcessing } = useStudioGateway();
-    const { modeColor, canSimulate } = useStudioMode();
+    const { sendCommand } = useStudioGateway();
+    const { modeColor } = useStudioMode();
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,12 +33,7 @@ export default function ActionsPanel() {
         await sendCommand(cmd, mode, molecule);
     };
 
-    const handleChatSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!inputValue.trim() || !molecule) return;
-        handleActionClick(inputValue);
-        setInputValue('');
-    };
+    // Chat residue removed.
 
     // --- Comparison Logic ---
     const comparisonData = useMemo(() => {
@@ -98,18 +92,18 @@ export default function ActionsPanel() {
                             <div className="grid grid-cols-1 gap-2">
                                 {mode === 'design' && (
                                     <>
-                                        <button onClick={() => handleActionClick("Add benzene ring")} className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-black hover:text-white border border-lightGrey rounded-xl transition-all group text-xs font-bold">
+                                        <button onClick={() => handleActionClick("Add benzene ring")} className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-black hover:text-white border border-lightGrey rounded-xl transition-all group text-xs font-bold shadow-sm">
                                             <span>Add Benzene Ring</span>
                                             <Plus size={14} className="text-gray-300 group-hover:text-white" />
                                         </button>
-                                        <button onClick={() => handleActionClick("Validate structure")} className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-black hover:text-white border border-lightGrey rounded-xl transition-all group text-xs font-bold">
+                                        <button onClick={() => handleActionClick("Validate structure")} className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-black hover:text-white border border-lightGrey rounded-xl transition-all group text-xs font-bold shadow-sm">
                                             <span>Check Valence Health</span>
                                             <Activity size={14} className="text-gray-300 group-hover:text-white" />
                                         </button>
                                     </>
                                 )}
                                 {mode === 'optimize' && (
-                                    <button className="flex items-center justify-between px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white border border-purple-100 rounded-xl transition-all group text-xs font-bold">
+                                    <button className="flex items-center justify-between px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white border border-purple-100 rounded-xl transition-all group text-xs font-bold shadow-sm">
                                         <span>Scan for Improvements</span>
                                         <Sparkles size={14} className="text-purple-300 group-hover:text-white" />
                                     </button>
@@ -121,26 +115,6 @@ export default function ActionsPanel() {
                                 )}
                             </div>
                         </div>
-
-                        {/* SECONDARY/AI ACTIONS */}
-                        {!canSimulate && (
-                            <div className="space-y-3 pt-2">
-                                <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AI Assist (Optional)</h3>
-                                <form onSubmit={handleChatSubmit} className="relative group">
-                                    <input
-                                        type="text"
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder="Describe a targeted change..."
-                                        className="w-full bg-offwhite border border-lightGrey rounded-xl pl-4 pr-12 py-3 text-[11px] focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black/20 transition-all font-medium"
-                                        disabled={isProcessing}
-                                    />
-                                    <button type="submit" disabled={!inputValue.trim() || isProcessing} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-20 transition-all">
-                                        {isProcessing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={14} />}
-                                    </button>
-                                </form>
-                            </div>
-                        )}
                     </div>
                 )}
 

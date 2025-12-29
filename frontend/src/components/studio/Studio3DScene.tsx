@@ -45,9 +45,9 @@ function FloatingMolecule({
         // Gentle float
         groupRef.current.position.y = Math.sin(time * 0.5) * 0.1;
 
-        // Auto-rotate only in read-only / playback modes
-        if (!canEdit) {
-            groupRef.current.rotation.y += 0.002;
+        // Auto-rotate logic per mode
+        if (mode === 'optimize') {
+            groupRef.current.rotation.y += 0.001;
         }
     });
 
@@ -208,7 +208,8 @@ export default function Studio3DScene({ molecule }: Studio3DSceneProps) {
                     <OrbitControls
                         enableZoom={true}
                         enablePan={true}
-                        autoRotate={false}
+                        autoRotate={mode === 'simulate'}
+                        autoRotateSpeed={1.0}
                         enabled={true}
                     />
                 </Suspense>
