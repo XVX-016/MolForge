@@ -1,10 +1,7 @@
-
-import React from 'react';
 import Studio3DScene from './Studio3DScene';
-import type { MoleculeGraph } from '../../types/molecule';
+import { ArrowRight } from 'lucide-react';
 import { useStudioStore } from '../../store/studioStore';
 import { useHistoryStore } from '../../store/historyStore';
-import { ArrowRight } from 'lucide-react';
 
 export default function OptimizeCompareView() {
     const { mode } = useStudioStore();
