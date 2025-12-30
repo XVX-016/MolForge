@@ -18,7 +18,7 @@ interface HistoryState {
 
   // Core Actions
   init: (mol: MoleculeGraph) => void;
-  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source']) => void;
+  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source'], mode?: ActionLogEntry['mode']) => void;
   undo: () => void;
   redo: () => void;
 }
@@ -44,14 +44,14 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     });
   },
 
-  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source']) => {
+  applyMutation: (nextGraph: MoleculeGraph, description: string, source: ActionLogEntry['source'], mode?: ActionLogEntry['mode']) => {
     const { present, past, logs } = get();
 
     // Create Log Entry
     const newLog: ActionLogEntry = {
       id: Date.now().toString(),
       timestamp: Date.now(),
-      mode: 'design', // TODO: this should technically come from studioStore mode, but for now we default or need to inject
+      mode: mode || 'design',
       description: description,
       source: source
     };

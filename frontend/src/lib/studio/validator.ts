@@ -1,6 +1,6 @@
-import { StudioAction } from '../../types/studioActions';
-import { MoleculeGraph } from '../../types/molecule';
-import { StudioMode } from '../../types/studio';
+import type { StudioAction } from '../../types/studioActions';
+import type { MoleculeGraph } from '../../types/molecule';
+import type { StudioMode } from '../../types/studio';
 
 export interface ValidationResult {
     valid: boolean;
@@ -57,7 +57,7 @@ function validateDesignAction(action: StudioAction, molecule: MoleculeGraph): Va
             return { valid: false, error: `${action.type} is not allowed in DESIGN mode. Switch modes first.` };
 
         default:
-            return { valid: false, error: `Action ${action.type} not recognized for DESIGN mode` };
+            return { valid: false, error: 'Unrecognized action type for DESIGN mode' };
     }
 }
 
@@ -77,7 +77,7 @@ function validateOptimizeAction(action: StudioAction): ValidationResult {
             return { valid: false, error: `Structural mutations are blocked in OPTIMIZE mode.` };
 
         default:
-            return { valid: false, error: `Action ${action.type} not allowed in OPTIMIZE mode` };
+            return { valid: false, error: 'Unrecognized action for OPTIMIZE mode' };
     }
 }
 
