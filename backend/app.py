@@ -46,6 +46,7 @@ from backend.api import orchestrator as orchestrator_api_router
 from backend.api import phase10 as phase10_api_router
 from backend.api import molecule as molecule_api_router
 from backend.api import mentor as mentor_api_router
+from backend.api import studio as studio_api_router
 from backend.db import init_db
 from backend.services.prediction_service import PredictionService
 from backend.models.schemas.prediction_schema import PredictOut, PredictIn
@@ -151,6 +152,7 @@ app.include_router(collaboration_router.router, prefix="/api/collaboration", tag
 app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(lab_router.router, prefix="/api/lab", tags=["lab"])
 app.include_router(mentor_api_router.router, prefix="/api/mentor", tags=["mentor"])
+app.include_router(studio_api_router.router, tags=["studio"])
 
 
 class PredictFastIn(BaseModel):

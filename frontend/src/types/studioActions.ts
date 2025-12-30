@@ -1,4 +1,4 @@
-import { Atom, Bond } from './molecule';
+import type { Atom, Bond } from './molecule';
 
 export type ActionType =
     | 'CREATE_MOLECULE'
@@ -56,6 +56,24 @@ export interface SimulateReactionAction {
     reason: string;
 }
 
+export interface AddBondAction {
+    type: 'ADD_BOND';
+    payload: {
+        from: string;
+        to: string;
+        order: 1 | 2 | 3 | 'aromatic';
+    };
+    reason: string;
+}
+
+export interface RemoveBondAction {
+    type: 'REMOVE_BOND';
+    payload: {
+        bondId: string;
+    };
+    reason: string;
+}
+
 export interface NoOpAction {
     type: 'NO_OP';
     reason: string;
@@ -66,6 +84,8 @@ export type StudioAction =
     | ReplaceAtomAction
     | AddAtomAction
     | RemoveAtomAction
+    | AddBondAction
+    | RemoveBondAction
     | OptimizeGeometryAction
     | SimulateReactionAction
     | NoOpAction;

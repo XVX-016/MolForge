@@ -1,0 +1,34 @@
+"""
+Studio API Endpoints
+"""
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+import logging
+from backend.services.studio_service import get_studio_service
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/studio", tags=["studio"])
+
+class StudioCommandRequest(BaseModel):
+    prompt: str
+    molecule_context: Dict[str, Any]
+    mode: str
+
+@router.post("/command")
+async def process_studio_command(request: StudioCommandRequest):
+    """
+    Process a Studio AI command.
+    """
+    try:
+        service = get_studio_service()
+        action = await service.process_command(
+            request.prompt, 
+            request.molecule_context, 
+            request.mode
+        )
+        return action
+    except Exception as e:
+        logger.error(f"Studio API Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
