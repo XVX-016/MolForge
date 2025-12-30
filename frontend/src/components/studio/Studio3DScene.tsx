@@ -1,5 +1,5 @@
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Float, PerspectiveCamera, OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
@@ -81,9 +81,9 @@ function FloatingMolecule({
                     emissiveIntensity = 0.2;
                 } else {
                     // Element Colors
-                    if (atom.element === 'C') color = "#333333";
-                    if (atom.element === 'O') color = "#ef4444";
-                    if (atom.element === 'N') color = "#3b82f6";
+                    if (atom.element === 'C') color = "#4B5563"; // Dark gray - cleaner for light mode
+                    if (atom.element === 'O') color = "#EF4444";
+                    if (atom.element === 'N') color = "#2563EB";
                     if (atom.element === 'H') color = "#ffffff";
                 }
 
@@ -155,12 +155,12 @@ function FloatingMolecule({
                     >
                         <cylinderGeometry args={[radius, radius, length, 32]} />
                         <meshPhysicalMaterial
-                            color={isSelected ? "#60a5fa" : "#cccccc"}
-                            metalness={0.9}
+                            color={isSelected ? "#3b82f6" : "#E5E7EB"}
+                            metalness={0.2}
                             roughness={0.1}
-                            envMapIntensity={1.5}
-                            emissive={isSelected ? "#60a5fa" : "#000000"}
-                            emissiveIntensity={isSelected ? 0.4 : 0}
+                            envMapIntensity={1}
+                            emissive={isSelected ? "#3b82f6" : "#000000"}
+                            emissiveIntensity={isSelected ? 0.2 : 0}
                         />
                     </mesh>
                 );
@@ -191,11 +191,11 @@ export default function Studio3DScene({ molecule, mode }: Studio3DSceneProps) {
 
                 <Suspense fallback={null}>
                     <Environment preset="city" />
-                    <ambientLight intensity={0.5} />
-                    <pointLight position={[10, 10, 10]} intensity={1} castShadow />
+                    <ambientLight intensity={0.8} />
+                    <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
 
                     {canEdit && (
-                        <Grid infiniteGrid fadeDistance={30} sectionColor="#e5e7eb" cellColor="#f3f4f6" />
+                        <Grid infiniteGrid fadeDistance={30} sectionColor="#CBD5E1" cellColor="#E2E8F0" />
                     )}
 
                     <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>

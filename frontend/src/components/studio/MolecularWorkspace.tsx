@@ -77,7 +77,7 @@ export default function MolecularWorkspace() {
     }, [canEdit, selection, molecule, applyMutation]);
 
     return (
-        <div className="h-full w-full overflow-hidden bg-black relative group">
+        <div className="h-full w-full overflow-hidden bg-[#F9FAFB] relative group">
             {/* 3D Scene Layer */}
             <div className="absolute inset-0 z-0">
                 {layout.canvasLayout === 'split' ? (
@@ -117,10 +117,10 @@ export default function MolecularWorkspace() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute bottom-12 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full flex items-center gap-4 pointer-events-none"
+                        className="absolute bottom-12 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-white/80 backdrop-blur-xl border border-gray-200 rounded-full flex items-center gap-4 pointer-events-none shadow-lg"
                     >
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-700">
                             {selection.type === 'atom' ? `Atom ${selection.id}` : `Bond ${selection.id}`}
                         </span>
                     </motion.div>

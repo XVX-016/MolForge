@@ -47,12 +47,20 @@ class MentorService:
         if not api_key:
             raise ValueError("GEMINI_KEY not found in environment variables")
         
+        # Strip whitespace
+        api_key = "".join(api_key.split())
+        
+        # Log first 6 chars for debugging (NEVER log full key)
+        logger.info(f"Gemini key loaded: {api_key[:6]}...")
+        
         genai.configure(api_key=api_key)
+        
+        # Use gemini-1.5-flash (more stable and works with v1 endpoint)
         self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
+            model_name="gemini-1.5-flash",
             system_instruction=CHEMISTRY_SYSTEM_PROMPT
         )
-        logger.info("MentorService initialized with Gemini API")
+        logger.info("MentorService initialized with gemini-1.5-flash")
     
     async def chat(self, prompt: str, mentor_skill: str) -> Dict:
         """

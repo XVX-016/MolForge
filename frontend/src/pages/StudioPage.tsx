@@ -30,14 +30,14 @@ export default function StudioPage() {
   }, [undo, redo]);
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex-1 flex overflow-hidden bg-white">
       {/* AI Control Plane (Docked Left) */}
-      <aside className="w-[380px] shrink-0 border-r border-[#1F2937] bg-[#0F1013]">
+      <aside className="w-[380px] shrink-0 border-r border-[#E5E7EB] bg-white flex flex-col">
         <AIPanel />
       </aside>
 
       {/* The Stage (Canvas) */}
-      <section className="flex-1 relative bg-black">
+      <section className="flex-1 relative bg-[#F9FAFB] flex flex-col">
         <MolecularWorkspace />
       </section>
     </div>

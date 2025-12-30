@@ -11,7 +11,6 @@ import SupabaseTest from './pages/SupabaseTest';
 import SeedLibrary from './pages/SeedLibrary';
 import PublicLibrary from './pages/PublicLibrary';
 import StudioPage from './pages/StudioPage';
-import StudioLayout from './layouts/StudioLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthModal from './components/AuthModal';
 import AuthNavigationHandler from './components/AuthNavigationHandler';
@@ -44,6 +43,7 @@ function AuthRouteHandler() {
 
 // Main Application Router
 export default function App() {
+	const location = useLocation();
 	return (
 		<>
 			{/* Auth Modal - accessible from anywhere */}
@@ -57,19 +57,15 @@ export default function App() {
 				{/* Lab route - fullscreen, no AppShell, PUBLIC */}
 				<Route path="/lab" element={<LabV2Page />} />
 
-				{/* Studio route - dedicated dark shell */}
-				<Route element={<StudioLayout />}>
-					<Route path="/studio" element={<StudioPage />} />
-				</Route>
-
 				{/* All other routes - wrapped in AppShell */}
 				<Route path="/*" element={
-					<AppShell>
+					<AppShell noPadding={location.pathname.startsWith('/studio')}>
 						<Routes>
 							<Route path="/" element={<Dashboard />} />
 							<Route path="/library" element={<LibraryPage />} />
 							<Route path="/library/public" element={<PublicLibrary />} />
 							<Route path="/docs" element={<Docs />} />
+							<Route path="/studio" element={<StudioPage />} />
 							{/* Authenticated-only routes */}
 							<Route
 								path="/profile"
