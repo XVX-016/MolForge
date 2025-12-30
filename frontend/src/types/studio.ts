@@ -1,8 +1,6 @@
-/**
- * MolForge Studio - Architectural Contracts
- */
 
-export type StudioMode = 'design' | 'optimize' | 'simulate';
+export const STUDIO_MODES = ['design', 'optimize', 'simulate'] as const;
+export type StudioMode = typeof STUDIO_MODES[number];
 
 export interface StudioMentor {
     id: string;
