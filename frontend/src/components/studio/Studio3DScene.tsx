@@ -26,9 +26,11 @@ const ELEMENT_RADII: Record<string, number> = {
 // Internal component for the render logic
 function FloatingMolecule({
     molecule,
+    mode,
     onSelect
 }: {
     molecule: MoleculeGraph,
+    mode: StudioMode,
     onSelect?: (type: SelectionType, id: string | null) => void
 }) {
     const groupRef = useRef<THREE.Group>(null);
@@ -36,7 +38,7 @@ function FloatingMolecule({
 
     // Subscribe to store selection to show highlights
     const { selection } = useStudioStore();
-    const { canEdit, canSelect, canOptimize, modeColor } = useStudioMode();
+    const { canEdit, canSelect, canOptimize } = useStudioMode();
 
     useFrame((state) => {
         if (!groupRef.current) return;
@@ -173,7 +175,7 @@ interface Studio3DSceneProps {
     editable?: boolean;
 }
 
-export default function Studio3DScene({ molecule }: Studio3DSceneProps) {
+export default function Studio3DScene({ molecule, mode }: Studio3DSceneProps) {
     const { setSelection } = useStudioStore();
     const { canEdit, canOptimize } = useStudioMode();
 
@@ -200,6 +202,7 @@ export default function Studio3DScene({ molecule }: Studio3DSceneProps) {
                         {molecule && (
                             <FloatingMolecule
                                 molecule={molecule}
+                                mode={mode}
                                 onSelect={(type, id) => setSelection(type, id)}
                             />
                         )}
