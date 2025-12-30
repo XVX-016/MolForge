@@ -3,15 +3,16 @@ import Navbar from '../components/Navbar';
 
 type AppShellProps = {
 	children: React.ReactNode;
+	noPadding?: boolean;
 };
 
-export default function AppShell({ children }: AppShellProps) {
-	const [mobileOpen, setMobileOpen] = useState(false);
-
+export default function AppShell({ children, noPadding = false }: AppShellProps) {
 	return (
-		<div className="min-h-screen bg-white text-black">
-			<Navbar onToggleMenu={() => setMobileOpen((v) => !v)} />
-			<main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+		<div className="h-screen bg-white text-black flex flex-col overflow-hidden">
+			<Navbar />
+			<main className={`flex-1 flex flex-col ${noPadding ? '' : 'p-4 sm:p-6 lg:p-8'}`}>
+				{children}
+			</main>
 		</div>
 	);
 }
