@@ -93,16 +93,16 @@ export function useStudioGateway() {
         if (result.error) {
             addMessage({
                 id: Date.now().toString(),
-                role: 'assistant',
+                role: 'mentor',
                 content: `Error: ${result.error}`,
-                timestamp: Date.now()
+                timestamp: new Date()
             });
         } else {
             addMessage({
                 id: Date.now().toString(),
-                role: 'assistant',
+                role: 'mentor',
                 content: result.response,
-                timestamp: Date.now()
+                timestamp: new Date()
             });
         }
 
