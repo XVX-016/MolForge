@@ -42,9 +42,11 @@ class StudioService:
     def __init__(self):
         api_key = os.getenv("GEMINI_KEY")
         if not api_key:
-        raise ValueError("GEMINI_KEY not found in environment variables")
-        self.api_key = "".join(api_key.split())
-        logger.info(f"Gemini key loaded: {self.api_key[:6]}...")
+            logger.warning("GEMINI_KEY not found in environment variables. AI features will be disabled.")
+            self.api_key = None
+        else:
+            self.api_key = "".join(api_key.split())
+            logger.info(f"Gemini key loaded: {self.api_key[:6]}...")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self.model = "gemini-2.5-flash"
         
@@ -62,6 +64,12 @@ class StudioService:
         """
         Processes a natural language command into a structured action.
         """
+        if not self.api_key:
+            return {
+                "type": "NO_OP",
+                "reason": "Gemini API key is missing. Please configure GEMINI_KEY in the backend environment."
+            }
+
         try:
             # Prepare context-aware prompt
             context_str = json.dumps(context)
