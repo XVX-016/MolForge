@@ -42,35 +42,44 @@ Output Format:
 
 class StudioService:
     def __init__(self):
-        # Debug logging
+        # Debug logging to file
         cwd = os.getcwd()
-        logger.info(f"StudioService Init - CWD: {cwd}")
-        
-        # Explicitly load .env to be sure
-        env_path = Path(__file__).resolve().parent.parent / ".env"
-        logger.info(f"Looking for .env at: {env_path}")
-        logger.info(f".env exists: {env_path.exists()}")
-        
-        load_dotenv(dotenv_path=env_path)
-        
-        # Try finding key with multiple names
-        api_key = os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY")
-        
-        # Debug which keys are seen
-        logger.info(f"Env vars check - GEMINI_KEY present: {'GEMINI_KEY' in os.environ}")
-        logger.info(f"Env vars check - GOOGLE_API_KEY present: {'GOOGLE_API_KEY' in os.environ}")
-        
-        if not api_key:
-            logger.warning("GEMINI_KEY not found in environment variables. AI features will be disabled.")
-            self.api_key = None
-        else:
-            self.api_key = "".join(api_key.split())
-            logger.info(f"Gemini key loaded: {self.api_key[:6]}...")
+        with open("debug_init.log", "a") as f:
+            f.write(f"\n--- Init at {cwd} ---\n")
             
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.model = "gemini-1.5-flash"
-        
-        logger.info(f"StudioService initialized with {self.model} (REST API v1beta)")
+            # Explicitly load .env to be sure
+            env_path = Path(__file__).resolve().parent.parent / ".env"
+            f.write(f"Looking for .env at: {env_path}\n")
+            f.write(f".env exists: {env_path.exists()}\n")
+            
+            # Force reload with override
+            load_dotenv(dotenv_path=env_path, override=True)
+            
+            # Try finding key with multiple names
+            api_key = os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY")
+            
+            # Debug which keys are seen
+            f.write(f"Env vars check - GEMINI_KEY present: {'GEMINI_KEY' in os.environ}\n")
+            if 'GEMINI_KEY' in os.environ:
+                 val = os.environ['GEMINI_KEY']
+                 f.write(f"GEMINI_KEY value length: {len(val)}\n")
+                 f.write(f"GEMINI_KEY value prefix: {val[:5]}...\n")
+                 f.write(f"GEMINI_KEY raw value: {repr(val)}\n")
+            
+            if not api_key:
+                f.write("GEMINI_KEY not found in environment variables.\n")
+                logger.warning("GEMINI_KEY not found in environment variables. AI features will be disabled.")
+                self.api_key = None
+            else:
+                self.api_key = "".join(api_key.split())
+                f.write(f"Gemini key loaded: {self.api_key[:6]}...\n")
+                logger.info(f"Gemini key loaded: {self.api_key[:6]}...")
+                
+            self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+            self.model = "gemini-1.5-flash"
+            
+            f.write(f"StudioService initialized with {self.model}\n")
+            logger.info(f"StudioService initialized with {self.model} (REST API v1beta)")
 
     def _extract_json(self, text: str) -> dict:
         """Safely extract JSON from response text"""
