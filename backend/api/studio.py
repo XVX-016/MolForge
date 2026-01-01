@@ -21,6 +21,9 @@ async def process_studio_command(request: StudioCommandRequest):
     """
     Process a Studio AI command.
     """
+    # DEBUG: PROVE THIS CODE IS RUNNING
+    # print(f"DEBUG: HIT STUDIO API with prompt: {request.prompt}")
+    
     try:
         service = get_studio_service()
         action = await service.process_command(
