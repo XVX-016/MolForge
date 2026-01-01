@@ -2,14 +2,23 @@
 MolForge Backend API
 FastAPI application entrypoint
 """
+# Force reload trigger
 import sys
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-# Ensure backend root is in Python path so 'chem' and other modules are importable
-# This allows imports like 'from chem.search.substructure import find_substructure'
-ROOT = Path(__file__).resolve().parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+# Step 1: PROVE environment loading
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(env_path)
+
+print("----------------------------------------------------------------")
+print(f"DEBUG: STARTING BACKEND. CWD: {os.getcwd()}")
+print(f"DEBUG: LOOKING FOR .ENV AT: {env_path} (Exists: {env_path.exists()})")
+print(f"DEBUG: GEMINI_KEY present? {bool(os.getenv('GEMINI_KEY') or os.getenv('GOOGLE_API_KEY'))}")
+val = os.getenv('GEMINI_KEY') or os.getenv('GOOGLE_API_KEY') or ""
+print(f"DEBUG: GEMINI_KEY length: {len(val)}")
+print("----------------------------------------------------------------")
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

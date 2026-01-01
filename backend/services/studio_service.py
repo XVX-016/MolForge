@@ -110,9 +110,14 @@ class StudioService:
         Processes a natural language command into a structured action.
         """
         if not self.model:
+            # Debug info for user
+            env_path = Path(__file__).resolve().parent.parent / ".env"
+            cwd = os.getcwd()
+            has_key = "GEMINI_KEY" in os.environ or "GOOGLE_API_KEY" in os.environ
+            
             return {
                 "type": "NO_OP",
-                "reason": "Gemini API key is missing. Please configure GEMINI_KEY in the backend environment."
+                "reason": f"Gemini API key is missing. Searched: {env_path} (Exists: {env_path.exists()}). CWD: {cwd}. EnvVars: {has_key}. Please configure GEMINI_KEY in the backend environment."
             }
 
         if not self._is_safe_prompt(prompt):
