@@ -1,4 +1,3 @@
-w
 import type { MoleculeGraph } from '../types/molecule';
 
 export const BENZENE: MoleculeGraph = {
