@@ -46,8 +46,10 @@ Write-Host ""
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
 
-# Set PYTHONPATH to include repo root for backend imports
-$env:PYTHONPATH = (Get-Location).Path
+# Set PYTHONPATH to include repo root and backend directory for imports
+$rootPath = (Get-Location).Path
+$backendPath = Join-Path $rootPath "backend"
+$env:PYTHONPATH = "$rootPath;$backendPath"
 
 # Use --reload-dir to only watch backend directory and avoid node_modules issues
 python -m uvicorn backend.app:app --reload --reload-dir backend --host 0.0.0.0 --port 8000

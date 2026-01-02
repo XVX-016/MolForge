@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from typing import Optional, List
 from pathlib import Path
 env_path = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, override=True)
 
 
 class Settings:
@@ -56,5 +56,10 @@ class Settings:
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    
+    # AI Keys
+    GEMINI_KEY: Optional[str] = os.getenv("GEMINI_KEY")
+    GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
+
 settings = Settings()
 
