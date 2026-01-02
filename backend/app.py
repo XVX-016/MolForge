@@ -8,24 +8,14 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Step 1: PROVE environment loading
-env_path = Path(__file__).resolve().parent / ".env"
-load_dotenv(env_path)
-
-print("----------------------------------------------------------------")
-print(f"DEBUG: STARTING BACKEND. CWD: {os.getcwd()}")
-print(f"DEBUG: LOOKING FOR .ENV AT: {env_path} (Exists: {env_path.exists()})")
-print(f"DEBUG: GEMINI_KEY present? {bool(os.getenv('GEMINI_KEY') or os.getenv('GOOGLE_API_KEY'))}")
-val = os.getenv('GEMINI_KEY') or os.getenv('GOOGLE_API_KEY') or ""
-print(f"DEBUG: GEMINI_KEY length: {len(val)}")
-print("----------------------------------------------------------------")
+# Step 1: Initialize configurations
+from backend.config import settings
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import traceback
-from config import settings
 from backend.routes import predict as predict_router
 from backend.routes import generate as generate_router
 from backend.routes import library as library_router
@@ -195,5 +185,6 @@ def predict_fast(payload: PredictFastIn):
 
 @app.get("/health")
 def health():
+    print("DEBUG: HEALTH CHECK HIT")
     return {"status": "healthy"}
 
