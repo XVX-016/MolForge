@@ -14,24 +14,27 @@ if not api_key:
     print("ERROR: No API key found")
     exit(1)
 
-def check_version(version):
-    print(f"\n--- Checking API version: {version} ---")
+def get_models(version):
     url = f"https://generativelanguage.googleapis.com/{version}/models?key={api_key}"
     try:
         response = httpx.get(url)
         if response.status_code == 200:
-            models = response.json().get('models', [])
-            for m in models:
-                name = m.get('name')
-                methods = m.get('supportedGenerationMethods', [])
-                if 'generateContent' in methods:
-                    print(f"  [OK]  {name}")
-                else:
-                    print(f"  [--]  {name} (Methods: {methods})")
+            return response.json().get('models', [])
         else:
-            print(f"  ERROR {response.status_code}: {response.text}")
+            print(f"ERROR {version} ({response.status_code}): {response.text[:100]}")
+            return []
     except Exception as e:
-        print(f"  EXCEPTION: {e}")
+        print(f"EXCEPTION {version}: {e}")
+        return []
 
-check_version('v1')
-check_version('v1beta')
+print("=== Gemini API Model Check ===")
+for ver in ['v1', 'v1beta']:
+    print(f"\nAPI Version: {ver}")
+    models = get_models(ver)
+    for m in models:
+        name = m.get('name', 'unknown')
+        methods = m.get('supportedGenerationMethods', [])
+        if 'generateContent' in methods:
+            print(f"  [YES] {name}")
+        else:
+            print(f"  [NO ] {name} (Methods: {methods[:2]})")
