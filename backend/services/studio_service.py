@@ -48,118 +48,94 @@ Output Format:
 
 from backend.config import settings
 
+import httpx
+import asyncio
+
 class StudioService:
     def __init__(self):
-        if not GEMINI_AVAILABLE:
-            raise ValueError("google-generativeai package not installed")
-
         # Use global settings
         api_key = settings.GEMINI_KEY or settings.GOOGLE_API_KEY
         key_log = f"{api_key[:15]}...{api_key[-5:]}" if api_key else "NONE"
         print(f"DEBUG: StudioService key: {key_log}")
-        print(f"DEBUG: Key length: {len(api_key) if api_key else 0}")
         
         if not api_key:
             logger.warning("GEMINI_KEY not found in environment variables. AI features will be disabled.")
             self.api_key = None
-            self.model = None
         else:
             self.api_key = "".join(api_key.split())
-            logger.info(f"Gemini key loaded: {self.api_key[:6]}...")
-            
-            genai.configure(api_key=self.api_key)
-            # Use simplest possible initialization that worked in script
-            self.model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
-            logger.info("StudioService initialized with models/gemini-1.5-flash (STABLE)")
+            logger.info("StudioService initialized with Gemini v1 REST API")
 
-    def _extract_json(self, text: str) -> dict:
-        """Safely extract JSON from response text"""
+    def _extract_json(self, response_data: dict) -> dict:
+        """Extract JSON from Gemini REST response"""
         try:
-            # First try direct parsing
-            return json.loads(text)
-        except json.JSONDecodeError:
-            # Fallback to finding braces
+            text = response_data['candidates'][0]['content']['parts'][0]['text']
+            # Find JSON block if model wrapped it in markdown
             start = text.find("{")
             end = text.rfind("}")
-            if start == -1 or end == -1:
-                raise ValueError("No JSON object found in response")
-            return json.loads(text[start:end+1])
+            if start != -1 and end != -1:
+                return json.loads(text[start:end+1])
+            return json.loads(text)
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to parse Gemini response: {e}")
+            raise ValueError(f"Invalid response format from AI: {e}")
 
     def _is_safe_prompt(self, prompt: str) -> bool:
-        """
-        Check if prompt is chemistry/studio related.
-        Relaxed to allow more natural language interactions.
-        """
+        """Relaxed safety filter"""
         return True
 
     async def process_command(self, prompt: str, context: Dict[str, Any], mode: str) -> Dict[str, Any]:
         """
-        Processes a natural language command into a structured action.
+        Processes a natural language command using Gemini v1 REST API.
         """
-        if not self.model:
-            # Debug info for user
-            env_path = Path(__file__).resolve().parent.parent / ".env"
-            cwd = os.getcwd()
-            has_key = "GEMINI_KEY" in os.environ or "GOOGLE_API_KEY" in os.environ
-            
+        if not self.api_key:
             return {
                 "type": "NO_OP",
-                "reason": f"Gemini API key is missing. Searched: {env_path} (Exists: {env_path.exists()}). CWD: {cwd}. EnvVars: {has_key}. Please configure GEMINI_KEY in the backend environment."
-            }
-
-        if not self._is_safe_prompt(prompt):
-            return {
-                "type": "NO_OP",
-                "reason": "I can only assist with molecular design and chemistry-related tasks."
+                "reason": "Gemini API key is missing. Please configure GEMINI_KEY in the backend environment."
             }
 
         try:
-            # Re-configure just in case
-            genai.configure(api_key=self.api_key)
+            # Prepare the request
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={self.api_key}"
             
-            # Using sync generate_content because async is currently returning 404 for this key
-            model = genai.GenerativeModel(
-                model_name="models/gemini-1.5-flash",
-                system_instruction=STUDIO_SYSTEM_PROMPT
-            )
-            
-            # Prepare context-aware prompt
             context_str = json.dumps(context)
-            full_prompt = f"Mode: {mode}\nContext: {context_str}\n\nUser: {prompt}"
+            system_instruction = STUDIO_SYSTEM_PROMPT
             
-            import asyncio
-            # Use asyncio.to_thread to run sync generation without blocking
-            response = await asyncio.to_thread(
-                model.generate_content,
-                full_prompt,
-                generation_config={
-                    "temperature": 0.2,
-                    "top_p": 0.95,
-                    "top_k": 40,
-                    "max_output_tokens": 1024,
-                    "response_mime_type": "application/json"
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {"text": f"System Instruction: {system_instruction}\n\nMode: {mode}\nContext: {context_str}\n\nUser Prompt: {prompt}"}
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.0,  # Set to 0 for most predictable JSON
+                    "topP": 0.95,
+                    "topK": 40,
+                    "maxOutputTokens": 1024
                 }
-            )
-            
-            text = response.text
-            return self._extract_json(text)
+            }
+
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(url, json=payload)
+                
+                if response.status_code != 200:
+                    error_detail = response.text
+                    logger.error(f"Gemini API Error ({response.status_code}): {error_detail}")
+                    return {
+                        "type": "NO_OP",
+                        "reason": f"AI service error ({response.status_code}): {error_detail}"
+                    }
+                
+                data = response.json()
+                return self._extract_json(data)
                 
         except Exception as e:
-            import traceback
-            logger.error(f"StudioService Error Traceback: {traceback.format_exc()}")
-            logger.error(f"StudioService Error: {type(e).__name__}: {e}")
-            
-            error_msg = str(e)
-            if "401" in error_msg or "403" in error_msg or "API_KEY" in error_msg:
-                user_msg = "AI service authentication failed. Please check API key."
-            elif "429" in error_msg:
-                user_msg = "Rate limit reached. Please try again later."
-            else:
-                user_msg = f"AI service error: {str(e)}"
-            
+            logger.error(f"StudioService Error: {type(e).__name__}: {e}", exc_info=True)
             return {
                 "type": "NO_OP",
-                "reason": user_msg
+                "reason": f"AI service processing error: {str(e)}"
             }
 
 _studio_service: Optional[StudioService] = None
