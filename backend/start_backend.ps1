@@ -57,5 +57,5 @@ Write-Host ""
 
 # Run from backend directory but with PYTHONPATH set to parent
 # Use --reload-dir to only watch current directory and avoid path issues
-python -m uvicorn app:app --reload --reload-dir . --host 0.0.0.0 --port 8000
+python -m uvicorn app:app --reload --reload-dir . --host 127.0.0.1 --port 8000
 

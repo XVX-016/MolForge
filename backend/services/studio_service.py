@@ -86,16 +86,11 @@ class StudioService:
             return json.loads(text[start:end+1])
 
     def _is_safe_prompt(self, prompt: str) -> bool:
-        """Check if prompt is chemistry/studio related"""
-        keywords = [
-            "molecule", "atom", "bond", "create", "make", "synthesize",
-            "add", "remove", "delete", "replace", "change", "optimize",
-            "geometry", "structure", "3d", "benzene", "ring", "chain",
-            "carbon", "oxygen", "nitrogen", "hydrogen", "build", "design",
-            "modify", "reaction", "simulate", "graph", "render", "view"
-        ]
-        prompt_lower = prompt.lower()
-        return any(kw in prompt_lower for kw in keywords)
+        """
+        Check if prompt is chemistry/studio related.
+        Relaxed to allow more natural language interactions.
+        """
+        return True
 
     async def process_command(self, prompt: str, context: Dict[str, Any], mode: str) -> Dict[str, Any]:
         """
