@@ -52,7 +52,7 @@ $backendPath = Join-Path $rootPath "backend"
 $env:PYTHONPATH = "$rootPath;$backendPath"
 
 # Use --reload-dir to only watch backend directory and avoid node_modules issues
-python -m uvicorn backend.app:app --reload --reload-dir backend --host 0.0.0.0 --port 8000
+python -m uvicorn backend.app:app --reload --reload-dir backend --host 127.0.0.1 --port 8000
 
 
 
