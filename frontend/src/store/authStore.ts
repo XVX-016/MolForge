@@ -10,29 +10,29 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   initialized: boolean;
-  
+
   // Modal state
   authModalOpen: boolean;
   authModalTab: AuthModalTab;
   pendingAction: (() => Promise<void>) | null;
   pendingEmail: string | null;
   intendedDestination: string | null; // Store intended destination after login
-  
+
   // Actions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any; requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
-  
+
   // Modal control
   openAuthModal: (tab?: AuthModalTab, intendedDestination?: string | null) => void;
   closeAuthModal: () => void;
   setAuthModalTab: (tab: AuthModalTab) => void;
-  
+
   // Pending action handling
   setPendingAction: (action: (() => Promise<void>) | null) => void;
   runPendingAction: () => Promise<void>;
-  
+
   // Email confirmation
   resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
 }
@@ -111,19 +111,23 @@ export const useAuthStore = create<AuthState>()(
           if (!authStateSubscription) {
             const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
               const newUser = session?.user ?? null;
-              set({ 
-                user: newUser, 
+              set({
+                user: newUser,
                 session,
-                loading: false 
+                loading: false
               });
-              
-              // Handle successful sign in/sign up
+
+              // Handle successful sign in/sign up/token refresh
               if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newUser) {
-                // Close modal and run pending action
-                // Navigation to intended destination is handled by AuthNavigationHandler component
-                const { runPendingAction, closeAuthModal } = get();
-                closeAuthModal();
-                runPendingAction();
+                // Check if email is confirmed if required
+                const isEmailConfirmed = newUser.email_confirmed_at !== undefined && newUser.email_confirmed_at !== null;
+
+                // Close modal and run pending action if authenticated and confirmed
+                if (isEmailConfirmed || event === 'TOKEN_REFRESHED') {
+                  const { runPendingAction, closeAuthModal } = get();
+                  closeAuthModal();
+                  runPendingAction();
+                }
               }
             });
             authStateSubscription = subscription;
@@ -131,16 +135,16 @@ export const useAuthStore = create<AuthState>()(
 
           // Get initial session
           const { data: { session }, error } = await supabase.auth.getSession();
-          
+
           if (error) {
             console.error('Error getting session:', error);
             set({ user: null, session: null, loading: false, initialized: true });
             return;
           }
 
-          set({ 
-            user: session?.user ?? null, 
-            session, 
+          set({
+            user: session?.user ?? null,
+            session,
             loading: false,
             initialized: true
           });
@@ -171,14 +175,14 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const { data, error } = await supabase.auth.signUp({ email, password });
-          
+
           // Check if email confirmation is required
           const requiresConfirmation = !data.user?.email_confirmed_at && !error;
-          
+
           if (requiresConfirmation) {
             set({ authModalTab: 'confirm-email', pendingEmail: email });
           }
-          
+
           // State will be updated via onAuthStateChange listener if user is immediately authenticated
           return { error, requiresConfirmation };
         } catch (error: any) {

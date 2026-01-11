@@ -35,6 +35,9 @@ function AuthRouteHandler() {
 			openAuthModal('signup', intendedDestination);
 			// Navigate to home but preserve the intended destination in store
 			navigate('/', { replace: true });
+		} else if (location.pathname === '/verify-email') {
+			openAuthModal('confirm-email');
+			navigate('/', { replace: true });
 		}
 	}, [location.pathname, location.state, navigate, openAuthModal]);
 
@@ -86,6 +89,7 @@ export default function App() {
 							<Route path="/admin/items" element={<AdminItems />} />
 							<Route path="/supabase-test" element={<SupabaseTest />} />
 							<Route path="/seed-library" element={<SeedLibrary />} />
+							<Route path="/verify-email" element={<div />} /> {/* Modal handles the UI */}
 						</Routes>
 					</AppShell>
 				} />

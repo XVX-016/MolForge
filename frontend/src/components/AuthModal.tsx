@@ -1,4 +1,4 @@
-import React, { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
 import Button from './ui/Button';
@@ -65,7 +65,7 @@ export default function AuthModal() {
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (isLoading) return;
     setIsLoading(true);
 
@@ -91,7 +91,7 @@ export default function AuthModal() {
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (isLoading) return;
 
     // Validate passwords match
@@ -126,7 +126,7 @@ export default function AuthModal() {
 
   const handleResendEmail = async () => {
     if (!email) return;
-    
+
     setResendLoading(true);
     setResendSuccess(false);
     setError(null);
@@ -185,11 +185,10 @@ export default function AuthModal() {
                     setAuthModalTab('signin');
                     setError(null);
                   }}
-                  className={`px-4 py-2 font-medium transition-colors relative ${
-                    authModalTab === 'signin'
-                      ? 'text-black'
-                      : 'text-darkGrey hover:text-black'
-                  }`}
+                  className={`px-4 py-2 font-medium transition-colors relative ${authModalTab === 'signin'
+                    ? 'text-black'
+                    : 'text-darkGrey hover:text-black'
+                    }`}
                 >
                   Sign In
                   {authModalTab === 'signin' && (
@@ -205,11 +204,10 @@ export default function AuthModal() {
                     setAuthModalTab('signup');
                     setError(null);
                   }}
-                  className={`px-4 py-2 font-medium transition-colors relative ${
-                    authModalTab === 'signup'
-                      ? 'text-black'
-                      : 'text-darkGrey hover:text-black'
-                  }`}
+                  className={`px-4 py-2 font-medium transition-colors relative ${authModalTab === 'signup'
+                    ? 'text-black'
+                    : 'text-darkGrey hover:text-black'
+                    }`}
                 >
                   Create Account
                   {authModalTab === 'signup' && (
@@ -222,7 +220,7 @@ export default function AuthModal() {
                 </button>
               </div>
             )}
-            
+
             {/* Spacer when tabs are hidden (confirm-email view) */}
             {authModalTab === 'confirm-email' && <div />}
 
@@ -266,8 +264,8 @@ export default function AuthModal() {
                       We've sent a confirmation link to
                     </p>
                     <p className="text-black font-medium mb-6">{email}</p>
-                    <p className="text-sm text-darkGrey mb-6">
-                      Click the link in that email to activate your account.
+                    <p className="text-sm text-darkGrey mb-8 leading-relaxed">
+                      We've sent a secure link to your inbox. Click the link to verify your email and unlock all features.
                     </p>
 
                     {error && (

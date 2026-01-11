@@ -35,6 +35,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect to verify-email if email is not confirmed
+  if (!user.email_confirmed_at) {
+    return <Navigate to="/verify-email" state={{ from: location }} replace />;
+  }
+
   return children;
 }
 

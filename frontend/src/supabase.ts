@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase configuration from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Debug: Log what Vite is actually reading (only in dev mode)
 if (import.meta.env.DEV) {
@@ -20,8 +20,8 @@ function validateSupabaseConfig() {
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn(
       '⚠️ Supabase configuration incomplete. Missing:',
-      !supabaseUrl ? 'VITE_SUPABASE_URL' : '',
-      !supabaseAnonKey ? 'VITE_SUPABASE_ANON_KEY' : '',
+      !supabaseUrl ? 'VITE_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL' : '',
+      !supabaseAnonKey ? 'VITE_SUPABASE_ANON_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY' : '',
       '\nPlease create a .env file with your Supabase credentials.'
     );
     return false;
@@ -77,7 +77,13 @@ try {
   const isValid = validateSupabaseConfig();
 
   if (isValid && supabaseUrl && supabaseAnonKey) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      }
+    });
     console.log('✅ Supabase initialized successfully');
   } else {
     console.warn('⚠️ Supabase not initialized - configuration missing');
