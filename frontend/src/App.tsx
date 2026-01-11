@@ -7,8 +7,6 @@ import LabV2Page from './components/LabV2/LabV2Page';
 import Profile from './pages/Profile';
 import Docs from './pages/Docs';
 import AdminItems from './pages/admin/Items';
-import SupabaseTest from './pages/SupabaseTest';
-import SeedLibrary from './pages/SeedLibrary';
 import PublicLibrary from './pages/PublicLibrary';
 import StudioPage from './pages/StudioPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -87,8 +85,6 @@ export default function App() {
 								}
 							/>
 							<Route path="/admin/items" element={<AdminItems />} />
-							<Route path="/supabase-test" element={<SupabaseTest />} />
-							<Route path="/seed-library" element={<SeedLibrary />} />
 							<Route path="/verify-email" element={<div />} /> {/* Modal handles the UI */}
 						</Routes>
 					</AppShell>
