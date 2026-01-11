@@ -95,7 +95,8 @@ class StudioService:
 
         try:
             # Prepare the request
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={self.api_key}"
+            model_name = getattr(settings, "GEMINI_MODEL", "gemini-1.5-flash")
+            url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={self.api_key}"
             
             context_str = json.dumps(context)
             system_instruction = STUDIO_SYSTEM_PROMPT
