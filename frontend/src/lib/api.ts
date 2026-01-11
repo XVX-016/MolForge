@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { MoleculeGraph } from '../types/molecule'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -179,6 +180,36 @@ export async function generate3DMolfile(
 }
 
 /**
+ * Convert MoleculeGraph to SMILES via backend
+ */
+export async function toSMILES(graph: MoleculeGraph): Promise<{ smiles: string }> {
+  const response = await apiClient.post<{ smiles: string }>('/api/molecule/to-smiles', {
+    molecule: graph
+  })
+  return response.data
+}
+
+export interface MoleculeProperties {
+  molecular_weight: number
+  logp: number
+  tpsa: number
+  hbd: number
+  hba: number
+  rotatable_bonds: number
+  formula: string
+  heavy_atom_count: number
+  lipinski_violations: number
+}
+
+/**
+ * Get deterministic molecular properties from RDKit
+ */
+export async function getMoleculeProperties(smiles: string): Promise<MoleculeProperties> {
+  const response = await apiClient.post<MoleculeProperties>('/api/molecule/properties', { smiles })
+  return response.data
+}
+
+/**
  * Admin Items API
  */
 export interface Item {
@@ -204,7 +235,7 @@ export interface CreateItemPayload {
   structure_file?: File | null
 }
 
-export interface UpdateItemPayload extends Partial<CreateItemPayload> {}
+export interface UpdateItemPayload extends Partial<CreateItemPayload> { }
 
 /**
  * List all items
@@ -234,7 +265,7 @@ export async function createItem(payload: CreateItemPayload): Promise<Item> {
   if (payload.status) formData.append('status', payload.status)
   if (payload.stock !== undefined) formData.append('stock', payload.stock.toString())
   if (payload.structure_file) formData.append('structure_file', payload.structure_file)
-  
+
   const response = await apiClient.post<Item>('/api/v1/admin/items', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -255,7 +286,7 @@ export async function updateItem(id: number, payload: UpdateItemPayload): Promis
   if (payload.status) formData.append('status', payload.status)
   if (payload.stock !== undefined) formData.append('stock', payload.stock.toString())
   if (payload.structure_file) formData.append('structure_file', payload.structure_file)
-  
+
   const response = await apiClient.put<Item>(`/api/v1/admin/items/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

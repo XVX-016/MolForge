@@ -9,8 +9,6 @@ import BarbellViewer from '../components/BarbellViewer'
 // Caffeine SMILES: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
 const CAFFEINE_SMILES = 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'
 
-
-
 /* --------- Inline Icons (clean, modern SVG) ---------- */
 function SparklesIcon({ className = 'w-7 h-7 text-indigo-600' }: { className?: string }) {
   return (
@@ -43,6 +41,17 @@ function LibraryIcon({ className = 'w-7 h-7 text-sky-500' }: { className?: strin
   );
 }
 
+function PropertyCard({ title, description }: { title: string; description: string }) {
+  return (
+    <Card className="p-6 bg-white border border-lightGrey/50 flex flex-col justify-between h-full">
+      <div>
+        <h4 className="font-semibold text-black mb-1">{title}</h4>
+        <p className="text-xs text-darkGrey leading-relaxed">{description}</p>
+      </div>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const [recent, setRecent] = useState<MoleculeItem[]>([])
@@ -64,8 +73,6 @@ export default function Dashboard() {
       })()
     return () => { cancelled = true }
   }, [])
-
-
 
   useEffect(() => {
     let cancelled = false
@@ -110,24 +117,24 @@ export default function Dashboard() {
 
           {/* Main Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-black leading-tight">
-            Reimagine Molecular Discovery with AI
+            Design with Molecular Precision
           </h1>
 
           {/* Description */}
           <p className="text-lg text-darkGrey leading-relaxed max-w-xl">
-            Build, analyze, and explore molecular structures instantly using cutting-edge computational chemistry tools.
-            Visualize 3D structures, save to your personal library, and collaborate with the community.
+            Build, analyze, and optimize molecules using deterministic computational chemistry.
+            Visualize structures in 3D, compute properties instantly, and guide design with AI-assisted workflows.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-2">
             <motion.button
-              onClick={() => navigate('/lab')}
+              onClick={() => navigate('/studio')}
               className="btn-primary px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Generate Molecule
+              Open Studio
             </motion.button>
             <motion.button
               onClick={() => navigate('/library')}
@@ -142,7 +149,7 @@ export default function Dashboard() {
           {/* Quick Stats */}
           <div className="flex gap-8 pt-6">
             <div>
-              <div className="text-sm text-midGrey mb-1">Total saved</div>
+              <div className="text-sm text-midGrey mb-1">Total molecules</div>
               <div className="text-3xl font-bold text-black">{kpis.total}</div>
             </div>
             <div>
@@ -150,7 +157,7 @@ export default function Dashboard() {
               <div className="text-3xl font-bold text-black">{kpis.avgStability}</div>
             </div>
             <div className="hidden md:block">
-              <div className="text-sm text-midGrey mb-1">Last generated</div>
+              <div className="text-sm text-midGrey mb-1">Active workspace</div>
               <div className="text-sm text-black truncate max-w-[120px]" title={kpis.lastGenerated}>{kpis.lastGenerated}</div>
             </div>
           </div>
@@ -196,9 +203,9 @@ export default function Dashboard() {
               <SparklesIcon />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-black mb-2">AI Molecule Generator</h3>
+              <h3 className="text-xl font-semibold text-black mb-2">AI-Guided Design</h3>
               <p className="text-darkGrey text-sm leading-relaxed">
-                Build molecules instantly using machine learning. Generate novel structures from natural language prompts.
+                Translate design intent into structured optimization commands. AI assists decision-making—chemistry is computed deterministically.
               </p>
             </div>
           </Card>
@@ -207,9 +214,9 @@ export default function Dashboard() {
               <CubeIcon />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-black mb-2">3D Molecular Viewer</h3>
+              <h3 className="text-xl font-semibold text-black mb-2">High-Fidelity Visualization</h3>
               <p className="text-darkGrey text-sm leading-relaxed">
-                Interact with high-quality 3D visualizations. Rotate, zoom, and explore molecular structures in real-time.
+                Real-time 2D/3D visualization powered by cheminformatics engines. Inspect bonds, geometry, and conformations interactively.
               </p>
             </div>
           </Card>
@@ -218,17 +225,18 @@ export default function Dashboard() {
               <LibraryIcon />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-black mb-2">Your Molecule Library</h3>
+              <h3 className="text-xl font-semibold text-black mb-2">Versioned Library</h3>
               <p className="text-darkGrey text-sm leading-relaxed">
-                Save, manage, and explore your creations. Build a personal collection of molecular structures.
+                Versioned molecule storage with computed properties, metadata, and full reproducibility analytics.
               </p>
             </div>
           </Card>
         </div>
       </section>
 
-      {/* Stats Grid - Compact */}
+      {/* Workspace Overview */}
       <section className="max-w-7xl mx-auto px-6">
+        <h2 className="text-2xl font-semibold text-black mb-6">Workspace Overview</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Card className="p-6">
             <div className="text-sm text-midGrey mb-2">Total saved</div>
@@ -252,74 +260,64 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Recent Molecules - Horizontal Scroll */}
+      {/* Computed Molecular Properties showcase */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold text-black">Recent Molecules</h2>
-          <button
-            onClick={() => navigate('/library')}
-            className="text-sm text-midGrey hover:text-black transition-colors"
-          >
-            View all →
-          </button>
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-black">Computed Molecular Properties</h2>
+          <p className="text-sm text-midGrey mt-1">
+            All properties are computed deterministically using cheminformatics engines &mdash; not predicted by language models.
+          </p>
         </div>
 
-        <div className="flex overflow-x-auto gap-6 pb-4 -mx-6 px-6 scrollbar-hide">
-          {recent.length > 0 ? (
-            recent.slice(0, 12).map((m) => (
-              <motion.div
-                key={m.id}
-                className="min-w-[220px] flex-shrink-0"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28 }}
-              >
-                <div
-                  className="cursor-pointer h-full"
-                  onClick={() => navigate(`/lab?id=${m.id}`)}
-                >
-                  <Card className="overflow-hidden hover:shadow-neon-hover transition-all h-full">
-                    <div className="h-36 flex items-center justify-center overflow-hidden bg-offwhite">
-                      {m.molfile ? (
-                        <BarbellViewer
-                          molfile={m.molfile}
-                          mode="card"
-                          height={140}
-                          atomScale={0.18}
-                          bondRadius={0.04}
-                        />
-                      ) : m.thumbnail_b64 ? (
-                        <img
-                          src={m.thumbnail_b64.startsWith('data:') ? m.thumbnail_b64 : `data:image/png;base64,${m.thumbnail_b64}`}
-                          alt={m.name}
-                          className="max-h-full max-w-full object-contain"
-                        />
-                      ) : (
-                        <div className="text-midGrey text-sm">No preview</div>
-                      )}
-                    </div>
-                    <div className="px-4 py-3">
-                      <div className="font-medium truncate text-black">{m.name}</div>
-                      {m.formula && (
-                        <div className="text-xs text-midGrey mt-1 font-mono">{m.formula}</div>
-                      )}
-                      <div className="text-xs text-midGrey mt-1">{new Date(m.created_at).toLocaleDateString()}</div>
-                    </div>
-                  </Card>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="text-midGrey col-span-full text-center py-12 w-full">
-              <p className="mb-4">No molecules yet.</p>
-              <button
-                onClick={() => navigate('/lab')}
-                className="btn-primary px-6 py-2"
-              >
-                Generate Your First Molecule
-              </button>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <PropertyCard
+            title="Molecular Weight"
+            description="Total molecular mass calculated from atomic composition."
+          />
+          <PropertyCard
+            title="LogP (Lipophilicity)"
+            description="Octanol&ndash;water partition coefficient computed via RDKit descriptors."
+          />
+          <PropertyCard
+            title="TPSA"
+            description="Topological polar surface area indicating permeability and absorption."
+          />
+          <PropertyCard
+            title="Hydrogen Bond Donors (HBD)"
+            description="Count of functional groups capable of donating hydrogen bonds."
+          />
+          <PropertyCard
+            title="Hydrogen Bond Acceptors (HBA)"
+            description="Count of atoms capable of accepting hydrogen bonds."
+          />
+          <PropertyCard
+            title="Rotatable Bonds"
+            description="Number of rotatable single bonds affecting molecular flexibility."
+          />
+        </div>
+
+        <p className="text-xs text-midGrey mt-8 text-center italic">
+          Property calculations are reproducible, auditable, and independent of AI model outputs.
+        </p>
+      </section>
+
+      {/* Final CTA */}
+      <section className="max-w-4xl mx-auto px-6 py-12 text-center">
+        <motion.button
+          onClick={() => navigate('/studio')}
+          className="btn-primary px-12 py-5 text-xl font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          Open Studio
+        </motion.button>
+        <div className="mt-4">
+          <button
+            onClick={() => navigate('/docs')}
+            className="text-midGrey hover:text-black transition-colors"
+          >
+            View documentation &rarr;
+          </button>
         </div>
       </section>
 

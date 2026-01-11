@@ -6,6 +6,8 @@ import { validateAction } from '../lib/studio/validator';
 import { useHistoryStore } from './historyStore';
 import * as mutations from '../lib/mutations';
 import { apiClient } from '../api/api';
+import { toSMILES, getMoleculeProperties } from '../lib/api';
+import type { MoleculeProperties } from '../lib/api';
 import type { MoleculeGraph } from '../types/molecule';
 
 export type SelectionType = 'atom' | 'bond' | null;
@@ -21,6 +23,8 @@ interface StudioState {
     isCanvasInitialized: boolean;
     isCommandRunning: boolean;
     selection: StudioSelection;
+    properties: MoleculeProperties | null;
+    isComputingProperties: boolean;
 
     // Actions
     setMode: (mode: StudioMode) => void;
@@ -30,6 +34,7 @@ interface StudioState {
     setCommandRunning: (running: boolean) => void;
     setSelection: (type: SelectionType, id: string | null) => void;
     runCommand: (input: string) => Promise<void>;
+    fetchMoleculeProperties: (graph: MoleculeGraph) => Promise<void>;
 }
 
 export const useStudioStore = create<StudioState>((set, get) => ({
@@ -38,6 +43,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     isCanvasInitialized: false,
     isCommandRunning: false,
     selection: { type: null, id: null },
+    properties: null,
+    isComputingProperties: false,
 
     setMode: (mode) => set({ mode }),
     addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
@@ -45,6 +52,23 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     setCanvasInitialized: (initialized) => set({ isCanvasInitialized: initialized }),
     setCommandRunning: (running) => set({ isCommandRunning: running }),
     setSelection: (type, id) => set({ selection: { type, id } }),
+
+    fetchMoleculeProperties: async (graph: MoleculeGraph) => {
+        set({ isComputingProperties: true });
+        try {
+            const { smiles } = await toSMILES(graph);
+            if (smiles) {
+                const props = await getMoleculeProperties(smiles);
+                set({ properties: props });
+            }
+        } catch (err) {
+            console.error('Failed to fetch molecular properties:', err);
+            // Fallback UX rule: Keep last known if reachable, or show null
+            // For now, we just log.
+        } finally {
+            set({ isComputingProperties: false });
+        }
+    },
 
     runCommand: async (input: string) => {
         const { mode, setCommandRunning } = get();
@@ -121,6 +145,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
             }
 
             history.applyMutation(nextGraph, description, 'ai', mode);
+            // Trigger property re-computation
+            get().fetchMoleculeProperties(nextGraph);
 
         } catch (error: any) {
             console.error('runCommand Error:', error);

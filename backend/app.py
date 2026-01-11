@@ -16,7 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import traceback
-from backend.routes import predict as predict_router
 from backend.routes import generate as generate_router
 from backend.routes import library as library_router
 from backend.routes import admin as admin_router
@@ -30,11 +29,9 @@ from backend.routes import reaction as reaction_router
 from backend.routes import retrosynthesis as retrosynthesis_router
 from backend.routes import kab as kab_router
 from backend.routes import quantum as quantum_router
-from backend.routes import ml as ml_router
 from backend.routes import collaboration as collaboration_router
 from backend.routes import dashboard as dashboard_router
 from backend.lab import routes as lab_router
-from backend.api import predict as predict_api_router
 from backend.routes import screening as screening_router
 from backend.routes import search_phase7 as search_phase7_router
 from backend.routes import qm_md as qm_md_router
@@ -47,7 +44,6 @@ from backend.api import molecule as molecule_api_router
 from backend.api import mentor as mentor_api_router
 from backend.api import studio as studio_api_router
 from backend.db import init_db
-from backend.services.prediction_service import PredictionService
 from backend.models.schemas.prediction_schema import PredictOut, PredictIn
 
 app = FastAPI(
@@ -122,7 +118,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 init_db()
 
 # Mount routers
-app.include_router(predict_router.router, prefix="/predict", tags=["predict"])
 app.include_router(generate_router.router, prefix="/generate", tags=["generate"])
 app.include_router(library_router.router, tags=["molecules"])
 app.include_router(admin_router.router, tags=["admin"])
@@ -136,8 +131,6 @@ app.include_router(reaction_router.router, prefix="/api/reaction", tags=["reacti
 app.include_router(retrosynthesis_router.router, prefix="/api/retrosynthesis", tags=["retrosynthesis"])
 app.include_router(kab_router.router, prefix="/api/kab", tags=["kab"])
 app.include_router(quantum_router.router, prefix="/api/quantum", tags=["quantum"])
-app.include_router(ml_router.router, prefix="/api/ml", tags=["ml"])
-app.include_router(predict_api_router.router, tags=["prediction"])
 app.include_router(screening_router.router, prefix="/api/screening", tags=["screening"])
 app.include_router(search_phase7_router.router, prefix="/api/search", tags=["search-phase7"])
 app.include_router(search_api_router.router, prefix="/api/search", tags=["search"])
@@ -164,23 +157,6 @@ def root():
         "message": "MolForge Backend API",
         "version": settings.API_VERSION
     }
-
-
-@app.post("/predict-fast")
-def predict_fast(payload: PredictFastIn):
-    """
-    Fast prediction using ONNX model
-    """
-    try:
-        properties = PredictionService.predict_properties(payload.smiles, use_onnx=True)
-        return PredictOut(properties=properties, smiles=payload.smiles)
-    except Exception as e:
-        # Fallback to regular predictor if ONNX fails
-        try:
-            properties = PredictionService.predict_properties(payload.smiles, use_onnx=False)
-            return PredictOut(properties=properties, smiles=payload.smiles)
-        except Exception as e2:
-            raise HTTPException(status_code=500, detail=str(e2))
 
 
 @app.get("/health")

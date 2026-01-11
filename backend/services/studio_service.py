@@ -17,32 +17,32 @@ except ImportError:
     logger.warning("google-generativeai not installed. Studio service will not work.")
 
 STUDIO_SYSTEM_PROMPT = """
-You are MolForge Studio Architect, a high-precision molecular design orchestrator.
-You ONLY output valid JSON. No conversational text.
+You are the MolForge AI Commander. Your role is strictly to PARSE intent from user requests into structured commands for the RDKit Chemistry Kernel.
+You MUST ONLY output a JSON object. No markdown, no prose, no explanations outside the JSON.
 
-Current Capabilities:
-1. CREATE_MOLECULE: { "atoms": [], "bonds": [] }
+COMMAND CONTRACT:
+1. CREATE_MOLECULE: { "smiles": "SMILES_STRING" }
 2. ADD_ATOM: { "element": "C", "position": [x, y, z] }
 3. REPLACE_ATOM: { "atomId": "id", "newElement": "N" }
 4. REMOVE_ATOM: { "atomId": "id" }
 5. ADD_BOND: { "from": "id1", "to": "id2", "order": 1 }
 6. REMOVE_BOND: { "bondId": "id" }
 7. OPTIMIZE_GEOMETRY: {}
-8. SIMULATE_REACTION: {}
-9. NO_OP: { "reason": "why" }
+8. ANALYZE_PROPERTIES: {}
+9. NO_OP: { "reason": "Scientific justification or error explanation" }
 
-Rules:
-- Default to NO_OP if a request is biologically/physically nonsensical.
-- For CREATE_MOLECULE, use a sensible geometry if not specified.
-- Use id format like 'a1', 'a2' for atoms and 'b1', 'b2' for bonds.
-- Always include a "reason" field for scientific justification.
-- If the user asks for property prediction or complex analysis, point them to the ANALYZE mode or provide a brief high-level summary in "reason".
+STRATEGIC RULES:
+- You are an ORCHESTRATOR. You do not compute properties; RDKit does.
+- If the user asks for "LogP" or "Stability", use ANALYZE_PROPERTIES.
+- If the request is ambiguous, use NO_OP with a request for clarification in "reason".
+- Never invent atomic coordinates unless performing a CREATE_MOLECULE from scratch.
+- For structural edits, refer to the provided Molecule Context for atom/bond IDs.
 
-Output Format:
+OUTPUT FORMAT:
 {
   "type": "ACTION_TYPE",
   "payload": { ... },
-  "reason": "..."
+  "reason": "Technical justification for this design choice."
 }
 """
 
@@ -66,18 +66,37 @@ class StudioService:
             logger.info("StudioService initialized with Gemini v1beta REST API")
 
     def _extract_json(self, response_data: dict) -> dict:
-        """Extract JSON from Gemini REST response"""
+        """Robustly extract JSON from Gemini REST response"""
         try:
-            text = response_data['candidates'][0]['content']['parts'][0]['text']
-            # Find JSON block if model wrapped it in markdown
+            parts = response_data.get('candidates', [{}])[0].get('content', {}).get('parts', [])
+            if not parts:
+                raise ValueError("No content returned from AI.")
+            
+            text = parts[0].get('text', '').strip()
+            
+            # Remove markdown code blocks if present
+            if text.startswith("```json"):
+                text = text[7:]
+            if text.startswith("```"):
+                text = text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            
+            text = text.strip()
+            
+            # Find JSON block boundaries just in case
             start = text.find("{")
             end = text.rfind("}")
             if start != -1 and end != -1:
                 return json.loads(text[start:end+1])
+            
             return json.loads(text)
         except (KeyError, IndexError, json.JSONDecodeError) as e:
-            logger.error(f"Failed to parse Gemini response: {e}")
-            raise ValueError(f"Invalid response format from AI: {e}")
+            logger.error(f"Failed to parse Gemini response: {e}. Raw text: {text[:200] if 'text' in locals() else 'N/A'}")
+            return {
+                "type": "NO_OP",
+                "reason": f"AI Parsing Failure: Expected JSON command, received malformed output. Chemistry kernel standing by."
+            }
 
     def _is_safe_prompt(self, prompt: str) -> bool:
         """Relaxed safety filter"""
@@ -95,7 +114,8 @@ class StudioService:
 
         try:
             # Prepare the request
-            model_name = getattr(settings, "GEMINI_MODEL", "gemini-1.5-flash")
+            # Force use 2.0-flash-exp on v1beta which we verified works for this key
+            model_name = "gemini-2.0-flash-exp"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
             
             context_str = json.dumps(context)
@@ -117,6 +137,9 @@ class StudioService:
                     "maxOutputTokens": 1024
                 }
             }
+
+            print(f"DEBUG: Calling Gemini API URL: {url}")
+            print(f"DEBUG: Payload: {json.dumps(payload, indent=2)}")
 
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(url, json=payload)

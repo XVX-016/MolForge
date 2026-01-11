@@ -16,10 +16,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdDepictor
 from rdkit.Chem import rdDistGeom
+from backend.chemistry.rdkit_props import compute_properties
+from backend.chemistry.errors import ChemistryError
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +53,11 @@ class ThreeDRequest(BaseModel):
     method: Optional[str] = "etkdg"  # "etkdg" or "embed"
 
 
+class PropertyRequest(BaseModel):
+    """Request for molecule properties."""
+    smiles: str
+
+
 @router.post("/to-smiles")
 async def to_smiles(request: MoleculeRequest):
     """
@@ -78,6 +82,20 @@ async def to_smiles(request: MoleculeRequest):
     except Exception as e:
         logger.error(f"Error generating SMILES: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/properties")
+async def get_properties(request: PropertyRequest):
+    """
+    Get molecular properties using RDKit.
+    """
+    try:
+        return compute_properties(request.smiles)
+    except ChemistryError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in /properties: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal chemistry engine error")
 
 
 @router.post("/to-molblock")

@@ -181,7 +181,10 @@ export default function AIPanel() {
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                         <span>Ready</span>
                     </div>
-                    <span>L4-Model Node</span>
+                    <div className="flex flex-col items-end gap-0.5">
+                        <span>L4-Model Node</span>
+                        <span className="text-[6px] tracking-normal text-blue-500/60 lowercase italic font-medium">Chemistry engine: RDKit Deterministic</span>
+                    </div>
                 </div>
             </div>
         </div>

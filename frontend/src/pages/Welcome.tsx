@@ -80,7 +80,7 @@ export default function Welcome() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-5xl lg:text-6xl font-bold text-ivory"
           >
-            Welcome to SynthCore
+            Welcome to MolForge
           </motion.h1>
 
           <motion.p
@@ -89,8 +89,8 @@ export default function Welcome() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-xl text-chrome leading-relaxed"
           >
-            Design, simulate, and explore molecular structures with cutting-edge AI-powered tools.
-            Build your molecular library and unlock the future of synthetic chemistry.
+            Build, analyze, and optimize molecules using deterministic computational chemistry.
+            Visualize structures in 3D, compute properties instantly, and guide design with AI-assisted workflows.
           </motion.p>
 
           <motion.div
@@ -100,6 +100,7 @@ export default function Welcome() {
             className="flex flex-col sm:flex-row gap-4"
           >
             <motion.button
+              onClick={() => window.location.href = '/studio'}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-8 py-4 rounded-lg font-semibold text-spaceGrey transition-all duration-300"
@@ -109,19 +110,12 @@ export default function Welcome() {
                 borderColor: 'rgba(139, 243, 255, 0.5)',
                 boxShadow: '0 0 20px rgba(139, 243, 255, 0.3)',
               }}
-              onHoverStart={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 30px rgba(139, 243, 255, 0.5)';
-                e.currentTarget.style.borderColor = 'rgba(139, 243, 255, 0.8)';
-              }}
-              onHoverEnd={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(139, 243, 255, 0.3)';
-                e.currentTarget.style.borderColor = 'rgba(139, 243, 255, 0.5)';
-              }}
             >
-              Get Started
+              Open Studio
             </motion.button>
 
             <motion.button
+              onClick={() => window.location.href = '/docs'}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-8 py-4 rounded-lg font-semibold text-spaceGrey transition-all duration-300"
@@ -130,14 +124,6 @@ export default function Welcome() {
                 border: '2px solid',
                 borderColor: 'rgba(139, 243, 255, 0.5)',
                 boxShadow: '0 0 20px rgba(139, 243, 255, 0.3)',
-              }}
-              onHoverStart={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 30px rgba(139, 243, 255, 0.5)';
-                e.currentTarget.style.borderColor = 'rgba(139, 243, 255, 0.8)';
-              }}
-              onHoverEnd={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 20px rgba(139, 243, 255, 0.3)';
-                e.currentTarget.style.borderColor = 'rgba(139, 243, 255, 0.5)';
               }}
             >
               Learn More

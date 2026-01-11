@@ -11,6 +11,7 @@ import { deleteAtom, deleteBond } from '../../lib/mutations';
 import OptimizationPanel from './OptimizationPanel';
 import SimulationTimeline from './SimulationTimeline';
 import { generateVibrationTrajectory, type Trajectory, type SimulationFrame } from '../../lib/simulation';
+import PropertiesPanel from './PropertiesPanel';
 
 export default function MolecularWorkspace() {
     const { mode, selection, setSelection } = useStudioStore();
@@ -109,6 +110,11 @@ export default function MolecularWorkspace() {
                     </div>
                 </div>
             )}
+
+            {/* Deterministic Properties Overlay */}
+            <div className="absolute top-6 right-6 z-20 w-64 pointer-events-auto">
+                <PropertiesPanel />
+            </div>
 
             {/* Selection HUD - Zero UI Aesthetic */}
             <AnimatePresence>

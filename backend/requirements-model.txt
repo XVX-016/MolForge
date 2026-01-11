@@ -1,12 +1,3 @@
-# Heavy ML/Model dependencies - installed separately for better Docker caching
-# These rarely change, so Docker can cache this layer
-# NOTE: PyTorch is installed separately in Dockerfile with CPU-only wheels
-
-##############################
-# ML/AI Libraries
-##############################
-transformers==4.41.2
-tokenizers==0.19.1
 # CPU-only ONNX Runtime (no GPU/CUDA dependencies)
 onnxruntime==1.19.2
 

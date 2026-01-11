@@ -5,7 +5,7 @@
  * Access it at /supabase-test
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabase';
 import { saveMolecule, listMolecules, deleteMolecule } from '../lib/supabaseMoleculeStore';
 
@@ -19,7 +19,7 @@ export default function SupabaseTest() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [testMoleculeId, setTestMoleculeId] = useState<string | null>(null);
+  const [, setTestMoleculeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -282,10 +282,10 @@ export default function SupabaseTest() {
               <div
                 key={index}
                 className={`p-3 rounded-lg border ${result.status === 'success'
-                    ? 'bg-green-50 border-green-200'
-                    : result.status === 'error'
-                      ? 'bg-red-50 border-red-200'
-                      : 'bg-gray-50 border-gray-200'
+                  ? 'bg-green-50 border-green-200'
+                  : result.status === 'error'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-gray-50 border-gray-200'
                   }`}
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -333,45 +333,12 @@ export default function SupabaseTest() {
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <p className="font-semibold mb-2">SQL to create molecules table:</p>
           <pre className="text-xs overflow-x-auto bg-gray-100 p-2 rounded">
-            {`CREATE TABLE IF NOT EXISTS molecules (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  smiles TEXT,
-  formula TEXT,
-  molfile TEXT,
-  json_graph TEXT,
-  properties TEXT,
-  thumbnail_b64 TEXT,
-  user_id UUID NOT NULL REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE molecules ENABLE ROW LEVEL SECURITY;
-
--- OPTIMIZED POLICIES (Using subqueries for performance)
--- Users can only see their own molecules
-CREATE POLICY "Users can view own molecules"
-  ON molecules FOR SELECT
-  USING ( (SELECT auth.uid()) = user_id );
-
--- Users can insert their own molecules
-CREATE POLICY "Users can insert own molecules"
-  ON molecules FOR INSERT
-  WITH CHECK ( (SELECT auth.uid()) = user_id );
-
--- Users can update their own molecules
-CREATE POLICY "Users can update own molecules"
-  ON molecules FOR UPDATE
-  USING ( (SELECT auth.uid()) = user_id );
-
--- Users can delete their own molecules
-CREATE POLICY "Users can delete own molecules"
-  ON molecules FOR DELETE
-  USING ( (SELECT auth.uid()) = user_id );
-
--- Recommended Index
-CREATE INDEX IF NOT EXISTS idx_molecules_user_id ON molecules(user_id);`}
+            {/* Large SQL instructions hidden to avoid potential HMR crash issues */}
+            {/* 
+CREATE TABLE IF NOT EXISTS molecules (
+...
+)
+*/}
           </pre>
         </div>
       </div>

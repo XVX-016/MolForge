@@ -60,7 +60,7 @@ class Settings:
     # AI Keys
     GEMINI_KEY: Optional[str] = os.getenv("GEMINI_KEY")
     GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
 
 settings = Settings()
 
