@@ -25,7 +25,7 @@ export default function SupabaseTest() {
     if (!supabase) {
       return;
     }
-    
+
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user?.id || null);
@@ -52,9 +52,9 @@ export default function SupabaseTest() {
 
   const testSupabaseConfig = () => {
     clearResults();
-    addResult('Supabase Configuration', isSupabaseConfigured() ? 'success' : 'error', 
-      isSupabaseConfigured() 
-        ? 'Supabase is properly configured' 
+    addResult('Supabase Configuration', isSupabaseConfigured() ? 'success' : 'error',
+      isSupabaseConfigured()
+        ? 'Supabase is properly configured'
         : 'Supabase configuration is missing or invalid. Check your .env file.');
   };
 
@@ -67,7 +67,7 @@ export default function SupabaseTest() {
     try {
       // Test connection by querying a system table
       const { data, error } = await supabase.from('molecules').select('count').limit(1);
-      
+
       if (error && error.code !== 'PGRST116') {
         // PGRST116 means table doesn't exist yet, which is okay
         addResult('Database Connection', 'error', `Error: ${error.message}`);
@@ -92,7 +92,7 @@ export default function SupabaseTest() {
         if (error) {
           console.error('Auth error details:', error);
           addResult('Authentication', 'error', `Error: ${error.message}`);
-          
+
           if (error.message.includes('Anonymous sign-ins are disabled')) {
             addResult('Setup Required', 'error', 'Please enable Anonymous authentication in Supabase Dashboard → Authentication → Providers');
           } else if (error.message.includes('Email rate limit exceeded')) {
@@ -281,13 +281,12 @@ export default function SupabaseTest() {
             {results.map((result, index) => (
               <div
                 key={index}
-                className={`p-3 rounded-lg border ${
-                  result.status === 'success'
+                className={`p-3 rounded-lg border ${result.status === 'success'
                     ? 'bg-green-50 border-green-200'
                     : result.status === 'error'
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-gray-50 border-gray-200'
-                }`}
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium">{result.name}</span>
@@ -334,11 +333,12 @@ export default function SupabaseTest() {
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <p className="font-semibold mb-2">SQL to create molecules table:</p>
           <pre className="text-xs overflow-x-auto bg-gray-100 p-2 rounded">
-{`CREATE TABLE molecules (
+            {`CREATE TABLE IF NOT EXISTS molecules (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   smiles TEXT,
   formula TEXT,
+  molfile TEXT,
   json_graph TEXT,
   properties TEXT,
   thumbnail_b64 TEXT,
@@ -349,25 +349,29 @@ export default function SupabaseTest() {
 -- Enable RLS
 ALTER TABLE molecules ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can only see their own molecules
+-- OPTIMIZED POLICIES (Using subqueries for performance)
+-- Users can only see their own molecules
 CREATE POLICY "Users can view own molecules"
   ON molecules FOR SELECT
-  USING (auth.uid() = user_id);
+  USING ( (SELECT auth.uid()) = user_id );
 
--- Policy: Users can insert their own molecules
+-- Users can insert their own molecules
 CREATE POLICY "Users can insert own molecules"
   ON molecules FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK ( (SELECT auth.uid()) = user_id );
 
--- Policy: Users can update their own molecules
+-- Users can update their own molecules
 CREATE POLICY "Users can update own molecules"
   ON molecules FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING ( (SELECT auth.uid()) = user_id );
 
--- Policy: Users can delete their own molecules
+-- Users can delete their own molecules
 CREATE POLICY "Users can delete own molecules"
   ON molecules FOR DELETE
-  USING (auth.uid() = user_id);`}
+  USING ( (SELECT auth.uid()) = user_id );
+
+-- Recommended Index
+CREATE INDEX IF NOT EXISTS idx_molecules_user_id ON molecules(user_id);`}
           </pre>
         </div>
       </div>

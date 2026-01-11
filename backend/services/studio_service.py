@@ -63,7 +63,7 @@ class StudioService:
             self.api_key = None
         else:
             self.api_key = "".join(api_key.split())
-            logger.info("StudioService initialized with Gemini v1 REST API")
+            logger.info("StudioService initialized with Gemini v1beta REST API")
 
     def _extract_json(self, response_data: dict) -> dict:
         """Extract JSON from Gemini REST response"""
@@ -96,7 +96,7 @@ class StudioService:
         try:
             # Prepare the request
             model_name = getattr(settings, "GEMINI_MODEL", "gemini-1.5-flash")
-            url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={self.api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
             
             context_str = json.dumps(context)
             system_instruction = STUDIO_SYSTEM_PROMPT
