@@ -15,6 +15,7 @@ class StudioCommandRequest(BaseModel):
     prompt: str
     molecule_context: Dict[str, Any]
     mode: str
+    analysis_context: Optional[Dict[str, Any]] = None
 
 @router.post("/command")
 async def process_studio_command(request: StudioCommandRequest):
@@ -29,7 +30,8 @@ async def process_studio_command(request: StudioCommandRequest):
         action = await service.process_command(
             request.prompt, 
             request.molecule_context, 
-            request.mode
+            request.mode,
+            request.analysis_context
         )
         return action
     except Exception as e:

@@ -4,8 +4,8 @@ Retrosynthesis planning API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.retrosynthesis.planner import plan_retrosynthesis
-from chem.retrosynthesis.scoring import rank_pathways
+from backend.chem.retrosynthesis.planner import plan_retrosynthesis
+from backend.chem.retrosynthesis.scoring import rank_pathways
 
 router = APIRouter()
 

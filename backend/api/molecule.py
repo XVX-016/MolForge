@@ -12,13 +12,21 @@ Provides endpoints for:
 - 2D coordinate generation
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+import uuid
 import logging
+from rdkit import Chem
 from rdkit.Chem import rdDistGeom
 from backend.chemistry.rdkit_props import compute_properties
 from backend.chemistry.errors import ChemistryError
+from backend.chemistry.optimize import analyze_structure, suggest_optimizations
+from backend.chemistry.diff import calculate_structural_diff
+from backend.services.version_service import VersionService
+from backend.core.dependencies import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +64,13 @@ class ThreeDRequest(BaseModel):
 class PropertyRequest(BaseModel):
     """Request for molecule properties."""
     smiles: str
+
+class CommitRequest(BaseModel):
+    """Request to commit a molecule version."""
+    smiles: str
+    json_graph: Dict[str, Any]
+    parent_version_id: Optional[uuid.UUID] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 @router.post("/to-smiles")
@@ -96,6 +111,113 @@ async def get_properties(request: PropertyRequest):
     except Exception as e:
         logger.error(f"Unexpected error in /properties: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal chemistry engine error")
+
+
+@router.post("/commit")
+async def commit_version(request: CommitRequest, db: Session = Depends(get_db)):
+    """
+    Commit a molecular draft to immutable persistence.
+    """
+    try:
+        version = VersionService.create_version(
+            db=db,
+            smiles=request.smiles,
+            json_graph=request.json_graph,
+            parent_version_id=request.parent_version_id,
+            additional_metadata=request.metadata
+        )
+        return {
+            "version_id": version.id,
+            "molecule_id": version.molecule_id,
+            "version_index": version.version_index,
+            "canonical_smiles": version.canonical_smiles,
+            "properties": version.properties
+        }
+    except ChemistryError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Commit Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to commit molecular version")
+
+
+@router.post("/analyze")
+async def analyze_molecule(request: PropertyRequest):
+    """
+    Perform medicinal chemistry analysis and suggest optimizations.
+    """
+    try:
+        mol = Chem.MolFromSmiles(request.smiles)
+        if not mol:
+            raise HTTPException(status_code=400, detail="Invalid SMILES")
+            
+        issues, radar = analyze_structure(mol)
+        suggestions = suggest_optimizations(mol)
+        
+        return {
+            "issues": issues,
+            "suggestions": suggestions,
+            "radar": radar
+        }
+    except Exception as e:
+        logger.error(f"Analysis Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to analyze structure")
+
+
+@router.get("/diff")
+async def get_molecule_diff(base_id: str, prop_id: str, db: Session = Depends(get_db)):
+    """
+    Compute structural diff between two molecular versions.
+    """
+    try:
+        base_version = db.get(MoleculeVersion, base_id)
+        prop_version = db.get(MoleculeVersion, prop_id)
+        
+        if not base_version or not prop_version:
+            raise HTTPException(status_code=404, detail="One or both versions not found")
+            
+        mol_a = Chem.MolFromSmiles(base_version.canonical_smiles)
+        mol_b = Chem.MolFromSmiles(prop_version.canonical_smiles)
+        
+        if not mol_a or not mol_b:
+            raise HTTPException(status_code=400, detail="Could not parse SMILES from versions")
+            
+        diff = calculate_structural_diff(mol_a, mol_b)
+        return diff
+    except Exception as e:
+        logger.error(f"Diff Endpoint Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to compute structural diff")
+
+
+@router.get("/dashboard")
+async def get_molecule_dashboard(base_id: str, opt_id: str, db: Session = Depends(get_db)):
+    """
+    Consolidated endpoint for the Molecular Profile + Diff Dashboard.
+    """
+    try:
+        base = db.get(MoleculeVersion, base_id)
+        opt = db.get(MoleculeVersion, opt_id)
+        
+        if not base or not opt:
+            raise HTTPException(status_code=404, detail="Versions not found")
+            
+        mol_base = Chem.MolFromSmiles(base.canonical_smiles)
+        mol_opt = Chem.MolFromSmiles(opt.canonical_smiles)
+        
+        issues, radar = analyze_structure(mol_opt)
+        suggestions = suggest_optimizations(mol_opt)
+        diff = calculate_structural_diff(mol_base, mol_opt)
+        
+        return {
+            "base_version": base,
+            "opt_version": opt,
+            "diff": diff,
+            "optimization_issues": issues,
+            "optimization_suggestions": suggestions,
+            "radar": radar
+        }
+    except Exception as e:
+        logger.error(f"Dashboard Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load dashboard data")
 
 
 @router.post("/to-molblock")
@@ -366,20 +488,21 @@ async def validate_molecule(request: ValidateRequest):
                 "errors": errors,
             }
         
-        # Try to sanitize
+        # Try to sanitize and canonicalize
+        from backend.chemistry.canonical import canonicalize
         try:
-            Chem.SanitizeMol(mol)
-            sanitized_smiles = Chem.MolToSmiles(mol)
-            molblock = Chem.MolToMolBlock(mol)
+            identity = canonicalize(request.smiles if request.smiles else Chem.MolToSmiles(mol))
             
             return {
                 "valid": True,
-                "sanitized_smiles": sanitized_smiles,
-                "molblock": molblock,
+                "sanitized_smiles": identity["canonical_smiles"],
+                "inchikey": identity["inchikey"],
+                "inchi": identity["inchi"],
+                "molblock": Chem.MolToMolBlock(identity["mol"]),
                 "errors": [],
             }
         except Exception as sanitize_error:
-            errors.append(f"Sanitization failed: {str(sanitize_error)}")
+            errors.append(f"Validation failed: {str(sanitize_error)}")
             return {
                 "valid": False,
                 "errors": errors,

@@ -4,9 +4,9 @@ Search API endpoints for substructure and SMARTS matching
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.search.substructure import find_substructure
-from chem.search.smarts import match_smarts
-from chem.search.indexer import get_index
+from backend.chem.search.substructure import find_substructure
+from backend.chem.search.smarts import match_smarts
+from backend.chem.search.indexer import get_index
 
 router = APIRouter()
 

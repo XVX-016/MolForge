@@ -31,20 +31,16 @@ from backend.routes import kab as kab_router
 from backend.routes import quantum as quantum_router
 from backend.routes import collaboration as collaboration_router
 from backend.routes import dashboard as dashboard_router
-from backend.lab import routes as lab_router
 from backend.routes import screening as screening_router
 from backend.routes import search_phase7 as search_phase7_router
 from backend.routes import qm_md as qm_md_router
 from backend.api import search as search_api_router
 from backend.api import screening as screening_api_router
 from backend.api import conformers as conformers_api_router
-from backend.api import orchestrator as orchestrator_api_router
-from backend.api import phase10 as phase10_api_router
 from backend.api import molecule as molecule_api_router
-from backend.api import mentor as mentor_api_router
 from backend.api import studio as studio_api_router
 from backend.db import init_db
-from backend.models.schemas.prediction_schema import PredictOut, PredictIn
+
 
 app = FastAPI(
     title=settings.API_TITLE,
@@ -53,15 +49,24 @@ app = FastAPI(
 )
 
 # CORS middleware must be added before routes
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=settings.CORS_ALLOW_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+# Configure CORS - use regex if available, otherwise use explicit origins
+cors_kwargs = {
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    "allow_headers": ["*"],
+    "expose_headers": ["*"],
+    "max_age": 3600,
+}
+
+if settings.CORS_ALLOW_ORIGIN_REGEX:
+    cors_kwargs["allow_origin_regex"] = settings.CORS_ALLOW_ORIGIN_REGEX
+    # Still include explicit origins as fallback
+    if settings.CORS_ORIGINS:
+        cors_kwargs["allow_origins"] = settings.CORS_ORIGINS
+else:
+    cors_kwargs["allow_origins"] = settings.CORS_ORIGINS if settings.CORS_ORIGINS else ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # Global exception handler to ensure CORS headers on errors
 @app.exception_handler(Exception)
@@ -137,18 +142,11 @@ app.include_router(search_api_router.router, prefix="/api/search", tags=["search
 app.include_router(screening_api_router.router, prefix="/api/screening", tags=["screening"])
 app.include_router(conformers_api_router.router, prefix="/api/conformers", tags=["conformers"])
 app.include_router(qm_md_router.router, prefix="/api", tags=["qm-md"])
-app.include_router(orchestrator_api_router.router, prefix="/api/orchestrator", tags=["orchestrator"])
-app.include_router(phase10_api_router.router, prefix="/api/phase10", tags=["phase10"])
 app.include_router(molecule_api_router.router, tags=["molecule"])
 app.include_router(collaboration_router.router, prefix="/api/collaboration", tags=["collaboration"])
 app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
-app.include_router(lab_router.router, prefix="/api/lab", tags=["lab"])
-app.include_router(mentor_api_router.router, prefix="/api/mentor", tags=["mentor"])
 app.include_router(studio_api_router.router, tags=["studio"])
 
-
-class PredictFastIn(BaseModel):
-    smiles: str
 
 
 @app.get("/")
@@ -163,4 +161,17 @@ def root():
 def health():
     print("DEBUG: HEALTH CHECK HIT")
     return {"status": "healthy"}
+
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle OPTIONS preflight requests for all paths"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "3600",
+        }
+    )
 

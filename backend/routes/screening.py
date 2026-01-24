@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import logging
 
-from chem.screening import (
+from backend.chem.screening import (
     SimilaritySearchEngine,
     LibraryLoader,
     ScreeningPipeline,

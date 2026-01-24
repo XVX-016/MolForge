@@ -11,7 +11,8 @@ You MUST ONLY output a JSON object. No markdown, no prose, no explanations outsi
 export async function processAICommand(
     input: string,
     molecule: MoleculeGraph,
-    mode: StudioMode
+    mode: StudioMode,
+    analysisContext?: any
 ): Promise<StudioAction> {
     console.log(`[AI Control Plane] Orchestrating: "${input}" in ${mode} mode`);
 
@@ -19,7 +20,8 @@ export async function processAICommand(
         const response = await apiClient.post('/api/studio/command', {
             prompt: input,
             molecule_context: molecule,
-            mode: mode
+            mode: mode,
+            analysis_context: analysisContext
         });
 
         return response.data;

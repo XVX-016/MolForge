@@ -22,19 +22,23 @@ class Settings:
         CORS_ORIGINS: List[str] = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
         CORS_ALLOW_ORIGIN_REGEX: Optional[str] = None
     elif _is_dev:
+        # In development, allow all localhost origins
         CORS_ORIGINS: List[str] = [
             "http://localhost:5173",
             "http://localhost:5174",
             "http://localhost:3000",
             "http://localhost:5175",
             "http://localhost:8080",
+            "http://localhost:8000",
             "http://127.0.0.1:5173",
             "http://127.0.0.1:5174",
             "http://127.0.0.1:3000",
             "http://127.0.0.1:5175",
             "http://127.0.0.1:8080",
+            "http://127.0.0.1:8000",
         ]
-        CORS_ALLOW_ORIGIN_REGEX: Optional[str] = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+        # More permissive regex for development - matches any localhost/127.0.0.1 with any port
+        CORS_ALLOW_ORIGIN_REGEX: Optional[str] = r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$"
     else:
         CORS_ORIGINS: List[str] = [
             "http://localhost:5173",

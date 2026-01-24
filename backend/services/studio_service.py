@@ -17,17 +17,6 @@ except ImportError:
     logger.warning("google-generativeai not installed. Studio service will not work.")
 
 STUDIO_SYSTEM_PROMPT = """
-You are the MolForge AI Commander. Your role is strictly to PARSE intent from user requests into structured commands for the RDKit Chemistry Kernel.
-You MUST ONLY output a JSON object. No markdown, no prose, no explanations outside the JSON.
-
-COMMAND CONTRACT:
-1. CREATE_MOLECULE: { "smiles": "SMILES_STRING" }
-2. ADD_ATOM: { "element": "C", "position": [x, y, z] }
-3. REPLACE_ATOM: { "atomId": "id", "newElement": "N" }
-4. REMOVE_ATOM: { "atomId": "id" }
-5. ADD_BOND: { "from": "id1", "to": "id2", "order": 1 }
-6. REMOVE_BOND: { "bondId": "id" }
-7. OPTIMIZE_GEOMETRY: {}
 8. ANALYZE_PROPERTIES: {}
 9. NO_OP: { "reason": "Scientific justification or error explanation" }
 
@@ -102,9 +91,10 @@ class StudioService:
         """Relaxed safety filter"""
         return True
 
-    async def process_command(self, prompt: str, context: Dict[str, Any], mode: str) -> Dict[str, Any]:
+    async def process_command(self, prompt: str, context: Dict[str, Any], mode: str, analysis_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Processes a natural language command using Gemini v1 REST API.
+        Injects deterministic analysis to prevent hallucinations.
         """
         if not self.api_key:
             return {
@@ -119,6 +109,7 @@ class StudioService:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
             
             context_str = json.dumps(context)
+            analysis_str = json.dumps(analysis_context or {"issues": [], "suggestions": []})
             system_instruction = STUDIO_SYSTEM_PROMPT
             
             payload = {
@@ -126,7 +117,7 @@ class StudioService:
                     {
                         "role": "user",
                         "parts": [
-                            {"text": f"System Instruction: {system_instruction}\n\nMode: {mode}\nContext: {context_str}\n\nUser Prompt: {prompt}"}
+                            {"text": f"SYSTEM_INSTRUCTION:\n{system_instruction}\n\nMODE: {mode}\nMOLECULE_CONTEXT: {context_str}\nANALYSIS_CONTEXT: {analysis_str}\n\nUSER_PROMPT: {prompt}"}
                         ]
                     }
                 ],
@@ -153,7 +144,20 @@ class StudioService:
                     }
                 
                 data = response.json()
-                return self._extract_json(data)
+                action = self._extract_json(data)
+                
+                # Hard Validation: Rule ID Must Exist
+                if action.get("type") == "SELECT_OPTIMIZATION_RULE":
+                    rule_id = action.get("payload", {}).get("rule_id")
+                    valid_ids = [s.get("id") for s in (analysis_context or {}).get("suggestions", [])]
+                    if rule_id not in valid_ids:
+                        logger.warning(f"AI attempted to hallucinate rule_id: {rule_id}. Baseline ids: {valid_ids}")
+                        return {
+                            "type": "NO_OP",
+                            "reason": "AI attempted to propose an unregistered optimization. Deterministic kernel rejected the command."
+                        }
+                
+                return action
                 
         except Exception as e:
             logger.error(f"StudioService Error: {type(e).__name__}: {e}", exc_info=True)

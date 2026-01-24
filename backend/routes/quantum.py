@@ -4,8 +4,8 @@ Quantum Properties API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from chem.quantum.homo_lumo import calculate_homo_lumo
-from chem.quantum.esp import calculate_esp
+from backend.chem.quantum.homo_lumo import calculate_homo_lumo
+from backend.chem.quantum.esp import calculate_esp
 
 router = APIRouter()
 

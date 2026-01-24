@@ -6,8 +6,8 @@ import { validateAction } from '../lib/studio/validator';
 import { useHistoryStore } from './historyStore';
 import * as mutations from '../lib/mutations';
 import { apiClient } from '../api/api';
-import { toSMILES, getMoleculeProperties } from '../lib/api';
-import type { MoleculeProperties } from '../lib/api';
+import { toSMILES, getMoleculeProperties, commitVersion, analyzeMolecule } from '../lib/api';
+import type { MoleculeProperties, AnalysisResponse } from '../lib/api';
 import type { MoleculeGraph } from '../types/molecule';
 
 export type SelectionType = 'atom' | 'bond' | null;
@@ -24,7 +24,13 @@ interface StudioState {
     isCommandRunning: boolean;
     selection: StudioSelection;
     properties: MoleculeProperties | null;
+    analysis: AnalysisResponse | null;
     isComputingProperties: boolean;
+    activeVersionId: string | null;
+    activeVersionIndex: number | null;
+    isSyncing: boolean;
+    isDirty: boolean;
+    canCommit: boolean;
 
     // Actions
     setMode: (mode: StudioMode) => void;
@@ -35,6 +41,8 @@ interface StudioState {
     setSelection: (type: SelectionType, id: string | null) => void;
     runCommand: (input: string) => Promise<void>;
     fetchMoleculeProperties: (graph: MoleculeGraph) => Promise<void>;
+    fetchAnalysis: (smiles: string) => Promise<void>;
+    commitDraft: () => Promise<void>;
 }
 
 export const useStudioStore = create<StudioState>((set, get) => ({
@@ -44,7 +52,13 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     isCommandRunning: false,
     selection: { type: null, id: null },
     properties: null,
+    analysis: null,
     isComputingProperties: false,
+    activeVersionId: null,
+    activeVersionIndex: null,
+    isSyncing: false,
+    isDirty: false,
+    canCommit: false,
 
     setMode: (mode) => set({ mode }),
     addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
@@ -59,7 +73,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
             const { smiles } = await toSMILES(graph);
             if (smiles) {
                 const props = await getMoleculeProperties(smiles);
-                set({ properties: props });
+                set({
+                    properties: props,
+                    canCommit: !!props.canonical_smiles && !!props.inchikey
+                });
+                await get().fetchAnalysis(smiles);
             }
         } catch (err) {
             console.error('Failed to fetch molecular properties:', err);
@@ -67,6 +85,15 @@ export const useStudioStore = create<StudioState>((set, get) => ({
             // For now, we just log.
         } finally {
             set({ isComputingProperties: false });
+        }
+    },
+
+    fetchAnalysis: async (smiles: string) => {
+        try {
+            const analysis = await analyzeMolecule(smiles);
+            set({ analysis });
+        } catch (err) {
+            console.error('Failed to fetch analysis:', err);
         }
     },
 
@@ -78,10 +105,25 @@ export const useStudioStore = create<StudioState>((set, get) => ({
         setCommandRunning(true);
 
         try {
-            // 1. Process via Gemini (mocked/impl in geminiControl)
-            const action = await processAICommand(input, currentMolecule, mode);
+            // 1. Process via Gemini (Command Manual Mode)
+            const action = await processAICommand(input, currentMolecule, mode, get().analysis);
 
-            // 2. Validate against Contract & Mode
+            // 2. Validate against Contract & Baseline Heuristics
+            if (action.type === 'SELECT_OPTIMIZATION_RULE') {
+                const ruleId = (action.payload as any)?.rule_id;
+                const availableRule = get().analysis?.suggestions.find(s => s.id === ruleId);
+
+                if (!availableRule) {
+                    throw new Error(`AI attempted to hallucinate rule: ${ruleId}`);
+                }
+
+                // Propose the mutation found in the analysis
+                // In Phase 4, "Applying" an AI rule creates an OPTIMIZED draft state.
+                // For this demo, we can just trigger the existing availableRule logic
+                // But we must follow the "ORCHESTRATOR" rule - AI doesn't know how to move atoms.
+                // It just says "DO THE THING RDKIT SAID".
+            }
+
             const validation = validateAction(action, currentMolecule, mode);
 
             if (!validation.valid) {
@@ -139,12 +181,20 @@ export const useStudioStore = create<StudioState>((set, get) => ({
                     description = "Initiating reaction simulation...";
                     // Simulation logic would go here
                     break;
+                case 'SELECT_OPTIMIZATION_RULE':
+                    // This action types the AI design intent to a deterministic kernel suggest
+                    // We can reuse history logic but mark it as 'ai' intent.
+                    description = `AI Proposal: ${action.reason}`;
+                    // In a full implementation, this might lead to a ghost/proposal state.
+                    // For now, we apply it to demonstrate the "locked" orchestration.
+                    break;
                 case 'NO_OP':
-                    description = `No Action: ${action.reason}`;
+                    description = `AI Response: ${action.reason}`;
                     break;
             }
 
             history.applyMutation(nextGraph, description, 'ai', mode);
+            set({ isDirty: true });
             // Trigger property re-computation
             get().fetchMoleculeProperties(nextGraph);
 
@@ -169,7 +219,39 @@ export const useStudioStore = create<StudioState>((set, get) => ({
                 mode
             );
         } finally {
-            setCommandRunning(false);
+            set({ isCommandRunning: false });
+        }
+    },
+
+    commitDraft: async () => {
+        const { activeVersionId } = get();
+        const history = useHistoryStore.getState();
+        const currentMolecule = history.present;
+
+        if (!currentMolecule || currentMolecule.atoms.length === 0) return;
+
+        set({ isSyncing: true });
+        try {
+            const { smiles } = await toSMILES(currentMolecule);
+            const response = await commitVersion(smiles, currentMolecule, activeVersionId);
+
+            set({
+                activeVersionId: response.version_id,
+                activeVersionIndex: response.version_index,
+                properties: response.properties,
+                isDirty: false
+            });
+
+            useHistoryStore.getState().applyMutation(
+                currentMolecule,
+                `Snapshot Committed: Version ${response.version_index}`,
+                'system',
+                get().mode
+            );
+        } catch (err) {
+            console.error('Failed to commit molecular version:', err);
+        } finally {
+            set({ isSyncing: false });
         }
     }
 }));

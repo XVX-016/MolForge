@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import AppShell from './layouts/AppShell';
 import Dashboard from './pages/Dashboard';
 import LibraryPage from './pages/LibraryPage';
-import LabV2Page from './components/LabV2/LabV2Page';
 import Profile from './pages/Profile';
 import Docs from './pages/Docs';
 import AdminItems from './pages/admin/Items';
@@ -55,9 +54,6 @@ export default function App() {
 			<AuthNavigationHandler />
 
 			<Routes>
-				{/* Lab route - fullscreen, no AppShell, PUBLIC */}
-				<Route path="/lab" element={<LabV2Page />} />
-
 				{/* All other routes - wrapped in AppShell */}
 				<Route path="/*" element={
 					<AppShell noPadding={location.pathname.startsWith('/studio')}>

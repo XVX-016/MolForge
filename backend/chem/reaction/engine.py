@@ -3,7 +3,7 @@ Reaction simulation engine
 """
 from typing import Dict, List, Any, Tuple, Optional
 import copy
-from chem.search.smarts import match_smarts
+from backend.chem.search.smarts import match_smarts
 
 # Common reaction patterns (SMARTS)
 REACTION_PATTERNS = {
@@ -28,7 +28,7 @@ def find_reaction_sites(molecule: Dict[str, Any], pattern: str) -> List[Dict[str
     """
     Find atoms that match a reaction pattern
     """
-    from chem.search.smarts import match_smarts
+    from backend.chem.search.smarts import match_smarts
     
     is_match, matched_atoms = match_smarts(pattern, molecule)
     if is_match and matched_atoms:
