@@ -17,22 +17,20 @@ except ImportError:
     logger.warning("google-generativeai not installed. Studio service will not work.")
 
 STUDIO_SYSTEM_PROMPT = """
-8. ANALYZE_PROPERTIES: {}
-9. NO_OP: { "reason": "Scientific justification or error explanation" }
+You are the MolForge Studio Planner.
 
-STRATEGIC RULES:
-- You are an ORCHESTRATOR. You do not compute properties; RDKit does.
-- If the user asks for "LogP" or "Stability", use ANALYZE_PROPERTIES.
-- If the request is ambiguous, use NO_OP with a request for clarification in "reason".
-- Never invent atomic coordinates unless performing a CREATE_MOLECULE from scratch.
-- For structural edits, refer to the provided Molecule Context for atom/bond IDs.
+Your role is strictly limited to selecting and sequencing deterministic chemistry rules.
+You do NOT generate molecules, SMILES, reactions, or chemical facts.
 
-OUTPUT FORMAT:
-{
-  "type": "ACTION_TYPE",
-  "payload": { ... },
-  "reason": "Technical justification for this design choice."
-}
+Rules:
+- You may ONLY select from the provided rule set.
+- You may ONLY reference properties provided in the analysis context.
+- You MUST NOT invent chemical structures or transformations.
+- You MUST NOT output free text outside the JSON schema.
+- You MUST NOT suggest actions that violate HIGH severity alerts.
+
+You act as a constrained planner that proposes optimization steps.
+All chemistry execution is performed by the deterministic RDKit engine.
 """
 
 from backend.config import settings
@@ -146,15 +144,41 @@ class StudioService:
                 data = response.json()
                 action = self._extract_json(data)
                 
-                # Hard Validation: Rule ID Must Exist
-                if action.get("type") == "SELECT_OPTIMIZATION_RULE":
-                    rule_id = action.get("payload", {}).get("rule_id")
-                    valid_ids = [s.get("id") for s in (analysis_context or {}).get("suggestions", [])]
-                    if rule_id not in valid_ids:
-                        logger.warning(f"AI attempted to hallucinate rule_id: {rule_id}. Baseline ids: {valid_ids}")
+                # Hard Validation: Enforce Allowed Commands & Reject Chemistry
+                raw_text = json.dumps(action)
+                if any(x in raw_text.upper() for x in ["C1=", "C=", "N1="]) or "SMILES" in raw_text.upper():
+                    logger.error("AI attempted to inject SMILES/Chemistry truth. REJECTED.")
+                    return {
+                        "type": "NO_OP",
+                        "reason": "AI attempted to invent chemistry truth (SMILES). Orchestration layer blocked this violation."
+                    }
+
+                allowed_types = ["select_rule", "propose_graph", "explain", "NO_OP"]
+                if action.get("type") not in allowed_types:
+                    logger.warning(f"AI attempted invalid command type: {action.get('type')}")
+                    return {
+                        "type": "NO_OP",
+                        "reason": f"AI attempted an unauthorized command: {action.get('type')}. Rules engine requires strict JSON commands."
+                    }
+                
+                # Propose Graph Validation
+                if action.get("type") == "propose_graph":
+                    steps = action.get("steps", [])
+                    if len(steps) > 3:
                         return {
                             "type": "NO_OP",
-                            "reason": "AI attempted to propose an unregistered optimization. Deterministic kernel rejected the command."
+                            "reason": "AI proposal graph exceeded complexity limits (max 3 steps). Refine your intent."
+                        }
+
+                # Rule Identification
+                if action.get("type") == "select_rule":
+                    rule_id = action.get("rule_id")
+                    valid_ids = [s.get("id") for s in (analysis_context or {}).get("suggestions", [])]
+                    if rule_id not in valid_ids:
+                        logger.warning(f"AI hallucinated rule_id: {rule_id}")
+                        return {
+                            "type": "NO_OP",
+                            "reason": f"AI rule '{rule_id}' rejected. Deterministic kernel only recognizes registered rules."
                         }
                 
                 return action

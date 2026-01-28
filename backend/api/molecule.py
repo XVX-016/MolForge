@@ -73,6 +73,23 @@ class CommitRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class DashboardRequest(BaseModel):
+    """Request for the Studio Dashboard."""
+    baseline_version_id: uuid.UUID
+    proposal_version_id: Optional[uuid.UUID] = None
+
+
+class DashboardPayload(BaseModel):
+    """Refined Studio Dashboard Response."""
+    baseline: Dict[str, Any]
+    proposal: Optional[Dict[str, Any]] = None
+    diff: Dict[str, Any]
+    alerts: List[Dict[str, Any]]
+    property_delta: Dict[str, float]
+    radar: Dict[str, Dict[str, float]]
+    optimization_context: Dict[str, Any]
+
+
 @router.post("/to-smiles")
 async def to_smiles(request: MoleculeRequest):
     """
@@ -188,36 +205,104 @@ async def get_molecule_diff(base_id: str, prop_id: str, db: Session = Depends(ge
         raise HTTPException(status_code=500, detail="Failed to compute structural diff")
 
 
-@router.get("/dashboard")
-async def get_molecule_dashboard(base_id: str, opt_id: str, db: Session = Depends(get_db)):
+@router.post("/dashboard", response_model=DashboardPayload)
+async def post_molecule_dashboard(request: DashboardRequest, db: Session = Depends(get_db)):
     """
-    Consolidated endpoint for the Molecular Profile + Diff Dashboard.
+    Authoritative Studio Dashboard endpoint.
+    Orchestrates RDKit properties, structural diffs, and optimization rules.
     """
     try:
-        base = db.get(MoleculeVersion, base_id)
-        opt = db.get(MoleculeVersion, opt_id)
+        from backend.chemistry.models import MoleculeVersion
         
-        if not base or not opt:
-            raise HTTPException(status_code=404, detail="Versions not found")
+        base = db.get(MoleculeVersion, request.baseline_version_id)
+        if not base:
+            raise HTTPException(status_code=404, detail="Baseline version not found")
             
+        opt = None
+        if request.proposal_version_id:
+            opt = db.get(MoleculeVersion, request.proposal_version_id)
+            if not opt:
+                raise HTTPException(status_code=404, detail="Proposal version not found")
+        
         mol_base = Chem.MolFromSmiles(base.canonical_smiles)
-        mol_opt = Chem.MolFromSmiles(opt.canonical_smiles)
+        mol_opt = Chem.MolFromSmiles(opt.canonical_smiles) if opt else None
         
-        issues, radar = analyze_structure(mol_opt)
-        suggestions = suggest_optimizations(mol_opt)
-        diff = calculate_structural_diff(mol_base, mol_opt)
+        # 1. Properties & Analysis
+        # Base properties are usually stored, but we can recompute if needed for consistency
+        base_props = base.properties
         
+        # Analyze the proposal (or baseline if no proposal)
+        analysis_target = mol_opt if mol_opt else mol_base
+        issues, radar_raw = analyze_structure(analysis_target)
+        suggestions = suggest_optimizations(analysis_target)
+        
+        # 2. Diffing (if proposal exists)
+        diff_payload = {"atoms": {"added": [], "removed": [], "modified": []}, "bonds": {"added": [], "removed": []}}
+        prop_delta = {}
+        radar_payload = {"baseline": radar_raw, "proposal": {}}
+        
+        if mol_opt and opt:
+            # Structural Diff
+            raw_diff = calculate_structural_diff(mol_base, mol_opt)
+            # Transform to spec format
+            for item in raw_diff.get("proposal", {}).get("atoms", []):
+                if item["status"] == "added":
+                    diff_payload["atoms"]["added"].append(item["index"])
+            for item in raw_diff.get("baseline", {}).get("atoms", []):
+                if item["status"] == "deleted":
+                    diff_payload["atoms"]["removed"].append(item["index"])
+            
+            for item in raw_diff.get("proposal", {}).get("bonds", []):
+                if item["status"] == "added":
+                    # Bond indices are trickier; in RDKit we use atom pairs often
+                    # For now, store indices of atoms for the bond
+                    bond = mol_opt.GetBondWithIdx(item["index"])
+                    diff_payload["bonds"]["added"].append([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+            for item in raw_diff.get("baseline", {}).get("bonds", []):
+                if item["status"] == "deleted":
+                    bond = mol_base.GetBondWithIdx(item["index"])
+                    diff_payload["bonds"]["removed"].append([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+
+            # Property Delta
+            opt_props = opt.properties
+            relevant_keys = ["logp", "tpsa", "qed", "molecular_weight"]
+            for key in relevant_keys:
+                base_val = base_props.get(key, 0)
+                opt_val = opt_props.get(key, 0)
+                prop_delta[key] = round(opt_val - base_val, 3)
+            
+            # Radar Comparison
+            _, opt_radar = analyze_structure(mol_opt)
+            _, base_radar = analyze_structure(mol_base)
+            radar_payload = {
+                "baseline": base_radar,
+                "proposal": opt_radar
+            }
+
         return {
-            "base_version": base,
-            "opt_version": opt,
-            "diff": diff,
-            "optimization_issues": issues,
-            "optimization_suggestions": suggestions,
-            "radar": radar
+            "baseline": {
+                "version_id": str(base.id),
+                "smiles": base.canonical_smiles,
+                "properties": base_props
+            },
+            "proposal": {
+                "version_id": str(opt.id),
+                "smiles": opt.canonical_smiles,
+                "properties": opt.properties
+            } if opt else None,
+            "diff": diff_payload,
+            "alerts": issues,
+            "property_delta": prop_delta,
+            "radar": radar_payload,
+            "optimization_context": {
+                "available_rules": suggestions
+            }
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Dashboard Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to load dashboard data")
+        logger.error(f"Authoritative Dashboard Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load studio dashboard data")
 
 
 @router.post("/to-molblock")

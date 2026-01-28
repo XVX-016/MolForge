@@ -1,37 +1,37 @@
-const BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+export const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
 export const api = {
-    predict: (payload) =>
-        fetch(`${BASE}/api/predict/property`, {
+    predict: (payload: any) =>
+        fetch(`${BASE_URL}/api/predict/property`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         }).then(r => r.json()),
 
-    predictBatch: (payload) =>
-        fetch(`${BASE}/api/predict/batch`, {
+    predictBatch: (payload: any) =>
+        fetch(`${BASE_URL}/api/predict/batch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         }).then(r => r.json()),
 
-    relax: (molfile) =>
-        fetch(`${BASE}/api/molecule/relax`, {
+    relax: (molfile: string) =>
+        fetch(`${BASE_URL}/api/molecule/relax`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ molfile }),
         }).then(r => r.json()),
 
-    generate3D: (smiles) =>
-        fetch(`${BASE}/api/molecule/generate-3d`, {
+    generate3D: (smiles: string) =>
+        fetch(`${BASE_URL}/api/molecule/generate-3d`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ smiles }),
         }).then(r => r.json()),
 
     train: () =>
-        fetch(`${BASE}/api/models/train`, { method: "POST" }),
+        fetch(`${BASE_URL}/api/models/train`, { method: "POST" }),
 
     listModels: () =>
-        fetch(`${BASE}/api/models/list`).then(r => r.json()),
+        fetch(`${BASE_URL}/api/models/list`).then(r => r.json()),
 };

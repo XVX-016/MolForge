@@ -21,39 +21,51 @@ ChartJS.register(
 );
 
 interface RadarChartProps {
-    scores: {
-        drug_likeness: number;
-        complexity: number;
-        lipinski?: number;
-        solubility: number;
-        size: number;
-        [key: string]: number | undefined;
-    };
+    baseline: Record<string, number>;
+    proposal?: Record<string, number>;
 }
 
-export const RadarChart: React.FC<RadarChartProps> = ({ scores }) => {
-    // Normalize nomenclature for display
+export const RadarChart: React.FC<RadarChartProps> = ({ baseline, proposal }) => {
+    const labels = ['Drug-likeness', 'Complexity', 'Stability', 'Solubility', 'Optimal Size'];
+
+    // Helper to map record to array
+    const mapScores = (scores: Record<string, number>) => [
+        scores.drug_likeness || 0,
+        scores.complexity || 0,
+        scores.lipophilicity || scores.lipinski || 0,
+        scores.solubility || 0,
+        scores.size || 0,
+    ];
+
+    const datasets = [
+        {
+            label: 'Baseline',
+            data: mapScores(baseline),
+            backgroundColor: 'rgba(209, 213, 219, 0.2)',
+            borderColor: 'rgb(156, 163, 175)',
+            borderWidth: 1.5,
+            pointBackgroundColor: 'rgb(156, 163, 175)',
+            pointBorderColor: '#fff',
+            pointRadius: 2,
+        }
+    ];
+
+    if (proposal) {
+        datasets.push({
+            label: 'Proposal',
+            data: mapScores(proposal),
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgb(59, 130, 246)',
+            pointBorderColor: '#fff',
+            pointRadius: 3,
+        });
+    }
+
     const data = {
-        labels: ['Drug-likeness', 'Complexity', 'Stability', 'Solubility', 'Optimal Size'],
-        datasets: [
-            {
-                label: 'Molecular Profile',
-                data: [
-                    scores.drug_likeness,
-                    scores.complexity,
-                    scores.lipinski || scores.lipophilicity || 0,
-                    scores.solubility,
-                    scores.size,
-                ],
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                borderColor: 'rgb(59, 130, 246)',
-                borderWidth: 2,
-                pointBackgroundColor: 'rgb(59, 130, 246)',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgb(59, 130, 246)',
-            },
-        ],
+        labels: labels,
+        datasets: datasets,
     };
 
     const options = {

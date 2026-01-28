@@ -1,45 +1,40 @@
+
 import { useEffect } from 'react';
-import AIPanel from '../components/studio/AIPanel';
-import MolecularWorkspace from '../components/studio/MolecularWorkspace';
-import { useHistoryStore } from '../store/historyStore';
+import { useStudioStore } from '../store/studioStore';
+import StudioTopBar from '../components/studio/StudioTopBar';
+import StudioControlPanel from '../components/studio/StudioControlPanel';
+import StudioMainCanvas from '../components/studio/StudioMainCanvas';
+import StudioPropertiesPanel from '../components/studio/StudioPropertiesPanel';
 
 export default function StudioPage() {
-  const { undo, redo } = useHistoryStore();
+  const { loadDashboard } = useStudioStore();
 
-  // Keyboard Shortcuts for Undo/Redo
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Undo: Ctrl+Z or Cmd+Z
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-      }
-      // Redo: Ctrl+Y or Cmd+Y
-      if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
-        e.preventDefault();
-        redo();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
+    // Initial load - in a real app, we'd get the ID from the URL/Library
+    // Hardcoding a placeholder for now to trigger the READY state
+    loadDashboard("00000000-0000-0000-0000-000000000000");
+  }, [loadDashboard]);
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-white">
-      {/* AI Control Plane (Docked Left) */}
-      <aside className="w-[380px] shrink-0 border-r border-[#E5E7EB] bg-white flex flex-col">
-        <AIPanel />
-      </aside>
+    <div className="flex flex-col h-screen overflow-hidden bg-[#F3F4F6]">
+      <StudioTopBar />
 
-      {/* The Stage (Canvas) */}
-      <section className="flex-1 relative bg-[#F9FAFB] flex flex-col">
-        <MolecularWorkspace />
-      </section>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Intent & Control */}
+        <aside className="w-[380px] shrink-0 border-r border-[#E5E7EB] bg-white flex flex-col">
+          <StudioControlPanel />
+        </aside>
+
+        {/* Center: Structural Truth */}
+        <main className="flex-1 relative bg-[#F9FAFB] flex flex-col">
+          <StudioMainCanvas />
+        </main>
+
+        {/* Right: Clinical Reality */}
+        <aside className="w-[400px] shrink-0 border-l border-[#E5E7EB] bg-white flex flex-col overflow-y-auto">
+          <StudioPropertiesPanel />
+        </aside>
+      </div>
     </div>
   );
 }

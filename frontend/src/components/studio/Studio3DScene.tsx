@@ -34,8 +34,8 @@ function FloatingMolecule({
     mode: StudioMode,
     onSelect?: (type: SelectionType, id: string | null) => void,
     diffData?: {
-        atoms: { index: number; status: string }[];
-        bonds: { index: number; status: string }[];
+        atoms: { added: number[]; removed: number[]; modified: number[] };
+        bonds: { added: number[][]; removed: number[][] };
     }
 }) {
     const groupRef = useRef<THREE.Group>(null);
@@ -65,8 +65,9 @@ function FloatingMolecule({
                 const radius = ELEMENT_RADII[atom.element] || 1.0;
 
                 // Diff Logic
-                const atomDiff = diffData?.atoms.find(a => a.index === i);
-                const status = atomDiff?.status || 'unchanged';
+                const isAdded = diffData?.atoms.added.includes(i);
+                const isRemoved = diffData?.atoms.removed.includes(i);
+                const isModified = diffData?.atoms.modified.includes(i);
 
                 // Selection Logic
                 const isSelected = canSelect && selection.type === 'atom' && selection.id === atom.id;
@@ -88,15 +89,15 @@ function FloatingMolecule({
                     color = "#a855f7"; // Purple hint
                     emissive = "#a855f7";
                     emissiveIntensity = 0.2;
-                } else if (status === 'added') {
+                } else if (isAdded) {
                     color = "#22c55e"; // Green
                     emissive = "#22c55e";
                     emissiveIntensity = 0.4;
-                } else if (status === 'deleted') {
+                } else if (isRemoved) {
                     color = "#ef4444"; // Red
                     emissive = "#ef4444";
                     emissiveIntensity = 0.4;
-                } else if (status === 'modified') {
+                } else if (isModified) {
                     color = "#f97316"; // Orange
                     emissive = "#f97316";
                     emissiveIntensity = 0.4;
@@ -159,16 +160,22 @@ function FloatingMolecule({
                 const isSelected = canSelect && selection.type === 'bond' && selection.id === bond.id;
 
                 // Diff Logic for bonds
-                const bondIdx = parseInt(bond.id.split('_')[1]);
-                const bondDiff = diffData?.bonds.find(b => b.index === bondIdx);
-                const status = bondDiff?.status || 'unchanged';
+                const a1Idx = parseInt(bond.fromAtomId.split('_')[1]);
+                const a2Idx = parseInt(bond.toAtomId.split('_')[1]);
+
+                const isBondAdded = diffData?.bonds.added.some(b =>
+                    (b[0] === a1Idx && b[1] === a2Idx) || (b[0] === a2Idx && b[1] === a1Idx)
+                );
+                const isBondRemoved = diffData?.bonds.removed.some(b =>
+                    (b[0] === a1Idx && b[1] === a2Idx) || (b[0] === a2Idx && b[1] === a1Idx)
+                );
 
                 let color = isSelected ? "#3b82f6" : "#E5E7EB";
                 let emissive = isSelected ? "#3b82f6" : "#000000";
+                const hasDiff = isBondAdded || isBondRemoved;
 
-                if (status === 'added') { color = "#22c55e"; emissive = "#22c55e"; }
-                if (status === 'deleted') { color = "#ef4444"; emissive = "#ef4444"; }
-                if (status === 'modified') { color = "#f97316"; emissive = "#f97316"; }
+                if (isBondAdded) { color = "#22c55e"; emissive = "#22c55e"; }
+                if (isBondRemoved) { color = "#ef4444"; emissive = "#ef4444"; }
 
                 return (
                     <mesh
@@ -193,7 +200,7 @@ function FloatingMolecule({
                             roughness={0.1}
                             envMapIntensity={1}
                             emissive={emissive}
-                            emissiveIntensity={(isSelected || status !== 'unchanged') ? 0.3 : 0}
+                            emissiveIntensity={(isSelected || hasDiff) ? 0.3 : 0}
                         />
                     </mesh>
                 );
@@ -207,8 +214,8 @@ interface Studio3DSceneProps {
     molecule: MoleculeGraph | null;
     editable?: boolean;
     diffData?: {
-        atoms: { index: number; status: string }[];
-        bonds: { index: number; status: string }[];
+        atoms: { added: number[]; removed: number[]; modified: number[] };
+        bonds: { added: number[][]; removed: number[][] };
     };
     onCameraChange?: (target: THREE.Vector3, position: THREE.Vector3) => void;
     cameraTarget?: THREE.Vector3;

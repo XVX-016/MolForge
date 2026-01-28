@@ -162,16 +162,3 @@ def health():
     print("DEBUG: HEALTH CHECK HIT")
     return {"status": "healthy"}
 
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    """Handle OPTIONS preflight requests for all paths"""
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "3600",
-        }
-    )
-
