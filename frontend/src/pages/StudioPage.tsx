@@ -2,9 +2,9 @@
 import { useEffect } from 'react';
 import { useStudioStore } from '../store/studioStore';
 import StudioTopBar from '../components/studio/StudioTopBar';
-import StudioControlPanel from '../components/studio/StudioControlPanel';
+import IntentPanel from '../components/studio/StudioControlPanel';
 import StudioMainCanvas from '../components/studio/StudioMainCanvas';
-import StudioPropertiesPanel from '../components/studio/StudioPropertiesPanel';
+import AuditPanel from '../components/studio/StudioPropertiesPanel';
 
 export default function StudioPage() {
   const { loadDashboard } = useStudioStore();
@@ -22,7 +22,7 @@ export default function StudioPage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Intent & Control */}
         <aside className="w-[380px] shrink-0 border-r border-[#E5E7EB] bg-white flex flex-col">
-          <StudioControlPanel />
+          <IntentPanel />
         </aside>
 
         {/* Center: Structural Truth */}
@@ -32,7 +32,7 @@ export default function StudioPage() {
 
         {/* Right: Clinical Reality */}
         <aside className="w-[400px] shrink-0 border-l border-[#E5E7EB] bg-white flex flex-col overflow-y-auto">
-          <StudioPropertiesPanel />
+          <AuditPanel />
         </aside>
       </div>
     </div>

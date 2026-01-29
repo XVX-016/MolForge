@@ -22,11 +22,13 @@ export interface DashboardPayload {
         version_id: string;
         smiles: string;
         properties: Record<string, any>;
+        graph: any;
     };
     proposal: {
         version_id: string;
         smiles: string;
         properties: Record<string, any>;
+        graph: any;
     } | null;
     diff: {
         atoms: { added: number[]; removed: number[]; modified: number[] };
@@ -47,6 +49,7 @@ export interface DashboardPayload {
             impact: Record<string, number>;
         }>;
     };
+    inchikey?: string;
 }
 
 interface StudioState {

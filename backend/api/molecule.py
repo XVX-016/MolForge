@@ -88,6 +88,7 @@ class DashboardPayload(BaseModel):
     property_delta: Dict[str, float]
     radar: Dict[str, Dict[str, float]]
     optimization_context: Dict[str, Any]
+    inchikey: Optional[str] = None
 
 
 @router.post("/to-smiles")
@@ -283,12 +284,14 @@ async def post_molecule_dashboard(request: DashboardRequest, db: Session = Depen
             "baseline": {
                 "version_id": str(base.id),
                 "smiles": base.canonical_smiles,
-                "properties": base_props
+                "properties": base_props,
+                "graph": base.json_graph
             },
             "proposal": {
                 "version_id": str(opt.id),
                 "smiles": opt.canonical_smiles,
-                "properties": opt.properties
+                "properties": opt.properties,
+                "graph": opt.json_graph
             } if opt else None,
             "diff": diff_payload,
             "alerts": issues,
@@ -296,7 +299,8 @@ async def post_molecule_dashboard(request: DashboardRequest, db: Session = Depen
             "radar": radar_payload,
             "optimization_context": {
                 "available_rules": suggestions
-            }
+            },
+            "inchikey": base.molecule.inchikey if hasattr(base, 'molecule') else None
         }
     except HTTPException:
         raise

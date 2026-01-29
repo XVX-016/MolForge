@@ -37,7 +37,7 @@ export default function StudioMainCanvas() {
                 </div>
                 <Studio3DScene
                     mode="optimize"
-                    molecule={null} // TODO: Implement SMILES-to-Graph conversion
+                    molecule={dashboard.baseline.graph}
                     cameraTarget={cameraState.target}
                     cameraPosition={cameraState.position}
                     onCameraChange={handleCameraChange}
@@ -55,7 +55,7 @@ export default function StudioMainCanvas() {
                     </div>
                     <Studio3DScene
                         mode="optimize"
-                        molecule={null}
+                        molecule={dashboard.proposal?.graph || null}
                         cameraTarget={cameraState.target}
                         cameraPosition={cameraState.position}
                         onCameraChange={handleCameraChange}

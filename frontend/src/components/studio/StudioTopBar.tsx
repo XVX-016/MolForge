@@ -3,14 +3,22 @@ import { useStudioStore } from '../../store/studioStore';
 import { Activity, ShieldCheck } from 'lucide-react';
 
 export default function StudioTopBar() {
-    const { status, baselineVersionId, proposalVersionId } = useStudioStore();
+    const { status, baselineVersionId, proposalVersionId, dashboard } = useStudioStore();
+    const inchikey = dashboard?.inchikey || 'INCHIKEY_PENDING';
 
     return (
-        <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 shrink-0">
+        <header className="h-14 bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 shrink-0 z-10">
             <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                     <Activity size={18} className="text-blue-600" />
-                    <h1 className="text-sm font-black uppercase tracking-widest text-black">Studio</h1>
+                    <h1 className="text-[12px] font-black uppercase tracking-widest text-black">MolForge Studio</h1>
+                </div>
+
+                <div className="h-4 w-[1px] bg-[#E5E7EB]" />
+
+                <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Identity (InChIKey)</span>
+                    <span className="text-[10px] font-mono text-gray-600 truncate max-w-[150px]">{inchikey}</span>
                 </div>
 
                 <div className="h-4 w-[1px] bg-[#E5E7EB]" />
@@ -22,7 +30,7 @@ export default function StudioTopBar() {
                     </div>
                     {proposalVersionId && (
                         <>
-                            <div className="h-2 w-2 rounded-full bg-gray-300" />
+                            <div className="text-gray-300">→</div>
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Proposal</span>
                                 <span className="text-[10px] font-mono text-blue-600 font-bold">{proposalVersionId.slice(0, 8)}</span>
