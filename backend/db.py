@@ -4,6 +4,7 @@ from sqlalchemy import text
 from backend.config import settings
 from backend.models.db.molecule import Molecule, Item
 from backend.chemistry.models import MoleculeIdentity, MoleculeVersion
+from backend.models.db.audit import UserActionLog
 
 DATABASE_URL = settings.DATABASE_URL
 engine = create_engine(DATABASE_URL, echo=False, connect_args={"check_same_thread": False})

@@ -74,7 +74,6 @@ class WorkflowNode(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     experiment_id: uuid.UUID = Field(foreign_key="experiments.id", index=True)
     node_type: str = Field(index=True) # docking, md, etc.
-    parent_node_id: Optional[uuid.UUID] = Field(default=None, foreign_key="workflow_nodes.id", index=True)
     
     # Parameters hash for deduplication/rerun logic
     parameters_hash: str = Field(index=True)
@@ -99,3 +98,15 @@ class WorkflowNodeResult(SQLModel, table=True):
     artifacts_checksum: Optional[str] = None # SHA-256 of generated files
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+if __name__ == "__main__":
+    from sqlmodel import create_engine
+    print("Starting table creation (full)...")
+    engine = create_engine("sqlite:///:memory:")
+    try:
+        SQLModel.metadata.create_all(engine)
+        print("Success!")
+    except Exception as e:
+        print(f"FAILED: {e}")
+        import traceback
+        traceback.print_exc()

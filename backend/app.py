@@ -39,6 +39,7 @@ from backend.api import screening as screening_api_router
 from backend.api import conformers as conformers_api_router
 from backend.api import molecule as molecule_api_router
 from backend.api import studio as studio_api_router
+from backend.api import studio_v2 as studio_v2_api_router
 from backend.db import init_db
 
 
@@ -146,6 +147,7 @@ app.include_router(molecule_api_router.router, prefix="/api/molecule", tags=["mo
 app.include_router(collaboration_router.router, prefix="/api/collaboration", tags=["collaboration"])
 app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(studio_api_router.router, prefix="/api/studio", tags=["studio"])
+app.include_router(studio_v2_api_router.router, prefix="/api/studio/v2", tags=["studio-v2"])
 
 
 
