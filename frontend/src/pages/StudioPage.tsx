@@ -1,7 +1,7 @@
-
 import { useEffect } from 'react';
 import { useStudioStore } from '../store/studioStore';
 import StudioTopBar from '../components/studio/StudioTopBar';
+import MetricsBar from '../components/studio/MetricsBar';
 import IntentPanel from '../components/studio/StudioControlPanel';
 import StudioMainCanvas from '../components/studio/StudioMainCanvas';
 import AuditPanel from '../components/studio/StudioPropertiesPanel';
@@ -18,6 +18,7 @@ export default function StudioPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F3F4F6]">
       <StudioTopBar />
+      <MetricsBar />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Intent & Control */}

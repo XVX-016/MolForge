@@ -8,6 +8,7 @@ import Docs from './pages/Docs';
 import AdminItems from './pages/admin/Items';
 import PublicLibrary from './pages/PublicLibrary';
 import StudioPage from './pages/StudioPage';
+import LabV2Page from './components/LabV2/LabV2Page';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthModal from './components/AuthModal';
 import AuthNavigationHandler from './components/AuthNavigationHandler';
@@ -56,12 +57,13 @@ export default function App() {
 			<Routes>
 				{/* All other routes - wrapped in AppShell */}
 				<Route path="/*" element={
-					<AppShell noPadding={location.pathname.startsWith('/studio')}>
+					<AppShell noPadding={location.pathname.startsWith('/studio') || location.pathname === '/lab'}>
 						<Routes>
 							<Route path="/" element={<Dashboard />} />
 							<Route path="/library" element={<LibraryPage />} />
 							<Route path="/library/public" element={<PublicLibrary />} />
 							<Route path="/docs" element={<Docs />} />
+							<Route path="/lab" element={<LabV2Page />} />
 							<Route path="/studio" element={<StudioPage />} />
 							{/* Authenticated-only routes */}
 							<Route

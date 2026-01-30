@@ -142,10 +142,10 @@ app.include_router(search_api_router.router, prefix="/api/search", tags=["search
 app.include_router(screening_api_router.router, prefix="/api/screening", tags=["screening"])
 app.include_router(conformers_api_router.router, prefix="/api/conformers", tags=["conformers"])
 app.include_router(qm_md_router.router, prefix="/api", tags=["qm-md"])
-app.include_router(molecule_api_router.router, tags=["molecule"])
+app.include_router(molecule_api_router.router, prefix="/api/molecule", tags=["molecule"])
 app.include_router(collaboration_router.router, prefix="/api/collaboration", tags=["collaboration"])
 app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
-app.include_router(studio_api_router.router, tags=["studio"])
+app.include_router(studio_api_router.router, prefix="/api/studio", tags=["studio"])
 
 
 

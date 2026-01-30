@@ -9,7 +9,7 @@ from backend.services.studio_service import get_studio_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/studio", tags=["studio"])
+router = APIRouter(tags=["studio"])
 
 class StudioCommandRequest(BaseModel):
     prompt: str

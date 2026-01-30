@@ -30,7 +30,7 @@ from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/molecule", tags=["molecule"])
+router = APIRouter(tags=["molecule"])
 
 
 class MoleculeRequest(BaseModel):
@@ -215,15 +215,38 @@ async def post_molecule_dashboard(request: DashboardRequest, db: Session = Depen
     try:
         from backend.chemistry.models import MoleculeVersion
         
-        base = db.get(MoleculeVersion, request.baseline_version_id)
-        if not base:
-            raise HTTPException(status_code=404, detail="Baseline version not found")
-            
+        # DEFAULT DEMO CASE: Handle zero-UUID if database is empty or for initial loading
+        ZERO_UUID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+        if request.baseline_version_id == ZERO_UUID:
+            # Return an empty but valid payload (no longer default to Aspirin)
+            return {
+                "baseline": {
+                    "version_id": str(ZERO_UUID),
+                    "smiles": "",
+                    "properties": {},
+                    "graph": {"atoms": [], "bonds": []}
+                },
+                "proposal": None,
+                "diff": {"atoms": {"added": [], "removed": [], "modified": []}, "bonds": {"added": [], "removed": []}},
+                "alerts": [],
+                "property_delta": {},
+                "radar": {"baseline": {}, "proposal": {}},
+                "optimization_context": {
+                    "available_rules": []
+                },
+                "inchikey": "BSYNTH-EMPTY-CANVAS"
+            }
+
         opt = None
         if request.proposal_version_id:
+            from backend.chemistry.models import MoleculeVersion
             opt = db.get(MoleculeVersion, request.proposal_version_id)
             if not opt:
                 raise HTTPException(status_code=404, detail="Proposal version not found")
+
+        base = db.get(MoleculeVersion, request.baseline_version_id)
+        if not base:
+            raise HTTPException(status_code=404, detail="Baseline version not found")
         
         mol_base = Chem.MolFromSmiles(base.canonical_smiles)
         mol_opt = Chem.MolFromSmiles(opt.canonical_smiles) if opt else None
