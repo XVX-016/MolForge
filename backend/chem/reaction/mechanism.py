@@ -4,7 +4,7 @@ Mechanism prediction - stepwise reaction intermediates
 from typing import Dict, List, Any
 import copy
 from .engine import predict_reaction_products, apply_reaction
-from chem.energy.forcefield import calculate_total_energy
+from backend.chem.energy.forcefield import calculate_total_energy
 
 def predict_mechanism(
     reactants: List[Dict[str, Any]],

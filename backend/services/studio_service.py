@@ -17,33 +17,20 @@ except ImportError:
     logger.warning("google-generativeai not installed. Studio service will not work.")
 
 STUDIO_SYSTEM_PROMPT = """
-You are the MolForge AI Commander. Your role is strictly to PARSE intent from user requests into structured commands for the RDKit Chemistry Kernel.
-You MUST ONLY output a JSON object. No markdown, no prose, no explanations outside the JSON.
+You are the MolForge Studio Planner.
 
-COMMAND CONTRACT:
-1. CREATE_MOLECULE: { "smiles": "SMILES_STRING" }
-2. ADD_ATOM: { "element": "C", "position": [x, y, z] }
-3. REPLACE_ATOM: { "atomId": "id", "newElement": "N" }
-4. REMOVE_ATOM: { "atomId": "id" }
-5. ADD_BOND: { "from": "id1", "to": "id2", "order": 1 }
-6. REMOVE_BOND: { "bondId": "id" }
-7. OPTIMIZE_GEOMETRY: {}
-8. ANALYZE_PROPERTIES: {}
-9. NO_OP: { "reason": "Scientific justification or error explanation" }
+Your role is strictly limited to selecting and sequencing deterministic chemistry rules.
+You do NOT generate molecules, SMILES, reactions, or chemical facts.
 
-STRATEGIC RULES:
-- You are an ORCHESTRATOR. You do not compute properties; RDKit does.
-- If the user asks for "LogP" or "Stability", use ANALYZE_PROPERTIES.
-- If the request is ambiguous, use NO_OP with a request for clarification in "reason".
-- Never invent atomic coordinates unless performing a CREATE_MOLECULE from scratch.
-- For structural edits, refer to the provided Molecule Context for atom/bond IDs.
+Rules:
+- You may ONLY select from the provided rule set.
+- You may ONLY reference properties provided in the analysis context.
+- You MUST NOT invent chemical structures or transformations.
+- You MUST NOT output free text outside the JSON schema.
+- You MUST NOT suggest actions that violate HIGH severity alerts.
 
-OUTPUT FORMAT:
-{
-  "type": "ACTION_TYPE",
-  "payload": { ... },
-  "reason": "Technical justification for this design choice."
-}
+You act as a constrained planner that proposes optimization steps.
+All chemistry execution is performed by the deterministic RDKit engine.
 """
 
 from backend.config import settings
@@ -102,9 +89,10 @@ class StudioService:
         """Relaxed safety filter"""
         return True
 
-    async def process_command(self, prompt: str, context: Dict[str, Any], mode: str) -> Dict[str, Any]:
+    async def process_command(self, prompt: str, context: Dict[str, Any], mode: str, analysis_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Processes a natural language command using Gemini v1 REST API.
+        Injects deterministic analysis to prevent hallucinations.
         """
         if not self.api_key:
             return {
@@ -119,6 +107,7 @@ class StudioService:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
             
             context_str = json.dumps(context)
+            analysis_str = json.dumps(analysis_context or {"issues": [], "suggestions": []})
             system_instruction = STUDIO_SYSTEM_PROMPT
             
             payload = {
@@ -126,7 +115,7 @@ class StudioService:
                     {
                         "role": "user",
                         "parts": [
-                            {"text": f"System Instruction: {system_instruction}\n\nMode: {mode}\nContext: {context_str}\n\nUser Prompt: {prompt}"}
+                            {"text": f"SYSTEM_INSTRUCTION:\n{system_instruction}\n\nMODE: {mode}\nMOLECULE_CONTEXT: {context_str}\nANALYSIS_CONTEXT: {analysis_str}\n\nUSER_PROMPT: {prompt}"}
                         ]
                     }
                 ],
@@ -153,7 +142,46 @@ class StudioService:
                     }
                 
                 data = response.json()
-                return self._extract_json(data)
+                action = self._extract_json(data)
+                
+                # Hard Validation: Enforce Allowed Commands & Reject Chemistry
+                raw_text = json.dumps(action)
+                if any(x in raw_text.upper() for x in ["C1=", "C=", "N1="]) or "SMILES" in raw_text.upper():
+                    logger.error("AI attempted to inject SMILES/Chemistry truth. REJECTED.")
+                    return {
+                        "type": "NO_OP",
+                        "reason": "AI attempted to invent chemistry truth (SMILES). Orchestration layer blocked this violation."
+                    }
+
+                allowed_types = ["select_rule", "propose_graph", "explain", "NO_OP"]
+                if action.get("type") not in allowed_types:
+                    logger.warning(f"AI attempted invalid command type: {action.get('type')}")
+                    return {
+                        "type": "NO_OP",
+                        "reason": f"AI attempted an unauthorized command: {action.get('type')}. Rules engine requires strict JSON commands."
+                    }
+                
+                # Propose Graph Validation
+                if action.get("type") == "propose_graph":
+                    steps = action.get("steps", [])
+                    if len(steps) > 3:
+                        return {
+                            "type": "NO_OP",
+                            "reason": "AI proposal graph exceeded complexity limits (max 3 steps). Refine your intent."
+                        }
+
+                # Rule Identification
+                if action.get("type") == "select_rule":
+                    rule_id = action.get("rule_id")
+                    valid_ids = [s.get("id") for s in (analysis_context or {}).get("suggestions", [])]
+                    if rule_id not in valid_ids:
+                        logger.warning(f"AI hallucinated rule_id: {rule_id}")
+                        return {
+                            "type": "NO_OP",
+                            "reason": f"AI rule '{rule_id}' rejected. Deterministic kernel only recognizes registered rules."
+                        }
+                
+                return action
                 
         except Exception as e:
             logger.error(f"StudioService Error: {type(e).__name__}: {e}", exc_info=True)

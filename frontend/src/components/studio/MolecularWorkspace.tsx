@@ -43,20 +43,21 @@ export default function MolecularWorkspace() {
     // handleAddAtom removed as it's now orchestrated by AI
 
     const handleDelete = () => {
-        if (!molecule || !selection.type || !selection.id || !canEdit) return;
+        if (!molecule || !selection || !selection.id) return;
 
-        let newGraph = molecule;
+        let newGraph = { ...molecule };
         let description = '';
 
         if (selection.type === 'atom') {
-            newGraph = deleteAtom(molecule, selection.id);
-            description = 'Deleted Atom';
+            newGraph = deleteAtom(molecule, selection.id); // Changed from mutations.deleteAtom to deleteAtom based on existing imports
+            description = `Deleted atom ${selection.id}`;
         } else if (selection.type === 'bond') {
-            newGraph = deleteBond(molecule, selection.id);
-            description = 'Deleted Bond';
+            newGraph = deleteBond(molecule, selection.id); // Changed from mutations.deleteBond to deleteBond based on existing imports
+            description = `Deleted bond ${selection.id}`;
         }
 
         applyMutation(newGraph, description, 'user');
+        useStudioStore.setState({ isDirty: true });
         setSelection(null, null);
     };
 
@@ -75,7 +76,7 @@ export default function MolecularWorkspace() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [canEdit, selection, molecule, applyMutation]);
+    }, [canEdit, selection, molecule, applyMutation, handleDelete]);
 
     return (
         <div className="h-full w-full overflow-hidden bg-[#F9FAFB] relative group">

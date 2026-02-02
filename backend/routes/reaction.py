@@ -4,9 +4,9 @@ Reaction simulation API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.reaction.engine import predict_reaction_products
-from chem.reaction.mechanism import predict_mechanism
-from chem.reaction.utils import calculate_reaction_energy
+from backend.chem.reaction.engine import predict_reaction_products
+from backend.chem.reaction.mechanism import predict_mechanism
+from backend.chem.reaction.utils import calculate_reaction_energy
 
 router = APIRouter()
 

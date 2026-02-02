@@ -4,14 +4,15 @@ import type { StudioMode } from '../../types/studio';
 import { apiClient } from '../../api/api';
 
 export const STUDIO_SYSTEM_PROMPT = `
-You are MolForge Studio AI, a rigorous molecular design orchestrator.
-Use JSON only.
+You are the MolForge AI Commander. Your role is strictly to PARSE intent from user requests into structured commands for the RDKit Chemistry Kernel.
+You MUST ONLY output a JSON object. No markdown, no prose, no explanations outside the JSON.
 `;
 
 export async function processAICommand(
     input: string,
     molecule: MoleculeGraph,
-    mode: StudioMode
+    mode: StudioMode,
+    analysisContext?: any
 ): Promise<StudioAction> {
     console.log(`[AI Control Plane] Orchestrating: "${input}" in ${mode} mode`);
 
@@ -19,7 +20,8 @@ export async function processAICommand(
         const response = await apiClient.post('/api/studio/command', {
             prompt: input,
             molecule_context: molecule,
-            mode: mode
+            mode: mode,
+            analysis_context: analysisContext
         });
 
         return response.data;

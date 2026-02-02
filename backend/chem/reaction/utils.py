@@ -2,7 +2,7 @@
 Reaction thermodynamics utilities
 """
 from typing import Dict, List, Any
-from chem.energy.forcefield import calculate_total_energy
+from backend.chem.energy.forcefield import calculate_total_energy
 
 def calculate_reaction_energy(
     reactants: List[Dict[str, Any]],

@@ -11,6 +11,8 @@ export interface RenderableBond {
     id: string;
     from: [number, number, number];
     to: [number, number, number];
+    fromAtomId: string;
+    toAtomId: string;
     order: number;
 }
 
@@ -36,28 +38,18 @@ export function moleculeToRenderable(molecule: MoleculeGraph | null): {
     molecule.atoms.forEach(a => atomMap.set(a.id, a.position));
 
     const bonds: RenderableBond[] = molecule.bonds.map((bond) => {
-        const fromPos = atomMap.get(bond.from);
-        const toPos = atomMap.get(bond.to);
-
-        if (!fromPos || !toPos) {
-            console.warn(`Bond ${bond.id} references missing atoms: ${bond.from}, ${bond.to}`);
-            // Return a dummy or null (filtered out later if needed, but here we assume validity)
-            // For safety, default to 0,0,0
-            return {
-                id: bond.id,
-                from: [0, 0, 0],
-                to: [0, 0, 0],
-                order: bond.order,
-            };
-        }
+        const fromPos = atomMap.get(bond.from) || [0, 0, 0];
+        const toPos = atomMap.get(bond.to) || [0, 0, 0];
 
         return {
             id: bond.id,
-            from: fromPos,
-            to: toPos,
+            from: fromPos as [number, number, number],
+            to: toPos as [number, number, number],
+            fromAtomId: bond.from,
+            toAtomId: bond.to,
             order: bond.order,
         };
-    }).filter(b => b.from[0] !== 0 || b.from[1] !== 0); // basic filter
+    }).filter(b => b.from[0] !== 0 || b.from[1] !== 0);
 
     return { atoms, bonds };
 }

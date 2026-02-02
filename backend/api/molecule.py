@@ -12,17 +12,25 @@ Provides endpoints for:
 - 2D coordinate generation
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+import uuid
 import logging
+from rdkit import Chem
 from rdkit.Chem import rdDistGeom
 from backend.chemistry.rdkit_props import compute_properties
 from backend.chemistry.errors import ChemistryError
+from backend.chemistry.optimize import analyze_structure, suggest_optimizations
+from backend.chemistry.diff import calculate_structural_diff
+from backend.services.version_service import VersionService
+from backend.core.dependencies import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/molecule", tags=["molecule"])
+router = APIRouter(tags=["molecule"])
 
 
 class MoleculeRequest(BaseModel):
@@ -56,6 +64,31 @@ class ThreeDRequest(BaseModel):
 class PropertyRequest(BaseModel):
     """Request for molecule properties."""
     smiles: str
+
+class CommitRequest(BaseModel):
+    """Request to commit a molecule version."""
+    smiles: str
+    json_graph: Dict[str, Any]
+    parent_version_id: Optional[uuid.UUID] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class DashboardRequest(BaseModel):
+    """Request for the Studio Dashboard."""
+    baseline_version_id: uuid.UUID
+    proposal_version_id: Optional[uuid.UUID] = None
+
+
+class DashboardPayload(BaseModel):
+    """Refined Studio Dashboard Response."""
+    baseline: Dict[str, Any]
+    proposal: Optional[Dict[str, Any]] = None
+    diff: Dict[str, Any]
+    alerts: List[Dict[str, Any]]
+    property_delta: Dict[str, float]
+    radar: Dict[str, Dict[str, float]]
+    optimization_context: Dict[str, Any]
+    inchikey: Optional[str] = None
 
 
 @router.post("/to-smiles")
@@ -96,6 +129,207 @@ async def get_properties(request: PropertyRequest):
     except Exception as e:
         logger.error(f"Unexpected error in /properties: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal chemistry engine error")
+
+
+@router.post("/commit")
+async def commit_version(request: CommitRequest, db: Session = Depends(get_db)):
+    """
+    Commit a molecular draft to immutable persistence.
+    """
+    try:
+        version = VersionService.create_version(
+            db=db,
+            smiles=request.smiles,
+            json_graph=request.json_graph,
+            parent_version_id=request.parent_version_id,
+            additional_metadata=request.metadata
+        )
+        return {
+            "version_id": version.id,
+            "molecule_id": version.molecule_id,
+            "version_index": version.version_index,
+            "canonical_smiles": version.canonical_smiles,
+            "properties": version.properties
+        }
+    except ChemistryError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Commit Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to commit molecular version")
+
+
+@router.post("/analyze")
+async def analyze_molecule(request: PropertyRequest):
+    """
+    Perform medicinal chemistry analysis and suggest optimizations.
+    """
+    try:
+        mol = Chem.MolFromSmiles(request.smiles)
+        if not mol:
+            raise HTTPException(status_code=400, detail="Invalid SMILES")
+            
+        issues, radar = analyze_structure(mol)
+        suggestions = suggest_optimizations(mol)
+        
+        return {
+            "issues": issues,
+            "suggestions": suggestions,
+            "radar": radar
+        }
+    except Exception as e:
+        logger.error(f"Analysis Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to analyze structure")
+
+
+@router.get("/diff")
+async def get_molecule_diff(base_id: str, prop_id: str, db: Session = Depends(get_db)):
+    """
+    Compute structural diff between two molecular versions.
+    """
+    try:
+        base_version = db.get(MoleculeVersion, base_id)
+        prop_version = db.get(MoleculeVersion, prop_id)
+        
+        if not base_version or not prop_version:
+            raise HTTPException(status_code=404, detail="One or both versions not found")
+            
+        mol_a = Chem.MolFromSmiles(base_version.canonical_smiles)
+        mol_b = Chem.MolFromSmiles(prop_version.canonical_smiles)
+        
+        if not mol_a or not mol_b:
+            raise HTTPException(status_code=400, detail="Could not parse SMILES from versions")
+            
+        diff = calculate_structural_diff(mol_a, mol_b)
+        return diff
+    except Exception as e:
+        logger.error(f"Diff Endpoint Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to compute structural diff")
+
+
+@router.post("/dashboard", response_model=DashboardPayload)
+async def post_molecule_dashboard(request: DashboardRequest, db: Session = Depends(get_db)):
+    """
+    Authoritative Studio Dashboard endpoint.
+    Orchestrates RDKit properties, structural diffs, and optimization rules.
+    """
+    try:
+        from backend.chemistry.models import MoleculeVersion
+        
+        # DEFAULT DEMO CASE: Handle zero-UUID if database is empty or for initial loading
+        ZERO_UUID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+        if request.baseline_version_id == ZERO_UUID:
+            # Return an empty but valid payload (no longer default to Aspirin)
+            return {
+                "baseline": {
+                    "version_id": str(ZERO_UUID),
+                    "smiles": "",
+                    "properties": {},
+                    "graph": {"atoms": [], "bonds": []}
+                },
+                "proposal": None,
+                "diff": {"atoms": {"added": [], "removed": [], "modified": []}, "bonds": {"added": [], "removed": []}},
+                "alerts": [],
+                "property_delta": {},
+                "radar": {"baseline": {}, "proposal": {}},
+                "optimization_context": {
+                    "available_rules": []
+                },
+                "inchikey": "BSYNTH-EMPTY-CANVAS"
+            }
+
+        opt = None
+        if request.proposal_version_id:
+            from backend.chemistry.models import MoleculeVersion
+            opt = db.get(MoleculeVersion, request.proposal_version_id)
+            if not opt:
+                raise HTTPException(status_code=404, detail="Proposal version not found")
+
+        base = db.get(MoleculeVersion, request.baseline_version_id)
+        if not base:
+            raise HTTPException(status_code=404, detail="Baseline version not found")
+        
+        mol_base = Chem.MolFromSmiles(base.canonical_smiles)
+        mol_opt = Chem.MolFromSmiles(opt.canonical_smiles) if opt else None
+        
+        # 1. Properties & Analysis
+        # Base properties are usually stored, but we can recompute if needed for consistency
+        base_props = base.properties
+        
+        # Analyze the proposal (or baseline if no proposal)
+        analysis_target = mol_opt if mol_opt else mol_base
+        issues, radar_raw = analyze_structure(analysis_target)
+        suggestions = suggest_optimizations(analysis_target)
+        
+        # 2. Diffing (if proposal exists)
+        diff_payload = {"atoms": {"added": [], "removed": [], "modified": []}, "bonds": {"added": [], "removed": []}}
+        prop_delta = {}
+        radar_payload = {"baseline": radar_raw, "proposal": {}}
+        
+        if mol_opt and opt:
+            # Structural Diff
+            raw_diff = calculate_structural_diff(mol_base, mol_opt)
+            # Transform to spec format
+            for item in raw_diff.get("proposal", {}).get("atoms", []):
+                if item["status"] == "added":
+                    diff_payload["atoms"]["added"].append(item["index"])
+            for item in raw_diff.get("baseline", {}).get("atoms", []):
+                if item["status"] == "deleted":
+                    diff_payload["atoms"]["removed"].append(item["index"])
+            
+            for item in raw_diff.get("proposal", {}).get("bonds", []):
+                if item["status"] == "added":
+                    # Bond indices are trickier; in RDKit we use atom pairs often
+                    # For now, store indices of atoms for the bond
+                    bond = mol_opt.GetBondWithIdx(item["index"])
+                    diff_payload["bonds"]["added"].append([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+            for item in raw_diff.get("baseline", {}).get("bonds", []):
+                if item["status"] == "deleted":
+                    bond = mol_base.GetBondWithIdx(item["index"])
+                    diff_payload["bonds"]["removed"].append([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+
+            # Property Delta
+            opt_props = opt.properties
+            relevant_keys = ["logp", "tpsa", "qed", "molecular_weight"]
+            for key in relevant_keys:
+                base_val = base_props.get(key, 0)
+                opt_val = opt_props.get(key, 0)
+                prop_delta[key] = round(opt_val - base_val, 3)
+            
+            # Radar Comparison
+            _, opt_radar = analyze_structure(mol_opt)
+            _, base_radar = analyze_structure(mol_base)
+            radar_payload = {
+                "baseline": base_radar,
+                "proposal": opt_radar
+            }
+
+        return {
+            "baseline": {
+                "version_id": str(base.id),
+                "smiles": base.canonical_smiles,
+                "properties": base_props,
+                "graph": base.json_graph
+            },
+            "proposal": {
+                "version_id": str(opt.id),
+                "smiles": opt.canonical_smiles,
+                "properties": opt.properties,
+                "graph": opt.json_graph
+            } if opt else None,
+            "diff": diff_payload,
+            "alerts": issues,
+            "property_delta": prop_delta,
+            "radar": radar_payload,
+            "optimization_context": {
+                "available_rules": suggestions
+            },
+            "inchikey": base.molecule.inchikey if hasattr(base, 'molecule') else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Authoritative Dashboard Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load studio dashboard data")
 
 
 @router.post("/to-molblock")
@@ -366,20 +600,21 @@ async def validate_molecule(request: ValidateRequest):
                 "errors": errors,
             }
         
-        # Try to sanitize
+        # Try to sanitize and canonicalize
+        from backend.chemistry.canonical import canonicalize
         try:
-            Chem.SanitizeMol(mol)
-            sanitized_smiles = Chem.MolToSmiles(mol)
-            molblock = Chem.MolToMolBlock(mol)
+            identity = canonicalize(request.smiles if request.smiles else Chem.MolToSmiles(mol))
             
             return {
                 "valid": True,
-                "sanitized_smiles": sanitized_smiles,
-                "molblock": molblock,
+                "sanitized_smiles": identity["canonical_smiles"],
+                "inchikey": identity["inchikey"],
+                "inchi": identity["inchi"],
+                "molblock": Chem.MolToMolBlock(identity["mol"]),
                 "errors": [],
             }
         except Exception as sanitize_error:
-            errors.append(f"Sanitization failed: {str(sanitize_error)}")
+            errors.append(f"Validation failed: {str(sanitize_error)}")
             return {
                 "valid": False,
                 "errors": errors,

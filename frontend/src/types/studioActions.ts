@@ -9,6 +9,8 @@ export type ActionType =
     | 'REMOVE_BOND'
     | 'OPTIMIZE_GEOMETRY'
     | 'SIMULATE_REACTION'
+    | 'SELECT_OPTIMIZATION_RULE'
+    | 'EXPLAIN_ANALYSIS'
     | 'NO_OP';
 
 export interface CreateMoleculeAction {
@@ -79,6 +81,22 @@ export interface NoOpAction {
     reason: string;
 }
 
+export interface SelectOptimizationRuleAction {
+    type: 'SELECT_OPTIMIZATION_RULE';
+    payload: {
+        rule_id: string;
+    };
+    reason: string;
+}
+
+export interface ExplainAnalysisAction {
+    type: 'EXPLAIN_ANALYSIS';
+    payload: {
+        issue_code: string;
+    };
+    reason: string;
+}
+
 export type StudioAction =
     | CreateMoleculeAction
     | ReplaceAtomAction
@@ -88,4 +106,6 @@ export type StudioAction =
     | RemoveBondAction
     | OptimizeGeometryAction
     | SimulateReactionAction
+    | SelectOptimizationRuleAction
+    | ExplainAnalysisAction
     | NoOpAction;

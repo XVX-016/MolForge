@@ -4,9 +4,9 @@ Spectroscopy API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from chem.spectroscopy.ir import predict_ir_spectrum
-from chem.spectroscopy.nmr import predict_nmr_spectrum
-from chem.spectroscopy.mass import predict_mass_spectrum
+from backend.chem.spectroscopy.ir import predict_ir_spectrum
+from backend.chem.spectroscopy.nmr import predict_nmr_spectrum
+from backend.chem.spectroscopy.mass import predict_mass_spectrum
 
 router = APIRouter()
 

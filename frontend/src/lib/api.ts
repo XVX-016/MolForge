@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { MoleculeGraph } from '../types/molecule'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -198,7 +198,12 @@ export interface MoleculeProperties {
   rotatable_bonds: number
   formula: string
   heavy_atom_count: number
+  qed: number
+  complexity: number
   lipinski_violations: number
+  canonical_smiles: string
+  inchikey: string
+  inchi: string
 }
 
 /**
@@ -206,6 +211,98 @@ export interface MoleculeProperties {
  */
 export async function getMoleculeProperties(smiles: string): Promise<MoleculeProperties> {
   const response = await apiClient.post<MoleculeProperties>('/api/molecule/properties', { smiles })
+  return response.data
+}
+
+export interface CommitResponse {
+  version_id: string
+  molecule_id: string
+  version_index: number
+  canonical_smiles: string
+  properties: MoleculeProperties
+}
+
+/**
+ * Commit a molecular draft to immutable persistence
+ */
+export async function commitVersion(
+  smiles: string,
+  json_graph: MoleculeGraph,
+  parent_version_id?: string | null
+): Promise<CommitResponse> {
+  const response = await apiClient.post<CommitResponse>('/api/molecule/commit', {
+    smiles,
+    json_graph,
+    parent_version_id
+  })
+  return response.data
+}
+
+export interface AnalysisIssue {
+  title: string
+  description: string
+  severity: 'high' | 'medium' | 'info'
+}
+
+export interface AnalysisSuggestion {
+  id: string
+  title: string
+  description: string
+  rationale: string
+  type: string
+  impact: {
+    logPDelta: number
+    tpsaDelta: number
+  }
+}
+
+export interface AnalysisResponse {
+  issues: AnalysisIssue[]
+  suggestions: AnalysisSuggestion[]
+  radar: {
+    drug_likeness: number
+    complexity: number
+    lipinski: number
+    solubility: number
+    size: number
+    [key: string]: number
+  }
+}
+
+export interface DashboardResponse {
+  base_version: any
+  opt_version: any
+  diff: {
+    baseline: {
+      atoms: { index: number; status: string }[]
+      bonds: { index: number; status: string }[]
+    }
+    proposal: {
+      atoms: { index: number; status: string }[]
+      bonds: { index: number; status: string }[]
+    }
+    mcs_smarts: string
+  }
+  optimization_issues: AnalysisIssue[]
+  optimization_suggestions: AnalysisSuggestion[]
+  radar: Record<string, number>
+}
+
+/**
+ * Perform medicinal chemistry analysis
+ */
+export async function analyzeMolecule(smiles: string): Promise<AnalysisResponse> {
+  const response = await apiClient.post<AnalysisResponse>('/api/molecule/analyze', { smiles })
+  return response.data
+}
+
+/**
+ * Get consolidated dashboard data
+ */
+export async function getDashboard(baseId: string, optId: string): Promise<DashboardResponse> {
+  const response = await apiClient.get<DashboardResponse>('/api/molecule/dashboard', {
+    params: { base_id: baseId, opt_id: optId }
+  })
   return response.data
 }
 

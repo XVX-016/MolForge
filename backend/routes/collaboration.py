@@ -4,8 +4,8 @@ Collaboration & Cloud Storage API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.collaboration.cloud import save_molecule_cloud, load_molecule_cloud, list_user_molecules
-from chem.collaboration.versioning import create_version, get_version_history, fork_molecule
+from backend.chem.collaboration.cloud import save_molecule_cloud, load_molecule_cloud, list_user_molecules
+from backend.chem.collaboration.versioning import create_version, get_version_history, fork_molecule
 
 router = APIRouter()
 

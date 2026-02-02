@@ -9,12 +9,13 @@ from backend.services.studio_service import get_studio_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/studio", tags=["studio"])
+router = APIRouter(tags=["studio"])
 
 class StudioCommandRequest(BaseModel):
     prompt: str
     molecule_context: Dict[str, Any]
     mode: str
+    analysis_context: Optional[Dict[str, Any]] = None
 
 @router.post("/command")
 async def process_studio_command(request: StudioCommandRequest):
@@ -29,7 +30,8 @@ async def process_studio_command(request: StudioCommandRequest):
         action = await service.process_command(
             request.prompt, 
             request.molecule_context, 
-            request.mode
+            request.mode,
+            request.analysis_context
         )
         return action
     except Exception as e:

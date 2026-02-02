@@ -4,9 +4,9 @@ KAB (Knowledge, Analysis & Binding) API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.kab.binding import predict_binding_sites, score_sites
-from chem.kab.analysis import compute_similarity, substructure_alerts, analyze_molecule
-from chem.kab.knowledge import query_knowledge_rules, apply_ml_rules
+from backend.chem.kab.binding import predict_binding_sites, score_sites
+from backend.chem.kab.analysis import compute_similarity, substructure_alerts, analyze_molecule
+from backend.chem.kab.knowledge import query_knowledge_rules, apply_ml_rules
 
 router = APIRouter()
 

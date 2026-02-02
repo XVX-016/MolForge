@@ -4,9 +4,9 @@ Energy calculation and geometry optimization API endpoints
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from chem.energy.forcefield import calculate_total_energy
-from chem.energy.geometry import optimize_geometry
-from chem.energy.dynamics import simulate_dynamics
+from backend.chem.energy.forcefield import calculate_total_energy
+from backend.chem.energy.geometry import optimize_geometry
+from backend.chem.energy.dynamics import simulate_dynamics
 
 router = APIRouter()
 
