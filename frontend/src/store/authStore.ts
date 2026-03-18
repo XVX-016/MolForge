@@ -4,6 +4,19 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
 
 type AuthModalTab = 'signin' | 'signup' | 'confirm-email';
+type AuthError = { message: string } | null;
+
+function toAuthError(error: unknown, fallback: string): AuthError {
+  if (error instanceof Error) {
+    return { message: error.message };
+  }
+
+  if (typeof error === 'string') {
+    return { message: error };
+  }
+
+  return { message: fallback };
+}
 
 interface AuthState {
   user: User | null;
@@ -19,8 +32,8 @@ interface AuthState {
   intendedDestination: string | null; // Store intended destination after login
 
   // Actions
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any; requiresConfirmation?: boolean }>;
+  signIn: (email: string, password: string) => Promise<{ error: AuthError }>;
+  signUp: (email: string, password: string) => Promise<{ error: AuthError; requiresConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
 
@@ -34,7 +47,7 @@ interface AuthState {
   runPendingAction: () => Promise<void>;
 
   // Email confirmation
-  resendConfirmationEmail: (email: string) => Promise<{ error: any }>;
+  resendConfirmationEmail: (email: string) => Promise<{ error: AuthError }>;
 }
 
 // Store the subscription outside the store to prevent multiple listeners
@@ -91,9 +104,9 @@ export const useAuthStore = create<AuthState>()(
             type: 'signup',
             email,
           });
-          return { error };
-        } catch (error: any) {
-          return { error };
+          return { error: error ? { message: error.message } : null };
+        } catch (error) {
+          return { error: toAuthError(error, 'Failed to resend confirmation email') };
         }
       },
 
@@ -162,9 +175,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { error } = await supabase.auth.signInWithPassword({ email, password });
           // State will be updated via onAuthStateChange listener
-          return { error };
-        } catch (error: any) {
-          return { error };
+          return { error: error ? { message: error.message } : null };
+        } catch (error) {
+          return { error: toAuthError(error, 'Failed to sign in') };
         }
       },
 
@@ -184,9 +197,9 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // State will be updated via onAuthStateChange listener if user is immediately authenticated
-          return { error, requiresConfirmation };
-        } catch (error: any) {
-          return { error };
+          return { error: error ? { message: error.message } : null, requiresConfirmation };
+        } catch (error) {
+          return { error: toAuthError(error, 'Failed to sign up') };
         }
       },
 

@@ -26,6 +26,15 @@ interface BarbellViewerProps {
   highlightColor?: number; // Color for highlighted atoms (default: yellow)
 }
 
+interface CanvasErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+interface CanvasErrorBoundaryState {
+  hasError: boolean;
+}
+
 // Use shared color system
 const ELEMENT_COLORS: Record<string, number> = {
   // Core supported elements use shared colors
@@ -155,17 +164,6 @@ function MoleculeScene({
     }
   });
 
-  if (atoms.length === 0) {
-    return (
-      <group ref={groupRef}>
-        <mesh rotation={[0.6, 0.2, 0]}>
-          <icosahedronGeometry args={[0.6, 0]} />
-          <meshStandardMaterial color={0x7aa6ff} metalness={0.2} roughness={0.3} />
-        </mesh>
-      </group>
-    );
-  }
-
   // Prepare bond vectors (centered)
   const bondVectors = useMemo(() => {
     return bonds
@@ -180,6 +178,17 @@ function MoleculeScene({
       })
       .filter((v): v is { start: THREE.Vector3; end: THREE.Vector3 } => v !== null);
   }, [atoms, bonds, centroid]);
+
+  if (atoms.length === 0) {
+    return (
+      <group ref={groupRef}>
+        <mesh rotation={[0.6, 0.2, 0]}>
+          <icosahedronGeometry args={[0.6, 0]} />
+          <meshStandardMaterial color={0x7aa6ff} metalness={0.2} roughness={0.3} />
+        </mesh>
+      </group>
+    );
+  }
 
   return (
     <group ref={groupRef} position={centroid.clone().multiplyScalar(-1)}>
@@ -222,10 +231,10 @@ function MoleculeScene({
 
 // Error boundary for Canvas rendering errors
 class CanvasErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean }
+  CanvasErrorBoundaryProps,
+  CanvasErrorBoundaryState
 > {
-  constructor(props: any) {
+  constructor(props: CanvasErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }

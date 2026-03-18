@@ -1,4 +1,1 @@
-// TODO: Define Atom interface
-export interface Atom {
-    // stub
-}
+export type { Atom } from '../../types/molecule'

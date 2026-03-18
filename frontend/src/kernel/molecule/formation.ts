@@ -1,6 +1,5 @@
 import { MoleculeGraph } from '@biosynth/engine';
 import { ForceField } from '@biosynth/engine';
-import { autoBondNewAtom } from '@biosynth/engine';
 import { allowedAdditionalBonds, getValence, type ElementSymbol } from '@biosynth/engine';
 
 /**

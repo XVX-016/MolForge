@@ -1,4 +1,4 @@
-import type { Atom, Bond, Molecule } from '../../types/molecule'
+import type { Molecule } from '../../types/molecule'
 import { VALENCE_LIMITS } from '../bondRules'
 
 export interface ValidationIssue {
@@ -18,7 +18,7 @@ export function validateStructure(mol: Molecule): ValidationIssue[] {
 
   mol.atoms.forEach(atom => {
     const bondCount = mol.bonds.filter(
-      b => b.atom1 === atom.id || b.atom2 === atom.id
+      b => b.from === atom.id || b.to === atom.id
     ).length
 
     const maxBonds = VALENCE_LIMITS[atom.element] || 4

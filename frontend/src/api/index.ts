@@ -1,14 +1,17 @@
 export const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
+type JsonObject = Record<string, unknown>;
+type ApiResponse = Promise<unknown>;
+
 export const api = {
-    predict: (payload: any) =>
+    predict: (payload: JsonObject): ApiResponse =>
         fetch(`${BASE_URL}/api/predict/property`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         }).then(r => r.json()),
 
-    predictBatch: (payload: any) =>
+    predictBatch: (payload: JsonObject): ApiResponse =>
         fetch(`${BASE_URL}/api/predict/batch`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

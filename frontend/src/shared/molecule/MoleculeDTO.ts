@@ -1,4 +1,1 @@
-// TODO: Define MoleculeDTO interface
-export interface MoleculeDTO {
-    // stub
-}
+export type { Molecule as MoleculeDTO } from '../../types/molecule'

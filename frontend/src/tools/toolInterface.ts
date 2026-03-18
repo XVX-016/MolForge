@@ -1,11 +1,13 @@
-import type { PointerEvent as R3FPointerEvent } from '@react-three/fiber'
-import type { useLabStore as _ } from '../store/labStore'
+import type { ThreeEvent } from '@react-three/fiber'
+import type { useLabStore } from '../store/labStore'
 import type { ToolName } from '../types/molecule'
+
+export type ToolPointerEvent = ThreeEvent<PointerEvent>
+export type LabStoreState = ReturnType<typeof useLabStore.getState>
 
 export interface Tool {
   name: ToolName
-  onPointerDown?: (ev: any, store: any) => void
-  onPointerMove?: (ev: any, store: any) => void
-  onPointerUp?: (ev: any, store: any) => void
+  onPointerDown?: (ev: ToolPointerEvent, store: LabStoreState) => void
+  onPointerMove?: (ev: ToolPointerEvent, store: LabStoreState) => void
+  onPointerUp?: (ev: ToolPointerEvent, store: LabStoreState) => void
 }
-

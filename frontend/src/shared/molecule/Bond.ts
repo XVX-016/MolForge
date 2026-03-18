@@ -1,4 +1,1 @@
-// TODO: Define Bond interface
-export interface Bond {
-    // stub
-}
+export type { Bond } from '../../types/molecule'

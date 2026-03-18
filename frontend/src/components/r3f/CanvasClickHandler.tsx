@@ -4,6 +4,12 @@ import { useMoleculeStore } from '../../store/moleculeStore'
 import { addAtom } from '../../lib/engineAdapter'
 import { screenToWorld } from '../../lib/raycasting'
 
+interface PointerLikeMouseEvent {
+  clientX: number
+  clientY: number
+  target: EventTarget | null
+}
+
 /**
  * Handles canvas clicks for add-atom tool
  */
@@ -13,23 +19,21 @@ export function CanvasClickHandler() {
   const atomToAdd = useMoleculeStore((state) => state.atomToAdd)
 
   useEffect(() => {
-    if (tool !== 'add-atom' || !atomToAdd) return
+    if ((tool !== 'add-atom' && tool !== 'add_atom') || !atomToAdd) return
 
     const handleClick = (e: MouseEvent) => {
       // Only handle if clicking canvas (not atoms/bonds)
       if (e.target !== gl.domElement) return
 
       const canvas = gl.domElement
-      const rect = canvas.getBoundingClientRect()
 
       // Convert to world coordinates
       const worldPos = screenToWorld(
         {
-          ...e,
           target: canvas,
           clientX: e.clientX,
           clientY: e.clientY,
-        } as any,
+        } satisfies PointerLikeMouseEvent,
         camera,
         0
       )

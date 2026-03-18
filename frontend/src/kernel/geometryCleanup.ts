@@ -150,20 +150,6 @@ export function planarizeAromaticRings(graph: MoleculeGraph): void {
     centroid[1] /= 6;
     centroid[2] /= 6;
 
-    // Build covariance matrix (simplified 2D PCA)
-    let xx = 0, yy = 0, zz = 0, xy = 0, xz = 0, yz = 0;
-    ringAtoms.forEach((atom) => {
-      const x = atom!.position[0] - centroid[0];
-      const y = atom!.position[1] - centroid[1];
-      const z = atom!.position[2] - centroid[2];
-      xx += x * x;
-      yy += y * y;
-      zz += z * z;
-      xy += x * y;
-      xz += x * z;
-      yz += y * z;
-    });
-
     // Find best-fit plane (simplified: use z-axis as normal if variance is smallest)
     // For simplicity, project onto XY plane
     ringAtoms.forEach((atom) => {

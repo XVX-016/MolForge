@@ -1,7 +1,23 @@
 import React from 'react'
 
+interface ElectrostaticPotentialValue {
+  atom: number
+  esp: number
+}
+
+interface QuantumExportData {
+  homo_lumo?: {
+    HOMO: number
+    LUMO: number
+    gap: number
+  }
+  esp?: {
+    esp_values?: ElectrostaticPotentialValue[]
+  }
+}
+
 interface QuantumExportProps {
-  data: any
+  data: QuantumExportData
   filename?: string
 }
 
@@ -29,7 +45,7 @@ export default function QuantumExport({ data, filename = 'quantum_data' }: Quant
     }
   }
 
-  const convertToCSV = (data: any): string => {
+  const convertToCSV = (data: QuantumExportData): string => {
     // Simple CSV conversion
     const lines: string[] = []
     if (data.homo_lumo) {
@@ -41,7 +57,7 @@ export default function QuantumExport({ data, filename = 'quantum_data' }: Quant
     if (data.esp && data.esp.esp_values) {
       lines.push('')
       lines.push('Atom,ESP')
-      data.esp.esp_values.forEach((item: any) => {
+      data.esp.esp_values.forEach((item) => {
         lines.push(`${item.atom},${item.esp}`)
       })
     }

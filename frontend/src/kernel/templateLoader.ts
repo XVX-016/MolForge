@@ -1,4 +1,5 @@
 import { MoleculeGraph } from "@biosynth/engine";
+import type { Element } from "@biosynth/engine";
 import { useMoleculeStore } from "../store/moleculeStore";
 import { pushState } from "../store/historyStore";
 import TEMPLATES from "../templates/templates.index";
@@ -41,7 +42,7 @@ export function placeTemplate(template: TemplateData, offset = { x: 0, y: 0, z: 
   // 1. create atoms
   template.atoms.forEach((atom) => {
     const id = molecule.addAtom({
-      element: atom.element as any,
+      element: atom.element as Element,
       position: [
         atom.coords.x + offset.x,
         atom.coords.y + offset.y,
@@ -94,7 +95,7 @@ export function attachTemplateToAtom(templateId: string, atomId: string): string
 
   // Get direction vector for placement
   const direction = suggestBondVector(cloned, atomId);
-  const bondLength = getBondLength(attachAtom.element, template.atoms[0].element as any);
+  const bondLength = getBondLength(attachAtom.element, template.atoms[0].element as Element);
 
   // Root atom of template (first atom)
   const rootAtomTemplate = template.atoms[0];
@@ -118,7 +119,7 @@ export function attachTemplateToAtom(templateId: string, atomId: string): string
   const createdAtomIds: string[] = [];
   template.atoms.forEach((atom) => {
     const id = cloned.addAtom({
-      element: atom.element as any,
+      element: atom.element as Element,
       position: [
         rootPosition[0] + (atom.coords.x - rootOffset.x),
         rootPosition[1] + (atom.coords.y - rootOffset.y),

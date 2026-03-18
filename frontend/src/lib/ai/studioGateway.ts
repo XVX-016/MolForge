@@ -32,6 +32,22 @@ export interface ChatResponse {
     error?: string;
 }
 
+function getErrorMessage(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+        const detail = error.response?.data;
+        if (detail && typeof detail === 'object' && 'detail' in detail && typeof detail.detail === 'string') {
+            return detail.detail;
+        }
+        return error.message;
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return 'Failed to communicate with Studio AI';
+}
+
 /**
  * Studio AI Gateway (Static Helper)
  */
@@ -57,13 +73,12 @@ export const StudioGateway = {
                 response: response.data.response,
                 blocked: response.data.blocked || false,
             };
-        } catch (error: any) {
+        } catch (error) {
             console.error('StudioGateway Chat Error:', error);
-            const errorMessage = error.response?.data?.detail || error.message || 'Failed to communicate with Studio AI';
             return {
                 response: '',
                 blocked: false,
-                error: errorMessage,
+                error: getErrorMessage(error),
             };
         }
     }

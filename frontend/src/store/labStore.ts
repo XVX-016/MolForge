@@ -68,7 +68,6 @@ export const useLabStore = create<LabState>()(
     redoStack: [],
 
     loadMolecule: (mol) => {
-      // eslint-disable-next-line no-console
       console.log('[LabStore] Loading molecule:', {
         id: mol.id,
         atomCount: mol.atoms.length,
@@ -78,13 +77,11 @@ export const useLabStore = create<LabState>()(
       });
       // Validate molecule structure
       if (mol.atoms.length === 0 && mol.bonds.length > 0) {
-        // eslint-disable-next-line no-console
         console.warn('[LabStore] Warning: molecule has bonds but no atoms');
       }
       // Validate atom positions
       mol.atoms.forEach((atom, idx) => {
         if (!atom.position || typeof atom.position.x !== 'number' || typeof atom.position.y !== 'number' || typeof atom.position.z !== 'number') {
-          // eslint-disable-next-line no-console
           console.warn('[LabStore] Invalid atom position:', { atom, idx });
         }
       });

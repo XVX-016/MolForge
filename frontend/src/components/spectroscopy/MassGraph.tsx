@@ -2,11 +2,14 @@ import React from 'react'
 import { Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
+  type ActiveElement,
+  type ChartEvent,
   CategoryScale,
   LinearScale,
   BarElement,
   Title,
   Tooltip,
+  type TooltipItem,
   Legend
 } from 'chart.js'
 
@@ -77,7 +80,7 @@ export default function MassGraph({ peaks, molecularIon, highlightPeak, onPeakHo
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const peak = peaks[context.dataIndex]
             let label = `m/z ${peak['m/z'].toFixed(1)} - ${(peak.intensity * 100).toFixed(1)}%`
             if (peak.fragment_type) {
@@ -88,7 +91,7 @@ export default function MassGraph({ peaks, molecularIon, highlightPeak, onPeakHo
         }
       }
     },
-    onHover: (event: any, elements: any[]) => {
+    onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
       if (elements.length > 0) {
         const index = elements[0].index
         onPeakHover?.(peaks[index])

@@ -13,7 +13,7 @@ const apiClient = axios.create({
 interface RetryOptions {
   maxRetries?: number;
   retryDelay?: number;
-  retryCondition?: (error: any) => boolean;
+  retryCondition?: (error: unknown) => boolean;
 }
 
 async function retryRequest<T>(
@@ -25,17 +25,17 @@ async function retryRequest<T>(
     retryDelay = 1000,
     retryCondition = (error) => {
       // Retry on network errors or 5xx errors
-      if (!error.response) return true;
+      if (!axios.isAxiosError(error) || !error.response) return true;
       return error.response.status >= 500;
     },
   } = options;
 
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await request();
-    } catch (error: any) {
+    } catch (error) {
       lastError = error;
 
       if (attempt < maxRetries && retryCondition(error)) {

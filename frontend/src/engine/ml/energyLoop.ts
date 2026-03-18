@@ -1,7 +1,7 @@
 import { MLAPI } from "../../api/ml";
 import type { MLRequest, OptimizeResponse } from "../../types/ml";
 
-export async function runEnergyLoop(getState: () => any, applyFn: (resp: OptimizeResponse) => void, opts?: {
+export async function runEnergyLoop(getState: () => MLRequest, applyFn: (resp: OptimizeResponse) => void, opts?: {
     maxRounds?: number, tolerance?: number
 }) {
     const maxRounds = opts?.maxRounds ?? 6;
@@ -11,8 +11,8 @@ export async function runEnergyLoop(getState: () => any, applyFn: (resp: Optimiz
     for (let round = 0; round < maxRounds; round++) {
         const state = getState();
         const payload: MLRequest = {
-            atoms: state.atoms.map((a: any) => ({ id: a.id, element: a.element, x: a.x, y: a.y, z: a.z ?? 0 })),
-            bonds: state.bonds.map((b: any) => ({ a: b.a, b: b.b, order: b.order || 1 }))
+            atoms: state.atoms.map((a) => ({ id: a.id, element: a.element, x: a.x, y: a.y, z: a.z ?? 0 })),
+            bonds: state.bonds.map((b) => ({ a: b.a, b: b.b, order: b.order || 1 }))
         };
 
         let resp: OptimizeResponse;

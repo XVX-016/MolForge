@@ -7,7 +7,7 @@ interface MultimodalWorkspaceProps {
     activeNode?: WorkflowNode;
     compareNode?: WorkflowNode;
     onCloseComparison?: () => void;
-    _moleculeData: any;
+    _moleculeData: unknown;
     isEmpty?: boolean;
 }
 
@@ -72,7 +72,7 @@ const EmptyState = () => {
     );
 };
 
-const DockingView = (_props: { node: WorkflowNode }) => (
+const DockingView = () => (
     <div className="absolute inset-0 flex flex-col">
         <div className="flex-1 relative">
             <Studio3DScene mode="optimize" molecule={null} />
@@ -99,7 +99,7 @@ const DockingView = (_props: { node: WorkflowNode }) => (
     </div>
 );
 
-const MDView = (_props: { node: WorkflowNode }) => (
+const MDView = () => (
     <div className="absolute inset-0 bg-[#F9FAFB] p-6 flex flex-col gap-6 overflow-y-auto">
         <h3 className="text-sm font-black text-black uppercase">Molecular Dynamics Stability Profile</h3>
         <div className="h-[300px] bg-white border rounded-2xl p-4 shadow-sm flex items-center justify-center">

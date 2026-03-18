@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { MoleculeGraph } from '@biosynth/engine'
-import { useMoleculeStore } from '../../store/moleculeStore'
 import { useLabStore } from '../../store/labStore'
+
+interface MechanismIntermediate {
+  atoms?: unknown[]
+}
 
 interface MechanismStep {
   step: number
-  intermediate: any
+  intermediate?: MechanismIntermediate
   energy: number
   description: string
 }
@@ -17,20 +19,15 @@ interface MechanismData {
 }
 
 interface MechanismGraphProps {
-  molecule?: MoleculeGraph | any
   mechanismData: MechanismData | null
   onStepSelect?: (step: number) => void
-  onHighlightAtoms?: (atomIndices: number[]) => void
 }
 
 export default function MechanismGraph({
-  molecule,
   mechanismData,
   onStepSelect,
-  onHighlightAtoms
 }: MechanismGraphProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null)
-  const selectAtom = useMoleculeStore((s) => s.selectAtom)
   const loadMolecule = useLabStore((s) => s.loadMolecule)
 
   if (!mechanismData || !mechanismData.steps || mechanismData.steps.length === 0) {

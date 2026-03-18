@@ -1,12 +1,18 @@
 import React, { useState } from 'react'
-import { MoleculeGraph } from '@biosynth/engine'
-import { useMoleculeStore } from '../../store/moleculeStore'
+
+interface PathwayReaction {
+  type?: string
+}
+
+interface PathwayMolecule {
+  atoms?: unknown[]
+}
 
 interface PathwayStep {
-  molecule: any
+  molecule?: PathwayMolecule
   step: number
-  reaction?: any
-  precursors?: any[]
+  reaction?: PathwayReaction
+  precursors?: unknown[]
   is_starting?: boolean
 }
 
@@ -14,13 +20,13 @@ interface Pathway {
   steps: PathwayStep[]
   total_steps: number
   score?: number
-  target: any
+  target: unknown
 }
 
 interface RetrosynthesisStepperProps {
   pathway: Pathway
   onStepSelect?: (step: number) => void
-  onMoleculeLoad?: (molecule: any) => void
+  onMoleculeLoad?: (molecule: PathwayMolecule | undefined) => void
 }
 
 export default function RetrosynthesisStepper({
@@ -29,7 +35,6 @@ export default function RetrosynthesisStepper({
   onMoleculeLoad
 }: RetrosynthesisStepperProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const selectAtom = useMoleculeStore((s) => s.selectAtom)
 
   if (!pathway || !pathway.steps || pathway.steps.length === 0) {
     return (
@@ -46,7 +51,7 @@ export default function RetrosynthesisStepper({
     }
   }
 
-  const handleLoadMolecule = (molecule: any) => {
+  const handleLoadMolecule = (molecule: PathwayMolecule | undefined) => {
     if (onMoleculeLoad) {
       onMoleculeLoad(molecule)
     }

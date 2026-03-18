@@ -10,7 +10,13 @@ import {
   errorShakeVariants,
 } from './auth/authMotion';
 
-type AuthModalTab = 'signin' | 'signup' | 'confirm-email';
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
 
 export default function AuthModal() {
   const {
@@ -81,8 +87,8 @@ export default function AuthModal() {
         }
       }
       // Modal will close automatically via auth state change handler
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+    } catch (error) {
+      setError(getErrorMessage(error, 'An unexpected error occurred'));
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +123,8 @@ export default function AuthModal() {
         setError(null);
       }
       // If no confirmation required, modal will close automatically via auth state change
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+    } catch (error) {
+      setError(getErrorMessage(error, 'An unexpected error occurred'));
     } finally {
       setIsLoading(false);
     }
@@ -138,8 +144,8 @@ export default function AuthModal() {
       } else {
         setResendSuccess(true);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend confirmation email');
+    } catch (error) {
+      setError(getErrorMessage(error, 'Failed to resend confirmation email'));
     } finally {
       setResendLoading(false);
     }

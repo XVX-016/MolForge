@@ -1,8 +1,10 @@
 import React from 'react'
 
+type DashboardFiltersState = Record<string, string>
+
 interface DashboardFiltersProps {
-  filters: Record<string, any>
-  onFiltersChange: (filters: Record<string, any>) => void
+  filters: DashboardFiltersState
+  onFiltersChange: (filters: DashboardFiltersState) => void
 }
 
 export default function DashboardFilters({ filters, onFiltersChange }: DashboardFiltersProps) {

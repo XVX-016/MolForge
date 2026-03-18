@@ -9,6 +9,8 @@ interface MoleculeImporterProps {
     onImportSuccess: () => void;
 }
 
+type OpenChemLibMolecule = OCL.Molecule;
+
 export default function MoleculeImporter({ userId, onImportSuccess }: MoleculeImporterProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -18,7 +20,7 @@ export default function MoleculeImporter({ userId, onImportSuccess }: MoleculeIm
 
         try {
             const text = await file.text();
-            let mol: any; // OCL.Molecule
+            let mol: OpenChemLibMolecule;
 
             if (file.name.endsWith('.mol') || file.name.endsWith('.sdf')) {
                 mol = OCL.Molecule.fromMolfile(text);

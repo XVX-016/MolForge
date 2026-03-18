@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { KernelSelectionManager } from '../selectionManager';
 
+type SelectionChangeEvent = { selected: string | null };
+
 describe('KernelSelectionManager', () => {
   let sm: KernelSelectionManager;
 
@@ -9,7 +11,7 @@ describe('KernelSelectionManager', () => {
   });
 
   it('selects and deselects atoms', () => {
-    const events: any[] = [];
+    const events: SelectionChangeEvent[] = [];
     sm.on('change', (p) => events.push(p));
     
     sm.selectAtom('a1');
@@ -21,7 +23,7 @@ describe('KernelSelectionManager', () => {
   });
 
   it('emits select event when atom is selected', () => {
-    const selectEvents: any[] = [];
+    const selectEvents: string[] = [];
     sm.on('select', (id) => selectEvents.push(id));
     
     sm.selectAtom('a1');
@@ -29,7 +31,7 @@ describe('KernelSelectionManager', () => {
   });
 
   it('emits deselect event when atom is deselected', () => {
-    const deselectEvents: any[] = [];
+    const deselectEvents: string[] = [];
     sm.on('deselect', (id) => deselectEvents.push(id));
     
     sm.selectAtom('a1');
@@ -38,7 +40,7 @@ describe('KernelSelectionManager', () => {
   });
 
   it('does not emit events when selecting same atom twice', () => {
-    const events: any[] = [];
+    const events: string[] = [];
     sm.on('select', (id) => events.push(id));
     
     sm.selectAtom('a1');
@@ -47,7 +49,7 @@ describe('KernelSelectionManager', () => {
   });
 
   it('unsubscribes from events', () => {
-    const events: any[] = [];
+    const events: string[] = [];
     const unsubscribe = sm.on('select', (id) => events.push(id));
     
     sm.selectAtom('a1');

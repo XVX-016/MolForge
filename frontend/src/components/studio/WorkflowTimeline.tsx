@@ -15,8 +15,8 @@ export interface WorkflowNode {
     experiment_id: string;
     node_type: string;
     status: WorkflowNodeState;
-    input_params: Record<string, any>;
-    output_data?: Record<string, any>;
+    input_params: Record<string, unknown>;
+    output_data?: Record<string, unknown>;
     created_at: string;
 }
 
@@ -111,7 +111,7 @@ export default function WorkflowTimeline({ nodes, selectedNodeId, compareNodeId,
                 {/* Connector Line Base */}
                 <div className="absolute left-[29px] top-4 bottom-4 w-[2px] bg-[#E5E7EB] z-0" />
 
-                {nodes.map((node, index) => (
+                {nodes.map((node) => (
                     <div key={node.id} className="relative z-10">
                         <div
                             onClick={(e) => {

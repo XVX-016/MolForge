@@ -9,6 +9,7 @@ import type { StudioMode } from '../../types/studio';
 import { useStudioStore } from '../../store/studioStore';
 import { useStudioMode } from '../../lib/studio/hooks';
 import type { SelectionType } from '../../store/studioStore';
+import type { Vec3 } from '../../types/molecule';
 
 const ELEMENT_RADII: Record<string, number> = {
     H: 0.55,
@@ -23,6 +24,18 @@ const ELEMENT_RADII: Record<string, number> = {
     I: 1.4,
 };
 
+type StudioDiffData = {
+    atoms: { added: number[]; removed: number[]; modified: number[] };
+    bonds: { added: number[][]; removed: number[][] };
+};
+
+type OrbitControlChangeTarget = {
+    target: THREE.Vector3;
+    object: {
+        position: THREE.Vector3;
+    };
+};
+
 // Internal component for the render logic
 function FloatingMolecule({
     molecule,
@@ -33,10 +46,7 @@ function FloatingMolecule({
     molecule: MoleculeGraph,
     mode: StudioMode,
     onSelect?: (type: SelectionType, id: string | null) => void,
-    diffData?: {
-        atoms: { added: number[]; removed: number[]; modified: number[] };
-        bonds: { added: number[][]; removed: number[][] };
-    }
+    diffData?: StudioDiffData
 }) {
     const groupRef = useRef<THREE.Group>(null);
     const renderable = moleculeToRenderable(molecule);
@@ -112,7 +122,7 @@ function FloatingMolecule({
                 return (
                     <mesh
                         key={atom.id}
-                        position={atom.position as any}
+                        position={atom.position}
                         onClick={(e) => {
                             e.stopPropagation();
                             if ((canEdit || canOptimize) && onSelect) {
@@ -212,14 +222,10 @@ function FloatingMolecule({
 interface Studio3DSceneProps {
     mode: StudioMode;
     molecule: MoleculeGraph | null;
-    editable?: boolean;
-    diffData?: {
-        atoms: { added: number[]; removed: number[]; modified: number[] };
-        bonds: { added: number[][]; removed: number[][] };
-    };
+    diffData?: StudioDiffData;
     onCameraChange?: (target: THREE.Vector3, position: THREE.Vector3) => void;
     cameraTarget?: THREE.Vector3;
-    cameraPosition?: THREE.Vector3;
+    cameraPosition?: THREE.Vector3 | Vec3;
 }
 
 export default function Studio3DScene({ molecule, mode, diffData, onCameraChange, cameraTarget, cameraPosition }: Studio3DSceneProps) {
@@ -268,7 +274,7 @@ export default function Studio3DScene({ molecule, mode, diffData, onCameraChange
                         enabled={true}
                         onChange={(e) => {
                             if (onCameraChange && e?.target) {
-                                const controls = e.target as any;
+                                const controls = e.target as OrbitControlChangeTarget;
                                 onCameraChange(controls.target.clone(), controls.object.position.clone());
                             }
                         }}

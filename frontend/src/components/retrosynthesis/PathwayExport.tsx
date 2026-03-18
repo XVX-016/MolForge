@@ -1,7 +1,29 @@
 import React from 'react'
 
+interface PathwayStepReaction {
+  name?: string
+  type?: string
+}
+
+interface PathwayStepMolecule {
+  atoms?: unknown[]
+}
+
+interface PathwayStepData {
+  step?: number
+  reaction?: PathwayStepReaction
+  molecule?: PathwayStepMolecule
+  is_starting?: boolean
+}
+
+interface PathwayData {
+  score?: number
+  total_steps?: number
+  steps?: PathwayStepData[]
+}
+
 interface PathwayExportProps {
-  pathway: any
+  pathway: PathwayData
   filename?: string
 }
 
@@ -28,7 +50,7 @@ export default function PathwayExport({ pathway, filename = 'pathway' }: Pathway
     }
   }
 
-  const convertToCSV = (pathway: any): string => {
+  const convertToCSV = (pathway: PathwayData): string => {
     const lines: string[] = []
     
     lines.push('Retrosynthesis Pathway')
@@ -38,7 +60,7 @@ export default function PathwayExport({ pathway, filename = 'pathway' }: Pathway
     lines.push('Step,Description,Atoms,Is Starting Material')
     
     if (pathway.steps) {
-      pathway.steps.forEach((step: any, idx: number) => {
+      pathway.steps.forEach((step, idx) => {
         const desc = step.reaction?.name || step.reaction?.type || `Step ${step.step}`
         const atoms = step.molecule?.atoms?.length || 0
         const isStarting = step.is_starting ? 'Yes' : 'No'

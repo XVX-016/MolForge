@@ -9,7 +9,7 @@ import React, { createContext, useContext, useReducer } from "react";
 export type Atom = { id: string; element: string; x: number; y: number; z: number };
 export type Bond = { id: string; a: string; b: string; order: number };
 
-type Tool = "select" | "add-atom" | "add-bond" | "move" | "erase";
+type Tool = "select" | "add_atom" | "bond" | "move" | "delete";
 
 type State = {
   atoms: Atom[];
@@ -21,6 +21,11 @@ type State = {
   history: { atoms: Atom[]; bonds: Bond[] }[];
   future: { atoms: Atom[]; bonds: Bond[] }[];
   name?: string;
+};
+
+type EditorContextValue = {
+  state: State;
+  dispatch: React.Dispatch<Action>;
 };
 
 const initialState: State = {
@@ -52,7 +57,7 @@ type Action =
   | { type: "CLEAR_HISTORY" }
   ;
 
-const EditorContext = createContext<any>(null);
+const EditorContext = createContext<EditorContextValue | null>(null);
 
 function snapshot(state: State) {
   return { atoms: JSON.parse(JSON.stringify(state.atoms)), bonds: JSON.parse(JSON.stringify(state.bonds)) };
@@ -167,11 +172,19 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export function EditorProvider({ children }: any) {
+export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   return <EditorContext.Provider value={{ state, dispatch }}>{children}</EditorContext.Provider>;
 }
 
-export const useEditorContext = () => useContext(EditorContext);
+export const useEditorContext = () => {
+  const context = useContext(EditorContext);
+
+  if (!context) {
+    throw new Error("useEditorContext must be used within an EditorProvider");
+  }
+
+  return context;
+};
 
 export const useEditor = useEditorContext;

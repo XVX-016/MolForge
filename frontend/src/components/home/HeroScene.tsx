@@ -135,7 +135,7 @@ class CanvasErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -145,7 +145,6 @@ class CanvasErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: unknown, info: unknown) {
-    // eslint-disable-next-line no-console
     console.error('[CanvasErrorBoundary] caught error:', error, info);
   }
 
@@ -173,14 +172,14 @@ function PostProcessingEffects() {
   const supportsPostProcessing = React.useMemo(() => {
     try {
       if (!gl) return false;
-      const isWebGL2 = !!(gl as any).capabilities?.isWebGL2;
-      const extGetter = (gl as any).getExtension ? (name: string) => (gl as any).getExtension(name) : () => null;
+      const isWebGL2 = gl.capabilities.isWebGL2;
+      const context = gl.getContext();
+      const extGetter = (name: string) => context.getExtension(name);
       const hasDrawBuffers = !!extGetter('WEBGL_draw_buffers') || !!extGetter('EXT_draw_buffers');
       const validSize = !!size && size.width > 0 && size.height > 0;
       return (isWebGL2 || hasDrawBuffers) && validSize;
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('supportsPostProcessing check failed', e);
+    } catch (error) {
+      console.warn('supportsPostProcessing check failed', error);
       return false;
     }
   }, [gl, size]);
@@ -202,19 +201,12 @@ function PostProcessingEffects() {
     return null;
   }
 
-  try {
-    return (
-      <EffectComposer multisampling={4}>
-        <Bloom intensity={0.6} luminanceThreshold={0.98} luminanceSmoothing={0.6} height={200} opacity={0.45} />
-        <ChromaticAberration offset={chromaticOffset} radialModulation={false} modulationOffset={0.06} />
-      </EffectComposer>
-    );
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[PostProcessingEffects] render error:', err);
-    setHasError(true);
-    return null;
-  }
+  return (
+    <EffectComposer multisampling={4}>
+      <Bloom intensity={0.6} luminanceThreshold={0.98} luminanceSmoothing={0.6} height={200} opacity={0.45} />
+      <ChromaticAberration offset={chromaticOffset} radialModulation={false} modulationOffset={0.06} />
+    </EffectComposer>
+  );
 }
 
 export default function HeroScene({ molecule: propMolecule }: HeroSceneProps) {

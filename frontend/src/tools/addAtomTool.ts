@@ -7,7 +7,7 @@ import { screenToWorld } from '../lib/raycasting'
  */
 const addAtomTool: Tool = {
   name: 'add_atom',
-  onPointerDown: (ev: any, store: any) => {
+  onPointerDown: (ev, store) => {
     // ev: three pointer event from r3f; camera available at ev.camera
     if (!ev.camera || !ev.target) return
     
@@ -17,7 +17,7 @@ const addAtomTool: Tool = {
         clientX: ev.clientX,
         clientY: ev.clientY,
         target: ev.target,
-      } as any,
+      },
       ev.camera,
       0 // y=0 plane
     )

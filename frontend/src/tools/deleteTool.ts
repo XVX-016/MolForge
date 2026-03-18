@@ -2,7 +2,7 @@ import type { Tool } from './toolInterface'
 
 const deleteTool: Tool = {
   name: 'delete',
-  onPointerDown: (ev: any, store: any) => {
+  onPointerDown: (ev, store) => {
     const picked = ev.object
     if (!picked) return
     
