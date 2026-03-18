@@ -2,46 +2,19 @@
 MolForge Backend API
 FastAPI application entrypoint
 """
-# Force reload trigger
-import sys
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+import logging
+from importlib import import_module
+from typing import Optional
 
-# Step 1: Initialize configurations
 from backend.config import settings
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import traceback
-from backend.routes import generate as generate_router
-from backend.routes import library as library_router
-from backend.routes import admin as admin_router
-from backend.routes import convert as convert_router
-from backend.routes import thumbnails as thumbnails_router
-from backend.routes import relax as relax_router
-from backend.routes import search as search_router
-from backend.routes import spectroscopy as spectroscopy_router
-from backend.routes import energy as energy_router
-from backend.routes import reaction as reaction_router
-from backend.routes import retrosynthesis as retrosynthesis_router
-from backend.routes import kab as kab_router
-from backend.routes import quantum as quantum_router
-from backend.routes import collaboration as collaboration_router
-from backend.routes import dashboard as dashboard_router
-from backend.routes import screening as screening_router
-from backend.routes import search_phase7 as search_phase7_router
-from backend.routes import qm_md as qm_md_router
-from backend.api import search as search_api_router
-from backend.api import screening as screening_api_router
-from backend.api import conformers as conformers_api_router
-from backend.api import molecule as molecule_api_router
-from backend.api import studio as studio_api_router
-from backend.api import studio_v2 as studio_v2_api_router
 from backend.db import init_db
 
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.API_TITLE,
@@ -93,7 +66,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-from fastapi.exceptions import RequestValidationError
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Ensure CORS headers on validation errors (422)"""
@@ -123,31 +96,70 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 # Initialize database
 init_db()
 
-# Mount routers
-app.include_router(generate_router.router, prefix="/generate", tags=["generate"])
-app.include_router(library_router.router, tags=["molecules"])
-app.include_router(admin_router.router, tags=["admin"])
-app.include_router(convert_router.router, tags=["convert"])
-app.include_router(thumbnails_router.router, tags=["thumbnails"])
-app.include_router(relax_router.router, prefix="/api", tags=["relax"])
-app.include_router(search_router.router, prefix="/api/search", tags=["search"])
-app.include_router(spectroscopy_router.router, prefix="/api/spectroscopy", tags=["spectroscopy"])
-app.include_router(energy_router.router, prefix="/api/energy", tags=["energy"])
-app.include_router(reaction_router.router, prefix="/api/reaction", tags=["reaction"])
-app.include_router(retrosynthesis_router.router, prefix="/api/retrosynthesis", tags=["retrosynthesis"])
-app.include_router(kab_router.router, prefix="/api/kab", tags=["kab"])
-app.include_router(quantum_router.router, prefix="/api/quantum", tags=["quantum"])
-app.include_router(screening_router.router, prefix="/api/screening", tags=["screening"])
-app.include_router(search_phase7_router.router, prefix="/api/search", tags=["search-phase7"])
-app.include_router(search_api_router.router, prefix="/api/search", tags=["search"])
-app.include_router(screening_api_router.router, prefix="/api/screening", tags=["screening"])
-app.include_router(conformers_api_router.router, prefix="/api/conformers", tags=["conformers"])
-app.include_router(qm_md_router.router, prefix="/api", tags=["qm-md"])
-app.include_router(molecule_api_router.router, prefix="/api/molecule", tags=["molecule"])
-app.include_router(collaboration_router.router, prefix="/api/collaboration", tags=["collaboration"])
-app.include_router(dashboard_router.router, prefix="/api/dashboard", tags=["dashboard"])
-app.include_router(studio_api_router.router, prefix="/api/studio", tags=["studio"])
-app.include_router(studio_v2_api_router.router, prefix="/api/studio/v2", tags=["studio-v2"])
+ROUTER_SPECS = [
+    ("backend.routes.generate", "/generate", ["generate"]),
+    ("backend.routes.library", None, ["molecules"]),
+    ("backend.routes.admin", None, ["admin"]),
+    ("backend.routes.convert", None, ["convert"]),
+    ("backend.routes.thumbnails", None, ["thumbnails"]),
+    ("backend.routes.relax", "/api", ["relax"]),
+    ("backend.routes.search", "/api/search", ["search"]),
+    ("backend.routes.spectroscopy", "/api/spectroscopy", ["spectroscopy"]),
+    ("backend.routes.energy", "/api/energy", ["energy"]),
+    ("backend.routes.reaction", "/api/reaction", ["reaction"]),
+    ("backend.routes.retrosynthesis", "/api/retrosynthesis", ["retrosynthesis"]),
+    ("backend.routes.kab", "/api/kab", ["kab"]),
+    ("backend.routes.quantum", "/api/quantum", ["quantum"]),
+    ("backend.routes.collaboration", "/api/collaboration", ["collaboration"]),
+    ("backend.routes.dashboard", "/api/dashboard", ["dashboard"]),
+    ("backend.routes.screening", "/api/screening", ["screening"]),
+    ("backend.routes.search_phase7", "/api/search", ["search-phase7"]),
+    ("backend.routes.qm_md", "/api", ["qm-md"]),
+    ("backend.api.search", "/api/search", ["search"]),
+    ("backend.api.screening", "/api/screening", ["screening"]),
+    ("backend.api.conformers", "/api/conformers", ["conformers"]),
+    ("backend.api.molecule", "/api/molecule", ["molecule"]),
+    ("backend.api.studio", "/api/studio", ["studio"]),
+    ("backend.api.studio_v2", "/api/studio/v2", ["studio-v2"]),
+]
+
+
+def _should_skip_missing_dependency(exc: ModuleNotFoundError, module_path: str) -> bool:
+    missing_name = exc.name or ""
+    if not missing_name:
+        return False
+    if missing_name == module_path:
+        return False
+    return not missing_name.startswith("backend")
+
+
+def _include_router(module_path: str, prefix: Optional[str], tags: list[str]) -> None:
+    try:
+        module = import_module(module_path)
+    except ModuleNotFoundError as exc:
+        if not _should_skip_missing_dependency(exc, module_path):
+            raise
+        logger.warning(
+            "Skipping router %s because optional dependency '%s' is unavailable: %s",
+            module_path,
+            exc.name,
+            exc,
+        )
+        return
+
+    router = getattr(module, "router", None)
+    if router is None:
+        logger.warning("Skipping router %s because it does not expose 'router'", module_path)
+        return
+
+    include_kwargs = {"tags": tags}
+    if prefix:
+        include_kwargs["prefix"] = prefix
+    app.include_router(router, **include_kwargs)
+
+
+for module_path, prefix, tags in ROUTER_SPECS:
+    _include_router(module_path, prefix, tags)
 
 
 

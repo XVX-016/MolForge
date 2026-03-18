@@ -112,13 +112,22 @@ export class FrameRateMonitor {
 /**
  * Monitor memory usage (if available)
  */
+interface PerformanceMemory {
+  usedJSHeapSize: number
+  totalJSHeapSize: number
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory: PerformanceMemory
+}
+
 export function getMemoryUsage(): {
   used: number
   total: number
   percentage: number
 } | null {
   if ('memory' in performance) {
-    const memory = (performance as any).memory
+    const memory = (performance as PerformanceWithMemory).memory
     return {
       used: memory.usedJSHeapSize,
       total: memory.totalJSHeapSize,

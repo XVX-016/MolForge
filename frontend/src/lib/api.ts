@@ -270,8 +270,14 @@ export interface AnalysisResponse {
 }
 
 export interface DashboardResponse {
-  base_version: any
-  opt_version: any
+  base_version: {
+    json_graph: MoleculeGraph | null
+    properties: Record<string, number>
+  }
+  opt_version: {
+    json_graph: MoleculeGraph | null
+    properties: Record<string, number>
+  }
   diff: {
     baseline: {
       atoms: { index: number; status: string }[]
@@ -332,7 +338,7 @@ export interface CreateItemPayload {
   structure_file?: File | null
 }
 
-export interface UpdateItemPayload extends Partial<CreateItemPayload> { }
+export type UpdateItemPayload = Partial<CreateItemPayload>
 
 /**
  * List all items

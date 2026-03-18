@@ -2,11 +2,14 @@ import React from 'react'
 import { Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
+  type ActiveElement,
+  type ChartEvent,
   CategoryScale,
   LinearScale,
   BarElement,
   Title,
   Tooltip,
+  type TooltipItem,
   Legend
 } from 'chart.js'
 
@@ -76,7 +79,7 @@ export default function NMRGraph({ peaks, type, highlightPeak, onPeakHover }: NM
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const peak = peaks[context.dataIndex]
             let label = `${peak.shift} ppm`
             if (peak.multiplicity) {
@@ -90,7 +93,7 @@ export default function NMRGraph({ peaks, type, highlightPeak, onPeakHover }: NM
         }
       }
     },
-    onHover: (event: any, elements: any[]) => {
+    onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
       if (elements.length > 0) {
         const index = elements[0].index
         onPeakHover?.(peaks[index])

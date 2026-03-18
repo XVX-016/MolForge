@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, type LinkProps } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import Button from './ui/Button';
 
@@ -13,7 +13,7 @@ export default function Navbar({ onToggleMenu }: NavbarProps) {
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const isActive = (to: string, exact = false) =>
 		exact ? location.pathname === to : location.pathname.startsWith(to);
-	const RLink = (props: any) => React.createElement(Link as any, props);
+	const RLink = (props: LinkProps) => <Link {...props} />;
 
 	const handleSignOut = async () => {
 		await signOut();

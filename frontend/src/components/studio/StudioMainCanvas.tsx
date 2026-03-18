@@ -50,7 +50,7 @@ export default function StudioMainCanvas() {
                         cameraTarget={cameraState.target}
                         cameraPosition={cameraState.position}
                         onCameraChange={handleCameraChange}
-                        diffData={dashboard.diff as any}
+                        diffData={dashboard.diff}
                     />
                 </div>
             </div>
@@ -75,7 +75,7 @@ export default function StudioMainCanvas() {
                             cameraTarget={cameraState.target}
                             cameraPosition={cameraState.position}
                             onCameraChange={handleCameraChange}
-                            diffData={dashboard.diff as any}
+                            diffData={dashboard.diff}
                         />
                     </div>
                 </div>

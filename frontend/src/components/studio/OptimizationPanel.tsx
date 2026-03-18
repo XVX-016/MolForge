@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStudioStore } from '../../store/studioStore';
 import { Sparkles, Zap, Info, AlertTriangle, CheckCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function OptimizationPanel() {
     const { analysis, isComputingProperties, runCommand } = useStudioStore();

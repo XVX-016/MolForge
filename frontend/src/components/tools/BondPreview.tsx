@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import { useMoleculeStore } from '../../store/moleculeStore';
 
 export function BondPreview() {
-    const { camera, mouse, scene } = useThree();
-    const lineRef = useRef<any>(null);
+    const { camera, mouse } = useThree();
+    const lineRef = useRef<THREE.Line | null>(null);
     const selectedAtomId = useMoleculeStore((state) => state.selectedAtomId);
     const tool = useMoleculeStore((state) => state.tool);
     const currentMolecule = useMoleculeStore((state) => state.currentMolecule);
@@ -30,7 +30,6 @@ export function BondPreview() {
         const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
         vector.unproject(camera);
         const dir = vector.sub(camera.position).normalize();
-        const distance = -camera.position.z / dir.z; // Project to Z=0 plane default?
         // Better: Project to plane parallel to view at atom depth? 
         // Or just some distance in front of camera
 

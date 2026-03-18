@@ -1,8 +1,34 @@
 import React from 'react'
 
+interface ReactionProduct {
+  id?: string
+}
+
+interface ReactionData {
+  reaction_type?: string
+  products?: ReactionProduct[]
+}
+
+interface MechanismStepExport {
+  step: number
+  description: string
+  energy: number
+}
+
+interface MechanismExportData {
+  steps?: MechanismStepExport[]
+  activation_energy?: number
+  reaction_energy?: number
+}
+
+interface ExportPayload {
+  reaction?: ReactionData
+  mechanism?: MechanismExportData
+}
+
 interface ReactionExportProps {
-  reactionData: any
-  mechanismData?: any
+  reactionData: ReactionData
+  mechanismData?: MechanismExportData
   filename?: string
 }
 
@@ -38,7 +64,7 @@ export default function ReactionExport({
     }
   }
 
-  const convertToCSV = (data: any): string => {
+  const convertToCSV = (data: ExportPayload): string => {
     const lines: string[] = []
     
     if (data.reaction) {
@@ -56,7 +82,7 @@ export default function ReactionExport({
     if (data.mechanism && data.mechanism.steps) {
       lines.push('Mechanism Steps')
       lines.push('Step,Description,Energy (kcal/mol)')
-      data.mechanism.steps.forEach((step: any) => {
+      data.mechanism.steps.forEach((step) => {
         lines.push(`${step.step},${step.description},${step.energy}`)
       })
       lines.push('')

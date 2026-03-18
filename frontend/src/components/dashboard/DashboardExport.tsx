@@ -1,7 +1,10 @@
 import React from 'react'
 
+type DashboardExportValue = string | number | boolean | null | undefined
+type DashboardExportData = Record<string, DashboardExportValue>
+
 interface DashboardExportProps {
-  data: any
+  data: DashboardExportData
 }
 
 export default function DashboardExport({ data }: DashboardExportProps) {
@@ -27,7 +30,7 @@ export default function DashboardExport({ data }: DashboardExportProps) {
     }
   }
 
-  const convertToCSV = (data: any): string => {
+  const convertToCSV = (data: DashboardExportData): string => {
     const lines: string[] = ['Metric,Value']
     Object.entries(data).forEach(([key, value]) => {
       lines.push(`${key},${value}`)

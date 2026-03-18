@@ -2,7 +2,7 @@ import type { Tool } from './toolInterface'
 
 const selectTool: Tool = {
   name: 'select',
-  onPointerDown: (ev: any, store: any) => {
+  onPointerDown: (ev, store) => {
     // expecting ev.object is the clicked mesh and ev.instanceId if instanced
     const picked = ev.object
     if (!picked) {

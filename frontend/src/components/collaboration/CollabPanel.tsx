@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
 import { MoleculeGraph } from '@biosynth/engine'
-import { moleculeToJSON } from '../../lib/engineAdapter'
+
+interface SerializableBond {
+  a1: number
+  a2: number
+  order: number
+}
 
 interface CollabPanelProps {
   molecule: MoleculeGraph
@@ -31,7 +36,7 @@ export default function CollabPanel({ molecule, userId }: CollabPanelProps) {
         id: idx
       }))
       
-      const bonds: any[] = []
+      const bonds: SerializableBond[] = []
       molecule.bonds.forEach((bond) => {
         const a1Idx = atoms.findIndex(a => a.id === bond.a1)
         const a2Idx = atoms.findIndex(a => a.id === bond.a2)
@@ -58,7 +63,7 @@ export default function CollabPanel({ molecule, userId }: CollabPanelProps) {
         throw new Error('Failed to save molecule')
       }
 
-      const result = await response.json()
+      await response.json()
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {

@@ -7,17 +7,26 @@
  * in components/r3f/SelectionManager.ts which handles hover/drag state.
  */
 
-type Handler = (payload?: any) => void;
+type SelectionChangePayload = { selected: string | null };
+type SelectionEventMap = {
+  select: string;
+  deselect: string;
+  change: SelectionChangePayload;
+};
+type SelectionEventName = keyof SelectionEventMap;
+type Handler<T> = (payload: T) => void;
 
 export class KernelSelectionManager {
   private selectedAtomId: string | null = null;
-  private listeners: Map<string, Set<Handler>> = new Map();
+  private listeners: {
+    [K in SelectionEventName]: Set<Handler<SelectionEventMap[K]>>;
+  } = {
+    select: new Set(),
+    deselect: new Set(),
+    change: new Set(),
+  };
 
-  constructor() {
-    this.listeners.set('select', new Set());
-    this.listeners.set('deselect', new Set());
-    this.listeners.set('change', new Set());
-  }
+  constructor() {}
 
   getSelectedAtomId(): string | null {
     return this.selectedAtomId;
@@ -38,32 +47,30 @@ export class KernelSelectionManager {
     this.emit('change', { selected: null });
   }
 
-  on(event: 'select' | 'deselect' | 'change', cb: Handler): () => void {
-    const set = this.listeners.get(event);
+  on<K extends SelectionEventName>(event: K, cb: Handler<SelectionEventMap[K]>): () => void {
+    const set = this.listeners[event];
     set?.add(cb);
     return () => set?.delete(cb);
   }
 
-  private emit(event: string, payload?: any): void {
-    const set = this.listeners.get(event);
+  private emit<K extends SelectionEventName>(event: K, payload: SelectionEventMap[K]): void {
+    const set = this.listeners[event];
     if (!set) return;
     for (const h of Array.from(set)) {
       try {
         h(payload);
-      } catch (e) {
+      } catch (error) {
         // swallow handler errors (kernels shouldn't crash tests)
-        // eslint-disable-next-line no-console
-        console.warn('KernelSelectionManager handler error', e);
+        console.warn('KernelSelectionManager handler error', error);
       }
     }
   }
 
   reset(): void {
     this.selectedAtomId = null;
-    this.listeners.forEach((s) => s.clear());
-    this.listeners.set('select', new Set());
-    this.listeners.set('deselect', new Set());
-    this.listeners.set('change', new Set());
+    this.listeners.select.clear();
+    this.listeners.deselect.clear();
+    this.listeners.change.clear();
   }
 }
 

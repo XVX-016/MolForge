@@ -10,11 +10,8 @@ interface UseCursorTrackingOptions {
   debounceMs?: number;
 }
 
-interface CursorStateMachine {
-  state: CursorState;
-  hoveredCardId: string | null;
-  cursorPosition: { x: number; y: number } | null;
-  transition: (newState: CursorState, data?: any) => void;
+interface CursorTransitionData {
+  cardId?: string | null;
 }
 
 export function useCursorTracking(options: UseCursorTrackingOptions = {}) {
@@ -22,7 +19,6 @@ export function useCursorTracking(options: UseCursorTrackingOptions = {}) {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
   const [state, setState] = useState<CursorState>('idle');
-  const lastMoveTime = useRef<number>(0);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleCardHover = useCallback((cardId: string | null) => {
@@ -35,7 +31,6 @@ export function useCursorTracking(options: UseCursorTrackingOptions = {}) {
   }, [state]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    const now = Date.now();
     const newPosition = {
       x: e.clientX / window.innerWidth,
       y: e.clientY / window.innerHeight,
@@ -58,12 +53,10 @@ export function useCursorTracking(options: UseCursorTrackingOptions = {}) {
       if (state === 'moving' && !hoveredCardId) {
         setState('idle');
       }
-    }, 500);
-    
-    lastMoveTime.current = now;
-  }, [state, hoveredCardId]);
+    }, debounceMs);
+  }, [debounceMs, state, hoveredCardId]);
 
-  const transition = useCallback((newState: CursorState, data?: any) => {
+  const transition = useCallback((newState: CursorState, data?: CursorTransitionData) => {
     setState(newState);
     if (data?.cardId !== undefined) {
       setHoveredCardId(data.cardId);

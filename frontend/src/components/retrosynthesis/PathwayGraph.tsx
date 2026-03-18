@@ -1,10 +1,26 @@
 import React from 'react'
 
+interface PathwayMoleculeSummary {
+  atoms?: unknown[]
+}
+
+interface PathwayReactionSummary {
+  id?: string
+  name?: string
+}
+
+interface PathwayScoreBreakdown {
+  step_score?: number
+  reagent_score?: number
+  energy_score?: number
+  yield_score?: number
+}
+
 interface PathwayStep {
-  molecule: any
+  molecule?: PathwayMoleculeSummary
   step: number
-  reaction?: any
-  precursors?: any[]
+  reaction?: PathwayReactionSummary
+  precursors?: unknown[]
   is_starting?: boolean
 }
 
@@ -12,7 +28,7 @@ interface PathwayGraphProps {
   pathway: {
     steps: PathwayStep[]
     score?: number
-    score_breakdown?: any
+    score_breakdown?: PathwayScoreBreakdown
   }
   onStepClick?: (step: PathwayStep) => void
 }

@@ -1,8 +1,9 @@
-# backend/services/__init__.py
-from .prediction_service import PredictionService
-from .molecule_service import MoleculeService
-from .generation_service import GenerationService
-from .user_service import UserService
+"""
+Backend service package.
+
+Keep this package import-light so route modules can import individual
+services without eagerly loading optional ML / chemistry dependencies.
+"""
 
 __all__ = [
     "PredictionService",
@@ -10,4 +11,3 @@ __all__ = [
     "GenerationService",
     "UserService",
 ]
-

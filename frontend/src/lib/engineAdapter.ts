@@ -1,4 +1,5 @@
 import { MoleculeGraph, MoleculeSerializer, ForceField, autoBondNewAtom } from '@biosynth/engine'
+import type { Element } from '@biosynth/engine'
 import { useMoleculeStore } from '../store/moleculeStore'
 import { pushState } from '../store/historyStore'
 
@@ -106,7 +107,7 @@ export function addAtom(
   if (!molecule) {
     // Create new molecule if none exists
     const newMolecule = new MoleculeGraph()
-    newMolecule.addAtom({ element: element as any, position })
+    newMolecule.addAtom({ element: element as Element, position })
     store.setMolecule(newMolecule)
     pushState()
     return
@@ -116,7 +117,7 @@ export function addAtom(
   const cloned = molecule.clone()
 
   // Add atom to cloned molecule
-  const newId = cloned.addAtom({ element: element as any, position })
+  const newId = cloned.addAtom({ element: element as Element, position })
 
   // Auto-bond if enabled and we have more than 1 atom
   if (store.autoBond && newId && cloned.atoms.size > 1) {
@@ -254,7 +255,7 @@ export function getCanvasThumbnail(): string | null {
  */
 export function renderableToMolecule(
   atoms: RenderableAtom[],
-  _bonds: RenderableBond[] // Unused until bond mapping is fixed
+  bonds: RenderableBond[] // Unused until bond mapping is fixed
 ): MoleculeGraph {
   const molecule = new MoleculeGraph()
   const atomIdMap = new Map<string, string>() // old ID -> new ID
@@ -262,7 +263,7 @@ export function renderableToMolecule(
   // Add atoms and track ID mapping
   atoms.forEach((atom) => {
     const newId = molecule.addAtom({
-      element: atom.element as any,
+      element: atom.element as Element,
       position: atom.position,
     })
     atomIdMap.set(atom.id, newId)
@@ -272,6 +273,7 @@ export function renderableToMolecule(
   // TODO: Fix bond mapping - bonds need to reference atoms by position or store atom IDs
   // For now, this is a placeholder that won't work correctly
   // Note: bonds parameter is intentionally unused until bond mapping is fixed
+  void bonds
 
   return molecule
 }

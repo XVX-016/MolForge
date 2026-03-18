@@ -2,12 +2,15 @@ import React from 'react'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
+  type ActiveElement,
+  type ChartEvent,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
   Title,
   Tooltip,
+  type TooltipItem,
   Legend,
   Filler
 } from 'chart.js'
@@ -91,14 +94,14 @@ export default function IRGraph({ peaks, highlightPeak, onPeakHover }: IRGraphPr
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'line'>) => {
             const peak = peaks[context.dataIndex]
             return `${peak.wavenumber} cm⁻¹ - ${peak.group} (${peak.intensity})`
           }
         }
       }
     },
-    onHover: (event: any, elements: any[]) => {
+    onHover: (_event: ChartEvent, elements: ActiveElement[]) => {
       if (elements.length > 0) {
         const index = elements[0].index
         onPeakHover?.(peaks[index])

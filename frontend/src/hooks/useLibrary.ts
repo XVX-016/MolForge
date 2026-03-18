@@ -30,7 +30,7 @@ export function useLibrary() {
         }
     };
 
-    const upload = async (mol: any) => {
+    const upload = async (mol: Molecule) => {
         try {
             const created = await LibraryAPI.upload(mol);
             setMolecules([created, ...molecules]);

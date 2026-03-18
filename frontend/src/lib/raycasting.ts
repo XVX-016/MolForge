@@ -1,11 +1,25 @@
 import * as THREE from 'three'
 import { Raycaster, Vector3 } from 'three'
 
+interface PointerLikeEvent {
+  clientX: number
+  clientY: number
+  target: EventTarget | null
+}
+
+function getTargetRect(target: EventTarget | null): DOMRect {
+  if (target instanceof HTMLElement) {
+    return target.getBoundingClientRect()
+  }
+
+  return new DOMRect(0, 0, window.innerWidth || 1, window.innerHeight || 1)
+}
+
 /**
  * Get atom under cursor using raycasting
  */
 export function getAtomUnderCursor(
-  event: MouseEvent | React.PointerEvent,
+  event: PointerLikeEvent,
   camera: THREE.Camera,
   scene: THREE.Scene,
   atomMeshes: THREE.Mesh[]
@@ -14,7 +28,7 @@ export function getAtomUnderCursor(
   const mouse = new Vector3()
 
   // Get mouse position in normalized device coordinates (-1 to +1)
-  const rect = (event.target as HTMLElement).getBoundingClientRect()
+  const rect = getTargetRect(event.target)
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 
@@ -38,7 +52,7 @@ export function getAtomUnderCursor(
  * Clamps coordinates to reasonable bounds [-5, 5]
  */
 export function screenToWorld(
-  event: MouseEvent | React.PointerEvent,
+  event: PointerLikeEvent,
   camera: THREE.Camera,
   planeY: number = 0
 ): Vector3 {
@@ -47,7 +61,7 @@ export function screenToWorld(
   const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
 
   // Get mouse position in normalized device coordinates
-  const rect = (event.target as HTMLElement).getBoundingClientRect()
+  const rect = getTargetRect(event.target)
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 

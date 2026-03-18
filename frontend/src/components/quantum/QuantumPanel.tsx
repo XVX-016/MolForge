@@ -14,6 +14,12 @@ interface QuantumData {
   }
 }
 
+interface QuantumBondPayload {
+  a1: number
+  a2: number
+  order: number
+}
+
 interface QuantumPanelProps {
   molecule: MoleculeGraph
   onHighlightAtoms?: (atomIndices: number[]) => void
@@ -41,7 +47,7 @@ export default function QuantumPanel({ molecule, onHighlightAtoms }: QuantumPane
           id: idx
         }))
         
-        const bonds: any[] = []
+        const bonds: QuantumBondPayload[] = []
         molecule.bonds.forEach((bond) => {
           const a1Idx = atoms.findIndex(a => a.id === bond.a1)
           const a2Idx = atoms.findIndex(a => a.id === bond.a2)

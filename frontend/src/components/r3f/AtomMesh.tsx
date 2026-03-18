@@ -23,7 +23,6 @@ export default function AtomMesh({
   position,
   element,
   renderMode,
-  colorScheme,
   colorOverride,
   highlighted = false,
 }: AtomMeshProps) {

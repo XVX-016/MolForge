@@ -3,6 +3,11 @@ import axios from 'axios';
 import type { WorkflowNode } from '../components/studio/WorkflowTimeline';
 
 const API_BASE = 'http://localhost:8000'; // Should match backend settings
+type NodeParams = Record<string, unknown>;
+
+function logStoreError(message: string, error: unknown) {
+    console.error(message, error);
+}
 
 export interface Experiment {
     id: string;
@@ -31,7 +36,7 @@ interface StudioV2State {
     // Actions
     createExperiment: (moleculeVersionId: string) => Promise<void>;
     createExperimentFromLibrary: (libraryId: number) => Promise<void>;
-    addNode: (nodeType: string, params: any, parentNodeId?: string) => Promise<void>;
+    addNode: (nodeType: string, params: NodeParams, parentNodeId?: string) => Promise<void>;
     runNode: (nodeId: string) => Promise<void>;
     selectNode: (nodeId: string) => void;
     setCompareNode: (nodeId: string | null) => void;
@@ -64,7 +69,7 @@ export const useStudioV2Store = create<StudioV2State>((set, get) => ({
                 loading: false
             });
         } catch (err) {
-            console.error("Failed to create experiment", err);
+            logStoreError("Failed to create experiment", err);
             set({ loading: false });
         }
     },
@@ -84,17 +89,17 @@ export const useStudioV2Store = create<StudioV2State>((set, get) => ({
                 loading: false
             });
         } catch (err) {
-            console.error("Failed to create experiment from library", err);
+            logStoreError("Failed to create experiment from library", err);
             set({ loading: false });
         }
     },
 
-    addNode: async (nodeType: string, params: any, parentNodeId?: string) => {
+    addNode: async (nodeType: string, params: NodeParams, parentNodeId?: string) => {
         const { currentExperiment } = get();
         if (!currentExperiment) return;
 
         try {
-            const queryParams: Record<string, any> = { node_type: nodeType };
+            const queryParams: Record<string, string> = { node_type: nodeType };
             if (parentNodeId) {
                 queryParams.parent_node_id = parentNodeId;
             }
@@ -104,7 +109,7 @@ export const useStudioV2Store = create<StudioV2State>((set, get) => ({
             });
             set(state => ({ nodes: [...state.nodes, res.data] }));
         } catch (err) {
-            console.error("Failed to add node", err);
+            logStoreError("Failed to add node", err);
         }
     },
 
@@ -120,7 +125,7 @@ export const useStudioV2Store = create<StudioV2State>((set, get) => ({
                 get().pollResults();
             }
         } catch (err) {
-            console.error("Failed to run node", err);
+            logStoreError("Failed to run node", err);
         }
     },
 
@@ -175,14 +180,14 @@ export const useStudioV2Store = create<StudioV2State>((set, get) => ({
                 // Check if any node status changed to completed/failed
                 set({ nodes: latestNodes });
 
-                const stillRunning = latestNodes.some((n: any) => n.status === 'queued' || n.status === 'running');
+                const stillRunning = latestNodes.some((n: WorkflowNode) => n.status === 'queued' || n.status === 'running');
                 if (stillRunning) {
                     setTimeout(poll, 2000);
                 } else {
                     set({ polling: false });
                 }
             } catch (err) {
-                console.error("Polling error", err);
+                logStoreError("Polling error", err);
                 set({ polling: false });
             }
         };

@@ -1,7 +1,9 @@
 import axios from 'axios';
+import type { Atom, Bond } from '../types/molecule';
+
 interface MoleculeData {
-    atoms: any[];
-    bonds: any[];
+    atoms: Atom[];
+    bonds: Bond[];
 }
 
 export async function optimizeGeometry(molecule: MoleculeData) {
@@ -14,7 +16,7 @@ export async function optimizeGeometry(molecule: MoleculeData) {
     }
 }
 
-export async function validateBond(molecule: MoleculeData, bond: any) {
+export async function validateBond(molecule: MoleculeData, bond: Bond) {
     try {
         const { data } = await axios.post("/api/ml/validate-bond", { molecule, bond });
         return data;

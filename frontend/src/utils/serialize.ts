@@ -11,7 +11,7 @@ export function deserializeMolecule(json: string): Molecule {
     parsed.atoms = parsed.atoms || []
     parsed.bonds = parsed.bonds || []
     return parsed as Molecule
-  } catch (e) {
+  } catch {
     throw new Error('Invalid molecule JSON')
   }
 }

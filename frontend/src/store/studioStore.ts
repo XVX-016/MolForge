@@ -1,6 +1,14 @@
 
 import { create } from 'zustand';
 import { apiClient } from '../api/api';
+import type { MoleculeGraph } from '../types/molecule';
+
+function getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return fallback;
+}
 
 export type StudioStatus =
     | "IDLE"
@@ -21,14 +29,14 @@ export interface DashboardPayload {
     baseline: {
         version_id: string;
         smiles: string;
-        properties: Record<string, any>;
-        graph: any;
+        properties: Record<string, unknown>;
+        graph: MoleculeGraph | null;
     };
     proposal: {
         version_id: string;
         smiles: string;
-        properties: Record<string, any>;
-        graph: any;
+        properties: Record<string, unknown>;
+        graph: MoleculeGraph | null;
     } | null;
     diff: {
         atoms: { added: number[]; removed: number[]; modified: number[] };
@@ -50,6 +58,14 @@ export interface DashboardPayload {
         }>;
     };
     inchikey?: string;
+}
+
+interface StudioCommandAction {
+    type: string;
+    payload?: {
+        rule_id?: string;
+        reason?: string;
+    };
 }
 
 interface StudioState {
@@ -92,8 +108,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
                 proposalVersionId: proposalId,
                 status: proposalId ? "PROPOSED" : "READY"
             });
-        } catch (err: any) {
-            set({ status: "IDLE", error: err.message || "Failed to load dashboard" });
+        } catch (error) {
+            set({ status: "IDLE", error: getErrorMessage(error, "Failed to load dashboard") });
         }
     },
 
@@ -111,18 +127,18 @@ export const useStudioStore = create<StudioState>((set, get) => ({
                 analysis_context: dashboard?.optimization_context
             });
 
-            const action = aiRes.data;
-            if (action.type === "SELECT_OPTIMIZATION_RULE") {
+            const action = aiRes.data as StudioCommandAction;
+            if (action.type === "SELECT_OPTIMIZATION_RULE" && action.payload?.rule_id) {
                 await get().applyRule(action.payload.rule_id);
             } else {
                 set({ status: "READY", error: action.payload?.reason || "AI found no appropriate optimization." });
             }
-        } catch (err: any) {
-            set({ status: "READY", error: err.message || "AI Command failed" });
+        } catch (error) {
+            set({ status: "READY", error: getErrorMessage(error, "AI Command failed") });
         }
     },
 
-    applyRule: async (_ruleId) => {
+    applyRule: async (ruleId: string) => {
         const { status, baselineVersionId } = get();
         if ((status !== "READY" && status !== "OPTIMIZING") || !baselineVersionId) return;
 
@@ -130,12 +146,13 @@ export const useStudioStore = create<StudioState>((set, get) => ({
         try {
             // In this authoritative model, 'applying' a rule means asking the backend
             // to create an ephemeral/optimized version and then loading the dashboard with it.
+            void ruleId;
 
             await apiClient.get(`/api/molecule/dashboard`); // Placeholder for Rule execution
 
             set({ status: "PROPOSED" }); // Mock transition
-        } catch (err: any) {
-            set({ status: "READY", error: err.message || "Rule application failed" });
+        } catch (error) {
+            set({ status: "READY", error: getErrorMessage(error, "Rule application failed") });
         }
     },
 
@@ -149,8 +166,8 @@ export const useStudioStore = create<StudioState>((set, get) => ({
             await apiClient.post(`/api/molecule/${proposalVersionId}/accept`);
             set({ status: "COMMITTED" });
             setTimeout(() => set({ status: "READY", proposalVersionId: null }), 2000);
-        } catch (err: any) {
-            set({ status: "PROPOSED", error: err.message || "Failed to accept proposal" });
+        } catch (error) {
+            set({ status: "PROPOSED", error: getErrorMessage(error, "Failed to accept proposal") });
         }
     },
 

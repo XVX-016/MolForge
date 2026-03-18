@@ -1,16 +1,25 @@
 import { apiClient } from "./api"; // Use centralized client
-import type { Molecule } from "../types/molecule";
+import type { MoleculeItem, SaveMoleculePayload } from "../lib/api";
+
+interface LibraryListItem extends MoleculeItem {
+    previewImage: string;
+    updatedAt: string;
+    atoms: [];
+    bonds: [];
+    isValid: boolean;
+    qualityScore: number;
+}
 
 export const LibraryAPI = {
-    list: async (params?: { page?: number; limit?: number }) => {
+    list: async (params?: { page?: number; limit?: number }): Promise<LibraryListItem[]> => {
         const p = params?.page || 1;
         const l = params?.limit || 9; // Default to 9 for 3x3 grid
         const offset = (p - 1) * l;
 
-        const res = await apiClient.get(`/molecules/list?limit=${l}&offset=${offset}`);
+        const res = await apiClient.get<MoleculeItem[]>(`/molecules/list?limit=${l}&offset=${offset}`);
 
         // Adapt backend response to frontend Molecule interface
-        return res.data.map((m: any) => ({
+        return res.data.map((m) => ({
             id: String(m.id),
             name: m.name,
             formula: m.formula || "",
@@ -26,7 +35,7 @@ export const LibraryAPI = {
         }));
     },
 
-    upload: async (payload: any) => {
+    upload: async (payload: SaveMoleculePayload) => {
         const res = await apiClient.post("/molecules/save", payload);
         return res.data;
     },

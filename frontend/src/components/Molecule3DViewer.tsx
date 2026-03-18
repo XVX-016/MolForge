@@ -1,5 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 
+interface ThreeDMolViewer {
+  clear: () => void;
+  addModel: (data: string, format: 'mol' | 'smi') => void;
+  setStyle: (
+    selection: Record<string, never>,
+    style: {
+      stick?: { radius?: number; colorscheme: string };
+      sphere?: { radius?: number; colorscheme: string };
+    }
+  ) => void;
+  zoomTo: () => void;
+  render: () => void;
+  animate: (options: { loop: boolean }) => void;
+  resize: () => void;
+}
+
 interface Molecule3DViewerProps {
   molfile?: string | null;
   smiles?: string | null;
@@ -26,7 +42,7 @@ export default function Molecule3DViewer({
   onLoaded,
 }: Molecule3DViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<any>(null);
+  const viewerRef = useRef<ThreeDMolViewer | null>(null);
 
   useEffect(() => {
     // Wait for 3Dmol to be loaded on window
@@ -41,7 +57,7 @@ export default function Molecule3DViewer({
     if (viewerRef.current) {
       try {
         viewerRef.current.clear();
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
       viewerRef.current = null;
@@ -114,7 +130,7 @@ export default function Molecule3DViewer({
         if (viewerRef.current) {
           try {
             viewerRef.current.resize();
-          } catch (e) {
+          } catch {
             // Ignore resize errors
           }
         }
@@ -126,7 +142,7 @@ export default function Molecule3DViewer({
         if (viewerRef.current) {
           try {
             viewerRef.current.clear();
-          } catch (e) {
+          } catch {
             // Ignore cleanup errors
           }
           viewerRef.current = null;
@@ -162,7 +178,7 @@ export default function Molecule3DViewer({
 declare global {
   interface Window {
     $3Dmol?: {
-      createViewer: (element: HTMLElement, config: { backgroundColor?: string }) => any;
+      createViewer: (element: HTMLElement, config: { backgroundColor?: string }) => ThreeDMolViewer;
     };
   }
 }

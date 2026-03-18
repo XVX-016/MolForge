@@ -1,5 +1,5 @@
 # === Base Image ===
-FROM python:3.11-slim
+FROM python:3.10-slim
 
 # === Set Working Directory ===
 WORKDIR /app
@@ -24,8 +24,8 @@ RUN conda config --set always_yes yes --set changeps1 no && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
-# === Install RDKit + Python 3.11 ===
-RUN conda install -y -c conda-forge rdkit=2023.09 python=3.11 && \
+# === Install RDKit + Python 3.10 ===
+RUN conda install -y -c conda-forge rdkit=2023.09 python=3.10 && \
     conda clean -afy
 
 # === Copy & Install Python Dependencies ===

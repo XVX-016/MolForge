@@ -33,13 +33,13 @@ export default function LeftToolDock() {
                     <button
                         key={atom.symbol}
                         onClick={() => {
-                            setTool('add-atom');
+                            setTool('add_atom');
                             setCurrentElement(atom.symbol);
                             setSelectedElement(atom.symbol);
                         }}
                         className={`
                             w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border
-                            ${selectedElement === atom.symbol && currentTool === 'add-atom'
+                            ${selectedElement === atom.symbol && currentTool === 'add_atom'
                                 ? 'scale-110 ring-2 ring-blue-500 ring-offset-2 border-transparent'
                                 : 'hover:scale-105 border-gray-200'
                             }
@@ -66,13 +66,13 @@ export default function LeftToolDock() {
                     <button
                         key={bond.type}
                         onClick={() => {
-                            setTool('add-bond');
+                            setTool('bond');
                             setSelectedBondData(bond.type);
                             setBondOrder(bond.type as 1 | 2 | 3);
                         }}
                         className={`
                             w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border
-                            ${selectedBondData === bond.type && currentTool === 'add-bond'
+                            ${selectedBondData === bond.type && currentTool === 'bond'
                                 ? 'bg-black text-white border-black'
                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                             }

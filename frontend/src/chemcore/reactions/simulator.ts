@@ -1,10 +1,12 @@
 import type { Molecule } from "../graph/molecule";
 
+export type ReactionMatch = Record<string, unknown>;
+
 export interface ReactionRule {
     name: string;
     // Match returns array of 'match objects' (could be Atoms, Bonds, or custom structure)
-    match(molecule: Molecule): any[];
-    apply(molecule: Molecule, match: any): Molecule;
+    match(molecule: Molecule): ReactionMatch[];
+    apply(molecule: Molecule, match: ReactionMatch): Molecule;
 }
 
 export function simulateReaction(

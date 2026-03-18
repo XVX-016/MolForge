@@ -1,11 +1,12 @@
 import type { Tool } from './toolInterface'
 import * as THREE from 'three'
+import type { Atom } from '../types/molecule'
 
 let pendingAtomId: string | null = null
 
 const bondTool: Tool = {
   name: 'bond',
-  onPointerDown: (ev: any, store: any) => {
+  onPointerDown: (ev, store) => {
     const pickedAtomId = ev.object?.userData?.atomId
     if (!pickedAtomId) {
       // Clicked empty space - cancel bonding
@@ -21,8 +22,8 @@ const bondTool: Tool = {
     } else {
       // Second atom selected - create bond with proper length
       if (pendingAtomId !== pickedAtomId) {
-        const atom1 = store.molecule.atoms.find((a: any) => a.id === pendingAtomId)
-        const atom2 = store.molecule.atoms.find((a: any) => a.id === pickedAtomId)
+        const atom1 = store.molecule.atoms.find((a: Atom) => a.id === pendingAtomId)
+        const atom2 = store.molecule.atoms.find((a: Atom) => a.id === pickedAtomId)
         
         if (atom1 && atom2) {
           // Standard bond lengths (Å)
