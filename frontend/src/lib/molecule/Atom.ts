@@ -55,7 +55,7 @@ export class AtomImpl {
     return this._data.maxValence ?? this.getElementInfo().maxValence
   }
 
-  get metadata(): Record<string, any> {
+  get metadata(): Record<string, unknown> {
     return { ...this._data.metadata }
   }
 

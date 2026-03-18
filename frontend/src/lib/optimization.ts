@@ -92,5 +92,6 @@ export const AvailableStrategies: OptimizationSuggestion[] = [
     strategyHydroxylate,
 ];
 export function generateSuggestions(graph: MoleculeGraph): OptimizationSuggestion[] {
+    void graph;
     return AvailableStrategies;
 }

@@ -9,11 +9,18 @@
  * - Fallback handling
  */
 
-import type { Molecule } from '../Molecule'
+import { Molecule } from '../Molecule'
+import type { Atom, Bond } from '../types'
 
 export interface ThreeDOptions {
   method?: 'etkdg' | 'embed'
   optimize?: boolean
+}
+
+interface BackendMoleculeData {
+  atoms?: Atom[]
+  bonds?: Bond[]
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -91,7 +98,7 @@ export async function generate3DFromSMILES(
 /**
  * Convert molecule to backend format
  */
-function moleculeToBackendFormat(molecule: Molecule): any {
+function moleculeToBackendFormat(molecule: Molecule): BackendMoleculeData {
   const atoms = molecule.getAtoms().map(atom => ({
     id: atom.id,
     element: atom.element,
@@ -118,12 +125,11 @@ function moleculeToBackendFormat(molecule: Molecule): any {
 /**
  * Convert backend format to Molecule
  */
-function moleculeFromBackendFormat(data: any): Molecule {
-  const { Molecule } = require('../Molecule')
+function moleculeFromBackendFormat(data: BackendMoleculeData): Molecule {
   const molecule = new Molecule()
 
   // Add atoms
-  data.atoms?.forEach((atom: any) => {
+  data.atoms?.forEach((atom) => {
     molecule.addAtom({
       id: atom.id,
       element: atom.element,
@@ -134,7 +140,7 @@ function moleculeFromBackendFormat(data: any): Molecule {
   })
 
   // Add bonds
-  data.bonds?.forEach((bond: any) => {
+  data.bonds?.forEach((bond) => {
     molecule.addBond({
       id: bond.id,
       atom1: bond.atom1,

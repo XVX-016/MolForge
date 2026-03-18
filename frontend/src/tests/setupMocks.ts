@@ -2,7 +2,24 @@ import React from 'react';
 import { vi } from 'vitest';
 
 // ----- MOCK ZUSTAND STORE -----
-const fakeStore: any = {
+type FakeStore = {
+  currentMolecule: unknown;
+  autoBond: boolean;
+  selectedAtomId: string | null;
+  selectedBondId: string | null;
+  addAtom: ReturnType<typeof vi.fn>;
+  removeAtom: ReturnType<typeof vi.fn>;
+  selectAtom: ReturnType<typeof vi.fn>;
+  selectBond: ReturnType<typeof vi.fn>;
+  setMolecule: ReturnType<typeof vi.fn>;
+  reset: ReturnType<typeof vi.fn>;
+  getState: () => FakeStore;
+};
+
+type StoreSelector<T> = (store: FakeStore) => T;
+type StorePatch = Partial<FakeStore> | ((store: FakeStore) => Partial<FakeStore>);
+
+const fakeStore: FakeStore = {
   currentMolecule: null,
   autoBond: true,
   selectedAtomId: null,
@@ -23,10 +40,10 @@ const fakeStore: any = {
 };
 
 vi.mock('../store/moleculeStore', () => {
-  const useMoleculeStore: any = (selector?: (store: typeof fakeStore) => unknown) =>
+  const useMoleculeStore = <T>(selector?: StoreSelector<T>) =>
     selector ? selector(fakeStore) : fakeStore;
   useMoleculeStore.getState = () => fakeStore;
-  useMoleculeStore.setState = (partial: any) => {
+  useMoleculeStore.setState = (partial: StorePatch) => {
     const next = typeof partial === 'function' ? partial(fakeStore) : partial;
     Object.assign(fakeStore, next);
   };

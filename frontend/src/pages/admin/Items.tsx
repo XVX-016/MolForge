@@ -21,6 +21,10 @@ export default function AdminItems() {
   });
   const [tagInput, setTagInput] = useState('');
 
+  const handleStatusChange = (status: Item['status']) => {
+    setFormData({ ...formData, status });
+  };
+
   useEffect(() => {
     loadItems();
   }, []);
@@ -218,7 +222,7 @@ export default function AdminItems() {
                 <label className="block text-sm font-medium mb-1 text-chrome">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  onChange={(e) => handleStatusChange(e.target.value as Item['status'])}
                   className="w-full px-3 py-2 border border-chrome/20 bg-frostedGlass text-ivory rounded-lg focus:ring-2 focus:ring-neonCyan/50 focus:border-neonCyan/50 outline-none"
                 >
                   <option value="in-stock">In Stock</option>

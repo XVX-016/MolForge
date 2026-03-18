@@ -35,6 +35,20 @@ export interface PredictionRequest {
   returnAttention?: boolean
 }
 
+interface PredictionApiResponse {
+  predictions?: Record<string, number>
+  model_id?: string
+  attention?: {
+    edge_attentions?: number[]
+    edge_index?: number[][]
+    node_importance?: number[]
+  }
+}
+
+interface BatchPredictionApiResponse {
+  results: PredictionApiResponse[]
+}
+
 export class PredictionService {
   private pendingRequest: NodeJS.Timeout | null = null
   private lastMoleculeHash: string | null = null
@@ -107,11 +121,11 @@ export class PredictionService {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' } as { detail?: string }))
         throw new Error(errorData.detail || `Prediction failed: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = await response.json() as PredictionApiResponse
 
       const result: PredictionResult = {
         properties: data.predictions || {},
@@ -179,15 +193,15 @@ export class PredictionService {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown error' } as { detail?: string }))
       throw new Error(errorData.detail || `Batch prediction failed: ${response.statusText}`)
     }
 
-    const data = await response.json()
+    const data = await response.json() as BatchPredictionApiResponse
 
-    return data.results.map((r: any) => ({
-      properties: r.predictions || {},
-      modelId: r.model_id,
+    return data.results.map((result) => ({
+      properties: result.predictions || {},
+      modelId: result.model_id,
       timestamp: Date.now(),
     }))
   }

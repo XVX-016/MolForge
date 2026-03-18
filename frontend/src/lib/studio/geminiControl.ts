@@ -12,7 +12,7 @@ export async function processAICommand(
     input: string,
     molecule: MoleculeGraph,
     mode: StudioMode,
-    analysisContext?: any
+    analysisContext?: Record<string, unknown>
 ): Promise<StudioAction> {
     console.log(`[AI Control Plane] Orchestrating: "${input}" in ${mode} mode`);
 
@@ -25,11 +25,12 @@ export async function processAICommand(
         });
 
         return response.data;
-    } catch (error: any) {
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('AI Control Plane Error:', error);
         return {
             type: 'NO_OP',
-            reason: `Backend connection failed: ${error.message}`
+            reason: `Backend connection failed: ${errorMessage}`
         };
     }
 }

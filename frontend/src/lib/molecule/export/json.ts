@@ -6,7 +6,7 @@
  * Handles molecule serialization to/from JSON format.
  */
 
-import type { Molecule } from '../Molecule'
+import { Molecule } from '../Molecule'
 import type { MoleculeState } from '../types'
 
 /**
@@ -22,7 +22,6 @@ export function toJSON(molecule: Molecule): string {
  */
 export function fromJSON(json: string): Molecule {
   const state: MoleculeState = JSON.parse(json)
-  const { Molecule } = require('../Molecule')
   return new Molecule(state)
 }
 

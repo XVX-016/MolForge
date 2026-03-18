@@ -19,7 +19,7 @@ export function isValidSMILES(smiles: string): boolean {
   
   // Basic validation: SMILES should contain only valid characters
   // This is a simplified check - real validation requires parsing
-  const validChars = /^[A-Za-z0-9\[\]()=#@+\-.,;:*/\\$%]+$/;
+  const validChars = /^(?:[A-Za-z0-9[\]()=#@+\-.,;:*/\\$%])+$/;
   return validChars.test(smiles.trim()) && smiles.trim().length > 0;
 }
 
@@ -35,6 +35,7 @@ export function normalizeSMILES(smiles: string): string {
  * For production, use a proper SMILES parser like RDKit
  */
 export function smilesToFormula(smiles: string): string | null {
+  void smiles;
   // This is a placeholder - real implementation requires SMILES parsing
   // For now, return null to indicate formula needs to be calculated elsewhere
   return null;

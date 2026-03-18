@@ -1,6 +1,5 @@
 // src/templates/groups.ts
 import { MoleculeGraph } from "@biosynth/engine";
-import { atomTemplates } from "./atoms";
 import { placeAtomRelative } from "@biosynth/engine";
 
 export interface TemplateInstance {

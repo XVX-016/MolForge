@@ -38,7 +38,7 @@ export class BondImpl {
     return this._data.stereo
   }
 
-  get metadata(): Record<string, any> {
+  get metadata(): Record<string, unknown> {
     return { ...this._data.metadata }
   }
 

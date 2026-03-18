@@ -22,7 +22,7 @@ export default function Profile() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [load]);
 	const recentCount = useMemo(() => Math.min(count, 5), [count]);
 
 	return (

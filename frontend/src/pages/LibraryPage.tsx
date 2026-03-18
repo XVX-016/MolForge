@@ -33,10 +33,25 @@ import MoleculeImporter from '../components/MoleculeImporter';
 type SortOption = 'a-z' | 'z-a' | 'newest' | 'oldest';
 type ViewMode = 'all' | 'mine' | 'favorites';
 
+type LibraryItem = PublicMolecule | UserMolecule;
+
+function getLibraryFormula(item: LibraryItem): string | undefined {
+  return item.formula;
+}
+
+function getLibraryMolfile(item: LibraryItem): string | undefined {
+  return item.molfile;
+}
+
+function getLibraryProperties(item: LibraryItem): string | undefined {
+  const value = (item as { properties?: string }).properties;
+  return value;
+}
+
 export default function LibraryPage() {
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState<ViewMode>('all');
-  const [items, setItems] = useState<(PublicMolecule | UserMolecule)[]>([]);
+  const [items, setItems] = useState<LibraryItem[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
@@ -163,14 +178,14 @@ export default function LibraryPage() {
   const openInLab = async (molecule: PublicMolecule | UserMolecule) => {
     try {
       const source = activeView === 'mine' ? 'user' : 'public';
-      navigate(`/lab?id=${molecule.id}&source=${source}`, {
+          navigate(`/lab?id=${molecule.id}&source=${source}`, {
         state: {
           source,
           moleculeId: molecule.id,
           name: molecule.name,
           smiles: molecule.smiles,
-          formula: (molecule as any).formula,
-          molfile: (molecule as any).molfile,
+          formula: getLibraryFormula(molecule),
+          molfile: getLibraryMolfile(molecule),
         },
       });
     } catch (error) {
@@ -190,9 +205,10 @@ export default function LibraryPage() {
       alert(`"${molecule.name}" has been forked to your personal library!`);
       // If switching to 'mine' view context would be nice, but staying put is fine
       // User can switch to "My Library" to see it.
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to fork molecule:', error);
-      alert(`Failed to fork molecule: ${error.message}`);
+      alert(`Failed to fork molecule: ${errorMessage}`);
     }
   };
 
@@ -345,7 +361,7 @@ export default function LibraryPage() {
                 await saveMolfile(molecule.id, result.molfile);
               } else if (supabase && typeof molecule.id === 'string') {
                 // Try public update (might fail RLS, but harmless)
-                const { error } = await supabase
+                await supabase
                   .from('public_molecules')
                   .update({ molfile: result.molfile })
                   .eq('id', molecule.id);
@@ -557,7 +573,7 @@ export default function LibraryPage() {
                     smiles: item.smiles || undefined,
                     formula: item.formula || undefined,
                     molfile: item.molfile || undefined,
-                    properties: (item as any).properties,
+                    properties: getLibraryProperties(item),
                     thumbnail_b64: item.thumbnail_b64 || undefined,
                     created_at: item.created_at,
                     user_id: isMine ? userId || undefined : undefined,
