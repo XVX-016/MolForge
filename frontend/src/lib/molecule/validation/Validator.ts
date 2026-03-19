@@ -12,7 +12,7 @@
  * - Disconnected fragments
  */
 
-import type { ValidationResult, ValidationError, ValidationErrorCode } from '../types'
+import type { ValidationResult, ValidationError } from '../types'
 import type { Molecule } from '../Molecule'
 import { ELEMENT_DATA } from '../constants'
 
@@ -282,7 +282,6 @@ function checkRingStrain(molecule: Molecule): ValidationError[] {
   const warnings: ValidationError[] = []
 
   // Basic ring detection: find cycles
-  const atoms = molecule.getAtoms()
   const cycles = findCycles(molecule)
 
   cycles.forEach(cycle => {

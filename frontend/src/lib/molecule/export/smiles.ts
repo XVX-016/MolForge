@@ -6,7 +6,21 @@
  * Converts molecule to SMILES string via backend API.
  */
 
-import type { Molecule } from '../Molecule'
+import { Molecule } from '../Molecule'
+import type { Atom, Bond } from '../types'
+
+interface BackendMoleculeData {
+  atoms?: Atom[]
+  bonds?: Bond[]
+  metadata?: Record<string, unknown>
+}
+
+interface ValidationApiResponse {
+  valid: boolean
+  sanitized_smiles?: string
+  molblock?: string
+  errors: string[]
+}
 
 /**
  * Convert molecule to SMILES string
@@ -143,7 +157,7 @@ export async function validateWithRDKit(molecule: Molecule): Promise<{
       throw new Error(`Validation failed: ${response.statusText}`)
     }
 
-    return await response.json()
+    return await response.json() as ValidationApiResponse
   } catch (error) {
     console.error('Error validating molecule:', error)
     return {
@@ -156,7 +170,7 @@ export async function validateWithRDKit(molecule: Molecule): Promise<{
 /**
  * Convert molecule to backend format
  */
-function moleculeToBackendFormat(molecule: Molecule): any {
+function moleculeToBackendFormat(molecule: Molecule): BackendMoleculeData {
   const atoms = molecule.getAtoms().map(atom => ({
     id: atom.id,
     element: atom.element,
@@ -183,12 +197,11 @@ function moleculeToBackendFormat(molecule: Molecule): any {
 /**
  * Convert backend format to Molecule
  */
-function moleculeFromBackendFormat(data: any): Molecule {
-  const { Molecule } = require('../Molecule')
+function moleculeFromBackendFormat(data: BackendMoleculeData): Molecule {
   const molecule = new Molecule()
 
   // Add atoms
-  data.atoms?.forEach((atom: any) => {
+  data.atoms?.forEach((atom) => {
     molecule.addAtom({
       id: atom.id,
       element: atom.element,
@@ -199,7 +212,7 @@ function moleculeFromBackendFormat(data: any): Molecule {
   })
 
   // Add bonds
-  data.bonds?.forEach((bond: any) => {
+  data.bonds?.forEach((bond) => {
     molecule.addBond({
       id: bond.id,
       atom1: bond.atom1,

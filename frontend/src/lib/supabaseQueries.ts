@@ -148,7 +148,7 @@ export interface LabSession {
   id: string;
   user_id: string;
   name: string;
-  scene_state: Record<string, any>;
+  scene_state: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -156,7 +156,7 @@ export interface LabSession {
 /**
  * Save a lab session (requires authenticated user)
  */
-export async function saveLabSession(name: string, sceneState: Record<string, any>): Promise<string> {
+export async function saveLabSession(name: string, sceneState: Record<string, unknown>): Promise<string> {
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error('Supabase is not configured');
   }
@@ -187,7 +187,7 @@ export async function saveLabSession(name: string, sceneState: Record<string, an
  * Update a lab session (requires authenticated user)
  * RLS ensures user can only update their own sessions
  */
-export async function updateLabSession(sessionId: string, sceneState: Record<string, any>): Promise<void> {
+export async function updateLabSession(sessionId: string, sceneState: Record<string, unknown>): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error('Supabase is not configured');
   }

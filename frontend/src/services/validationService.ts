@@ -13,7 +13,6 @@ import type {
 import {
   ELEMENT_RADII,
   approximateBondLength,
-  bondKey,
 } from '../utils/chemistry'
 
 interface SimpleAtom {

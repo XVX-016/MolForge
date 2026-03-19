@@ -14,9 +14,7 @@
 import { describe, it, expect } from 'vitest'
 import { Molecule } from '@/lib/molecule'
 import { validateMolecule } from '@/lib/molecule/validation/Validator'
-import { toSMILES } from '@/lib/molecule/export'
 import { AtomImpl } from '@/lib/molecule/Atom'
-import { BondImpl } from '@/lib/molecule/Bond'
 import { nanoid } from 'nanoid'
 
 describe('Molecule Editor Regression Tests', () => {

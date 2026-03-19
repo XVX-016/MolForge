@@ -9,6 +9,8 @@ python-dotenv==1.0.1
 ##############################
 # Chemistry / Molecules
 ##############################
+# RDKit 2022.9.x still expects NumPy 1.x wheels on Windows
+numpy<2
 # Note: RDKit is included in base image, but keeping for version pinning
 rdkit-pypi==2022.9.5
 pillow==10.4.0

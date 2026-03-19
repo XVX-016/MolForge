@@ -86,9 +86,10 @@ export default function PublicLibrary() {
       await forkPublicMolecule(userId, molecule.id!);
       // Show toast notification (you can replace with a proper toast library)
       alert(`"${molecule.name}" has been forked to your personal library!`);
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to fork molecule:', error);
-      alert(`Failed to fork molecule: ${error.message}`);
+      alert(`Failed to fork molecule: ${errorMessage}`);
     }
   };
 

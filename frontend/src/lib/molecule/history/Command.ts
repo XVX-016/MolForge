@@ -7,9 +7,8 @@
  * Each command encapsulates an operation and its inverse.
  */
 
-import type { Molecule } from '../Molecule'
+import { Molecule } from '../Molecule'
 import type { Atom, Bond } from '../types'
-import { nanoid } from 'nanoid'
 
 export interface Command {
   execute(molecule: Molecule): Molecule
@@ -175,12 +174,10 @@ export class ClearMoleculeCommand implements Command {
       bonds: molecule.getBonds().map(b => b.toJSON()),
     }
     // Clear molecule
-    const { Molecule } = require('../Molecule')
     return new Molecule()
   }
   undo(molecule: Molecule): Molecule {
     if (!this.previousState) return molecule
-    const { Molecule } = require('../Molecule')
     const restored = new Molecule()
     this.previousState.atoms.forEach(atom => restored.addAtom(atom))
     this.previousState.bonds.forEach(bond => restored.addBond(bond))

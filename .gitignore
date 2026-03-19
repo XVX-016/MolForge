@@ -46,6 +46,8 @@ Thumbs.db
 # Backend specific
 backend/weights/
 backend/.venv/
+backend/.venv_*/
+*.venv_backup/
 
 # ML Models and Data
 data/

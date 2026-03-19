@@ -16,7 +16,7 @@ export interface Atom {
   inRing?: boolean
   valence?: number
   maxValence?: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export interface Bond {
@@ -26,7 +26,7 @@ export interface Bond {
   order: number  // 1, 2, 3, or aromatic
   type?: 'single' | 'double' | 'triple' | 'aromatic'
   stereo?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export interface MoleculeState {
@@ -37,7 +37,7 @@ export interface MoleculeState {
     formula?: string
     smiles?: string
     molblock?: string
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -70,7 +70,7 @@ export interface ValidationError {
   message: string
   atomId?: string
   bondId?: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 export interface ValidationResult {

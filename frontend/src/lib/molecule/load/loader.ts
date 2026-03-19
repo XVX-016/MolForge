@@ -6,16 +6,21 @@
  * Handles loading molecules from various formats.
  */
 
-import type { Molecule } from '../Molecule'
+import { Molecule } from '../Molecule'
+import type { Atom, Bond } from '../types'
 import { fromJSON } from '../export/json'
 
-// Import moleculeFromBackendFormat from smiles.ts
-function moleculeFromBackendFormat(data: any): Molecule {
-  const { Molecule } = require('../Molecule')
+interface BackendMoleculeData {
+  atoms?: Atom[]
+  bonds?: Bond[]
+  metadata?: Record<string, unknown>
+}
+
+function moleculeFromBackendFormat(data: BackendMoleculeData): Molecule {
   const molecule = new Molecule()
 
   // Add atoms
-  data.atoms?.forEach((atom: any) => {
+  data.atoms?.forEach((atom) => {
     molecule.addAtom({
       id: atom.id,
       element: atom.element,
@@ -26,7 +31,7 @@ function moleculeFromBackendFormat(data: any): Molecule {
   })
 
   // Add bonds
-  data.bonds?.forEach((bond: any) => {
+  data.bonds?.forEach((bond) => {
     molecule.addBond({
       id: bond.id,
       atom1: bond.atom1,

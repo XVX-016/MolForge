@@ -39,31 +39,28 @@ export default function MolecularWorkspace() {
         ? simulatedFrame.graph
         : molecule;
 
-    // --- Actions ---
-    // handleAddAtom removed as it's now orchestrated by AI
-
-    const handleDelete = () => {
-        if (!molecule || !selection || !selection.id) return;
-
-        let newGraph = { ...molecule };
-        let description = '';
-
-        if (selection.type === 'atom') {
-            newGraph = deleteAtom(molecule, selection.id); // Changed from mutations.deleteAtom to deleteAtom based on existing imports
-            description = `Deleted atom ${selection.id}`;
-        } else if (selection.type === 'bond') {
-            newGraph = deleteBond(molecule, selection.id); // Changed from mutations.deleteBond to deleteBond based on existing imports
-            description = `Deleted bond ${selection.id}`;
-        }
-
-        applyMutation(newGraph, description, 'user');
-        useStudioStore.setState({ isDirty: true });
-        setSelection(null, null);
-    };
-
     // --- Keyboard Shortcuts ---
     useEffect(() => {
         if (!canEdit) return;
+
+        const handleDelete = () => {
+            if (!molecule || !selection || !selection.id) return;
+
+            let newGraph = { ...molecule };
+            let description = '';
+
+            if (selection.type === 'atom') {
+                newGraph = deleteAtom(molecule, selection.id);
+                description = `Deleted atom ${selection.id}`;
+            } else if (selection.type === 'bond') {
+                newGraph = deleteBond(molecule, selection.id);
+                description = `Deleted bond ${selection.id}`;
+            }
+
+            applyMutation(newGraph, description, 'user');
+            useStudioStore.setState({ isDirty: true });
+            setSelection(null, null);
+        };
 
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -76,7 +73,7 @@ export default function MolecularWorkspace() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [canEdit, selection, molecule, applyMutation, handleDelete]);
+    }, [canEdit, selection, molecule, applyMutation, setSelection]);
 
     return (
         <div className="h-full w-full overflow-hidden bg-[#F9FAFB] relative group">

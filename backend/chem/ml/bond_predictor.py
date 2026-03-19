@@ -1,11 +1,16 @@
 import os
 from typing import List, Tuple
+from backend.ml.torch_runtime import torch_runtime_available
 
 MODEL_PATH = os.environ.get('BOND_MODEL_PATH','./backend/chem/ml/model.pth')
 
 class BondPredictor:
     def __init__(self):
         self.model = None
+        torch_available, torch_error = torch_runtime_available()
+        if not torch_available:
+            print('Torch runtime unavailable; using heuristic fallback:', torch_error)
+            return
         try:
             import torch
             if os.path.exists(MODEL_PATH):

@@ -4,7 +4,7 @@
  * Centralized molecule state management with validation and operations.
  */
 
-import type { MoleculeState, Atom, Bond, ValidationError, ValidationResult } from './types'
+import type { MoleculeState, Atom, Bond, ValidationResult } from './types'
 import { AtomImpl } from './Atom'
 import { BondImpl } from './Bond'
 import { validateMolecule } from './validation/Validator'
@@ -12,7 +12,7 @@ import { validateMolecule } from './validation/Validator'
 export class Molecule {
   private atoms: Map<string, AtomImpl>
   private bonds: Map<string, BondImpl>
-  private metadata: Record<string, any>
+  private metadata: Record<string, unknown>
 
   constructor(state?: MoleculeState) {
     this.atoms = new Map()
@@ -225,14 +225,14 @@ export class Molecule {
   /**
    * Get metadata
    */
-  getMetadata(): Record<string, any> {
+  getMetadata(): Record<string, unknown> {
     return { ...this.metadata }
   }
 
   /**
    * Set metadata
    */
-  setMetadata(metadata: Record<string, any>): void {
+  setMetadata(metadata: Record<string, unknown>): void {
     this.metadata = { ...this.metadata, ...metadata }
   }
 

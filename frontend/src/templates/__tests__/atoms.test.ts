@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { atomTemplates, AtomTemplateName } from "../atoms";
+import { atomTemplates } from "../atoms";
 
 describe("atoms", () => {
   it("exports atom templates", () => {

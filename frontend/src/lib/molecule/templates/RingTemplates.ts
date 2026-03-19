@@ -7,7 +7,6 @@
  */
 
 import type { Molecule } from '../Molecule'
-import { nanoid } from 'nanoid'
 
 export interface RingTemplate {
   id: string

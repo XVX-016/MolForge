@@ -17,24 +17,24 @@ export default function SimulationTimeline({ trajectory, onFrameChange }: Simula
     // Derived current frame
     const currentFrame = trajectory[currentStep];
 
-    const animate = (time: number) => {
-        if (lastTimeRef.current !== undefined) {
-            const delta = time - lastTimeRef.current;
-            if (delta > 33) { // ~30fps
-                setCurrentStep(prev => {
-                    const next = prev + 1;
-                    if (next >= trajectory.length) return 0;
-                    return next;
-                });
+    useEffect(() => {
+        const animate = (time: number) => {
+            if (lastTimeRef.current !== undefined) {
+                const delta = time - lastTimeRef.current;
+                if (delta > 33) { // ~30fps
+                    setCurrentStep(prev => {
+                        const next = prev + 1;
+                        if (next >= trajectory.length) return 0;
+                        return next;
+                    });
+                    lastTimeRef.current = time;
+                }
+            } else {
                 lastTimeRef.current = time;
             }
-        } else {
-            lastTimeRef.current = time;
-        }
-        requestRef.current = requestAnimationFrame(animate);
-    };
+            requestRef.current = requestAnimationFrame(animate);
+        };
 
-    useEffect(() => {
         if (isPlaying) {
             requestRef.current = requestAnimationFrame(animate);
         } else {
