@@ -7,19 +7,33 @@ Supports multiple model types (classical, GNN, Attention-GNN) with fallbacks.
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import logging
+from .torch_runtime import torch_runtime_available
 
 # Optional PyTorch imports - lazy import to avoid DLL issues
 TORCH_AVAILABLE = None
 torch = None
 Data = None
 Batch = None
+AttentionGNN = None
 
 def _ensure_torch():
     """Lazy import of PyTorch to avoid DLL issues at module load."""
     global TORCH_AVAILABLE, torch, Data, Batch
     if TORCH_AVAILABLE is not None:
         return TORCH_AVAILABLE
-    
+
+    runtime_ok, runtime_error = torch_runtime_available("torch_geometric.data")
+    if not runtime_ok:
+        TORCH_AVAILABLE = False
+        torch = None
+        Data = None
+        Batch = None
+        logging.warning(
+            "PyTorch/PyG runtime unavailable: %s. ML features will be limited.",
+            runtime_error,
+        )
+        return False
+
     try:
         import torch as _torch
         from torch_geometric.data import Data as _Data, Batch as _Batch
@@ -36,12 +50,23 @@ def _ensure_torch():
         logging.warning(f"PyTorch/PyG not available: {e}. ML features will be limited.")
         return False
 
+
+def _ensure_attention_gnn():
+    global AttentionGNN
+    if AttentionGNN is not None:
+        return AttentionGNN
+    if not _ensure_torch():
+        return None
+    try:
+        from .gat_model import AttentionGNN as _AttentionGNN
+        AttentionGNN = _AttentionGNN
+    except (ImportError, OSError) as exc:
+        logging.warning("Attention GNN unavailable: %s", exc)
+        AttentionGNN = None
+    return AttentionGNN
+
 from .featurize import featurize_smiles, featurize_json, canonicalize_smiles
 from .registry import ModelRegistry
-try:
-    from .gat_model import AttentionGNN
-except (ImportError, OSError):
-    AttentionGNN = None
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +205,8 @@ class PredictionEngine:
         batch = Batch.from_data_list([data]).to(self.device)
         
         with torch.no_grad():
-            if isinstance(model, AttentionGNN) and return_attention:
+            attention_gnn = _ensure_attention_gnn()
+            if attention_gnn is not None and isinstance(model, attention_gnn) and return_attention:
                 # Attention model
                 preds, attentions = model(
                     batch.x,

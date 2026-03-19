@@ -9,17 +9,30 @@ import os
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 import logging
+from .torch_runtime import torch_runtime_available
 
 # Optional PyTorch imports - lazy import
 TORCH_AVAILABLE = None
 torch = None
+AttentionGNN = None
+create_model = None
 
 def _ensure_torch():
     """Lazy import of PyTorch."""
     global TORCH_AVAILABLE, torch
     if TORCH_AVAILABLE is not None:
         return TORCH_AVAILABLE
-    
+
+    runtime_ok, runtime_error = torch_runtime_available()
+    if not runtime_ok:
+        TORCH_AVAILABLE = False
+        torch = None
+        logging.warning(
+            "PyTorch runtime unavailable: %s. Model registry will use mock mode.",
+            runtime_error,
+        )
+        return False
+
     try:
         import torch as _torch
         torch = _torch
@@ -31,11 +44,30 @@ def _ensure_torch():
         logging.warning(f"PyTorch not available: {e}. Model registry will use mock mode.")
         return False
 
-try:
-    from .gat_model import AttentionGNN, create_model
-except (ImportError, OSError):
-    AttentionGNN = None
-    create_model = None
+
+def _ensure_attention_model():
+    global AttentionGNN, create_model
+    if create_model is not None:
+        return True
+    if not _ensure_torch():
+        return False
+    runtime_ok, runtime_error = torch_runtime_available("torch_geometric.data")
+    if not runtime_ok:
+        logging.warning(
+            "Attention model runtime unavailable: %s. Registry will skip GNN loading.",
+            runtime_error,
+        )
+        return False
+    try:
+        from .gat_model import AttentionGNN as _AttentionGNN, create_model as _create_model
+        AttentionGNN = _AttentionGNN
+        create_model = _create_model
+        return True
+    except (ImportError, OSError) as exc:
+        logging.warning("Attention model import failed: %s", exc)
+        AttentionGNN = None
+        create_model = None
+        return False
 
 
 class ModelRegistry:
@@ -159,6 +191,9 @@ class ModelRegistry:
         
         try:
             if model_type == "attention-gnn":
+                if not _ensure_attention_model() or create_model is None:
+                    print("Warning: attention GNN runtime unavailable")
+                    return None
                 # Create model with metadata
                 model = create_model(
                     node_feat_dim=metadata.get("node_feat_dim", 64),
@@ -194,7 +229,7 @@ class ModelRegistry:
         """Unload model from memory."""
         if model_id in self.loaded_models:
             del self.loaded_models[model_id]
-            if torch.cuda.is_available():
+            if torch is not None and torch.cuda.is_available():
                 torch.cuda.empty_cache()
     
     def save_registry(self):

@@ -12,7 +12,21 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.db import init_db
+
+try:
+    from backend.db import init_db
+except ModuleNotFoundError as exc:
+    if not exc.name or exc.name.startswith("backend"):
+        raise
+    missing_dependency = exc.name
+    missing_error = str(exc)
+
+    def init_db() -> None:
+        logger.warning(
+            "Skipping database initialization because optional dependency '%s' is unavailable: %s",
+            missing_dependency,
+            missing_error,
+        )
 
 logger = logging.getLogger(__name__)
 
