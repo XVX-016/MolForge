@@ -29,9 +29,9 @@ RUN conda install -y -c conda-forge rdkit=2023.09 python=3.10 && \
     conda clean -afy
 
 # === Copy & Install Python Dependencies ===
-# Remove rdkit-pypi from requirements.txt before this step
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN grep -v '^rdkit-pypi==' /tmp/requirements.txt > /tmp/requirements.docker.txt && \
+    pip install --no-cache-dir -r /tmp/requirements.docker.txt
 
 # === Copy App Code ===
 COPY . /app/backend/
